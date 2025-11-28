@@ -1,0 +1,46 @@
+FROM node:20-slim
+
+# Instalar dependências do sistema
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    postgresql-client \
+    wget \
+    curl \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+# Criar diretório de trabalho
+WORKDIR /app
+
+# Copiar arquivos de dependências primeiro
+COPY package*.json ./
+
+# Instalar dependências (incluindo devDependencies para nest CLI)
+RUN npm ci
+
+# Limpar qualquer resíduo do Prisma Client
+RUN rm -rf node_modules/.prisma && rm -rf node_modules/@prisma/client
+
+# Copiar schema do Prisma
+COPY prisma ./prisma/
+
+# Gerar Prisma Client sem WASM (modo nativo)
+RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# Copiar código fonte (depois de instalar dependências e gerar Prisma)
+COPY . .
+
+# Copiar script de entrada
+COPY scripts/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Expor porta
+EXPOSE 3001
+
+# Usar script de entrada
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+# Comando padrão (pode ser sobrescrito no docker-compose)
+CMD ["npm", "run", "start:dev"]

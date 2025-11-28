@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Paleta de Cores Escura - Mecânica365 */
+  --color-graphite: #0F1115;
+  --color-carbon: #1A1E23;
+  --color-steel: #2A3038;
+  --color-turquoise: #00E0B8;
+  --color-mechanical-blue: #3ABFF8;
+  --color-tool-yellow: #FFCB2B;
+  --color-injector-red: #FF4E3D;
+  --color-text-light: #D0D6DE;
+  --color-text-secondary: #7E8691;
+  
+  --foreground-rgb: 208, 214, 222;
+  --background-start-rgb: 15, 17, 21;
+  --background-end-rgb: 26, 30, 35;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+  background-attachment: fixed;
+}
+
+/* Garantir que inputs tenham texto claro */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+select,
+textarea {
+  color: var(--color-text-light) !important;
+  background-color: var(--color-steel) !important;
+  border-color: var(--color-steel) !important;
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="number"]::placeholder,
+input[type="tel"]::placeholder,
+textarea::placeholder {
+  color: var(--color-text-secondary) !important;
+  opacity: 0.7 !important;
+  font-weight: 400 !important;
+  transition: opacity 0.2s ease !important;
+}
+
+input[type="text"]:focus::placeholder,
+input[type="email"]:focus::placeholder,
+input[type="password"]:focus::placeholder,
+input[type="number"]:focus::placeholder,
+input[type="tel"]:focus::placeholder,
+textarea:focus::placeholder {
+  opacity: 0.5 !important;
+}
+
+/* Garantir que selects tenham texto claro */
+select option {
+  color: var(--color-text-light) !important;
+  background-color: var(--color-carbon) !important;
+}
+
+/* Remover qualquer estilo que force texto branco */
+input, select, textarea {
+  -webkit-text-fill-color: var(--color-text-light) !important;
+}
+
+/* Animações globais */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0, 224, 184, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 224, 184, 0.6), 0 0 30px rgba(0, 224, 184, 0.4);
+  }
+}
+
+@keyframes hud-scan {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s ease-out;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Glassmorphism escuro */
+.glass-dark {
+  background: rgba(26, 30, 35, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(42, 48, 56, 0.5);
+}
+
+/* HUD Lines */
+.hud-line {
+  position: relative;
+  overflow: hidden;
+}
+
+.hud-line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 184, 0.5), transparent);
+  animation: hud-scan 3s infinite;
+}
+
+/* Textura de fibra de carbono (opcional) */
+.carbon-texture {
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
+  background-size: 20px 20px;
+}
+
+/* Neon glow effect */
+.neon-turquoise {
+  color: var(--color-turquoise);
+  text-shadow: 0 0 10px rgba(0, 224, 184, 0.5), 0 0 20px rgba(0, 224, 184, 0.3);
+}
+
+.neon-blue {
+  color: var(--color-mechanical-blue);
+  text-shadow: 0 0 10px rgba(58, 191, 248, 0.5), 0 0 20px rgba(58, 191, 248, 0.3);
+}
+
+/* Status colors */
+.status-free {
+  background: linear-gradient(135deg, rgba(0, 224, 184, 0.1), rgba(0, 224, 184, 0.05));
+  border-color: var(--color-turquoise);
+}
+
+.status-occupied {
+  background: linear-gradient(135deg, rgba(255, 78, 61, 0.1), rgba(255, 78, 61, 0.05));
+  border-color: var(--color-injector-red);
+}
+
+.status-maintenance {
+  background: linear-gradient(135deg, rgba(255, 203, 43, 0.1), rgba(255, 203, 43, 0.05));
+  border-color: var(--color-tool-yellow);
+}
+
+.status-scheduled {
+  background: linear-gradient(135deg, rgba(58, 191, 248, 0.1), rgba(58, 191, 248, 0.05));
+  border-color: var(--color-mechanical-blue);
+}

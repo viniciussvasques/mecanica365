@@ -1,0 +1,327 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id            String         @id @default(uuid())
+  name          String
+  subdomain     String         @unique
+  plan          String
+  status        String         @default("active")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  documentType String         @default("cnpj") @map("document_type") @db.VarChar(10)
+  document     String         @unique @db.VarChar(20)
+  adminEmail    String?        @map("admin_email") @db.VarChar(255)
+  appointments  Appointment[]
+  customers     Customer[]
+  invoices      Invoice[]
+  parts         Part[]
+  serviceOrders ServiceOrder[]
+  subscription  Subscription?
+  users         User[]
+
+  @@map("tenants")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  tenantId      String
+  email         String
+  name          String
+  password      String
+  role          String
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  appointments  Appointment[]  @relation("AssignedTo")
+  refreshTokens RefreshToken[]
+  serviceOrders ServiceOrder[] @relation("Technician")
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+model Subscription {
+  id                   String   @id @default(uuid())
+  tenantId             String   @unique
+  plan                 String
+  status               String   @default("active")
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  activeFeatures       String[]
+  serviceOrdersLimit   Int?
+  serviceOrdersUsed    Int      @default(0)
+  partsLimit           Int?
+  stripeSubscriptionId String?  @unique
+  stripeCustomerId     String?
+  billingCycle         String   @default("monthly")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+model ServiceOrder {
+  id               String                @id @default(uuid())
+  tenantId         String
+  number           String
+  customerId       String?
+  vehicleVin       String?
+  vehiclePlaca     String?
+  vehicleMake      String?
+  vehicleModel     String?
+  vehicleYear      Int?
+  vehicleMileage   Int?
+  technicianId     String?
+  status           String                @default("scheduled")
+  appointmentDate  DateTime?
+  checkInDate      DateTime?
+  checkInKm        Int?
+  checkInFuelLevel String?
+  inspectionNotes  String?
+  inspectionPhotos String[]
+  estimatedHours   Decimal?
+  laborCost        Decimal?
+  partsCost        Decimal?
+  totalCost        Decimal?
+  discount         Decimal?              @default(0)
+  actualHours      Decimal?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  invoiceId        String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  appointments     Appointment[]
+  invoice          Invoice?
+  partsConsumed    ServiceOrderPart[]
+  services         ServiceOrderService[]
+  customer         Customer?             @relation(fields: [customerId], references: [id])
+  technician       User?                 @relation("Technician", fields: [technicianId], references: [id])
+  tenant           Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@index([tenantId, customerId])
+  @@map("service_orders")
+}
+
+model ServiceOrderService {
+  id             String       @id @default(uuid())
+  serviceOrderId String
+  serviceId      String?
+  serviceName    String
+  description    String?
+  hours          Decimal
+  cost           Decimal
+  createdAt      DateTime     @default(now())
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+
+  @@map("service_order_services")
+}
+
+model ServiceOrderPart {
+  id             String       @id @default(uuid())
+  serviceOrderId String
+  partId         String?
+  partName       String
+  quantity       Int
+  unitCost       Decimal
+  totalCost      Decimal
+  createdAt      DateTime     @default(now())
+  part           Part?        @relation(fields: [partId], references: [id])
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+
+  @@map("service_order_parts")
+}
+
+model Appointment {
+  id             String        @id @default(uuid())
+  tenantId       String
+  customerId     String?
+  serviceOrderId String?
+  assignedToId   String?
+  date           DateTime
+  duration       Int           @default(60)
+  serviceType    String?
+  notes          String?
+  status         String        @default("scheduled")
+  reminderSent   Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  assignedTo     User?         @relation("AssignedTo", fields: [assignedToId], references: [id])
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+  serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id])
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, date])
+  @@map("appointments")
+}
+
+model Customer {
+  id            String            @id @default(uuid())
+  tenantId      String
+  name          String
+  email         String?
+  phone         String
+  cpf           String?
+  address       String?
+  notes         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  appointments  Appointment[]
+  vehicles      CustomerVehicle[]
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices      Invoice[]
+  serviceOrders ServiceOrder[]
+
+  @@unique([tenantId, phone])
+  @@index([tenantId, name])
+  @@map("customers")
+}
+
+model CustomerVehicle {
+  id         String   @id @default(uuid())
+  customerId String
+  vin        String?
+  placa      String?
+  make       String?
+  model      String?
+  year       Int?
+  color      String?
+  mileage    Int?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_vehicles")
+}
+
+model Part {
+  id          String             @id @default(uuid())
+  tenantId    String
+  partNumber  String?
+  description String
+  category    String?
+  supplier    String?
+  quantity    Int                @default(0)
+  minQuantity Int                @default(0)
+  unitCost    Decimal
+  unitPrice   Decimal
+  location    String?
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  movements   PartMovement[]
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  consumedIn  ServiceOrderPart[]
+
+  @@index([tenantId, partNumber])
+  @@index([tenantId, category])
+  @@map("parts")
+}
+
+model PartMovement {
+  id          String   @id @default(uuid())
+  tenantId    String
+  partId      String
+  type        String
+  quantity    Int
+  unitCost    Decimal?
+  referenceId String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  part        Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, partId])
+  @@map("part_movements")
+}
+
+model Invoice {
+  id             String       @id @default(uuid())
+  tenantId       String
+  invoiceNumber  String       @unique
+  serviceOrderId String       @unique
+  customerId     String?
+  total          Decimal
+  taxAmount      Decimal      @default(0)
+  discount       Decimal      @default(0)
+  nfeKey         String?      @unique
+  nfeXmlUrl      String?
+  nfePdfUrl      String?
+  nfeStatus      String?
+  paymentMethod  String?
+  paymentStatus  String       @default("pending")
+  paidAt         DateTime?
+  status         String       @default("draft")
+  issuedAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  customer       Customer?    @relation(fields: [customerId], references: [id])
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([tenantId, customerId])
+  @@map("invoices")
+}
+
+model WorkshopService {
+  id             String   @id @default(uuid())
+  name           String   @unique
+  description    String?
+  category       String
+  estimatedHours Decimal
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("workshop_services")
+}
+
+model CommonProblem {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  category      String
+  severity      String
+  estimatedCost Decimal?
+  description   String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("common_problems")
+}
+
+model PartsCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("parts_categories")
+}

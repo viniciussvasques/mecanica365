@@ -1,0 +1,43 @@
+==========================================
+CONFIGURAÇÃO GMAIL SMTP - MECÂNICA365
+==========================================
+
+Você já tem a senha de app do Gmail: kayp zkqy nrsz gqf
+
+Agora configure no arquivo .env:
+
+1. Abra o arquivo: workshops/backend/.env
+
+2. Adicione ou atualize estas linhas:
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=SEU_EMAIL@gmail.com
+SMTP_PASS=kayp zkqy nrsz gqf
+
+⚠️ IMPORTANTE: 
+   - Substitua "SEU_EMAIL@gmail.com" pelo seu email do Gmail real
+   - A senha de app já está pronta: kayp zkqy nrsz gqf
+
+3. Salve o arquivo
+
+4. Reinicie o backend:
+   docker-compose restart backend
+
+5. Verifique os logs:
+   docker-compose logs backend | Select-String -Pattern "SMTP|Email"
+
+Se aparecer "SMTP connection successful" ou similar, está funcionando! ✅
+
+==========================================
+EXEMPLO COMPLETO DO .env:
+==========================================
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=seuemail@gmail.com
+SMTP_PASS=kayp zkqy nrsz gqf
+
+==========================================
+

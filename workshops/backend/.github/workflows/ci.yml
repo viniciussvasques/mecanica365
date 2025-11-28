@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mecanica365_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dir: ./workshops/backend/node_modules
+
+      - name: Install dependencies
+        working-directory: ./workshops/backend
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: ./workshops/backend
+        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mecanica365_test
+
+      - name: Run migrations
+        working-directory: ./workshops/backend
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mecanica365_test
+
+      - name: Run linter
+        working-directory: ./workshops/backend
+        run: npm run lint || true
+
+      - name: Run tests
+        working-directory: ./workshops/backend
+        run: npm run test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mecanica365_test
+          JWT_SECRET: test-secret-key-for-ci
+          NODE_ENV: test
+
+      - name: Build
+        working-directory: ./workshops/backend
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mecanica365_test
+          JWT_SECRET: test-secret-key-for-ci
+

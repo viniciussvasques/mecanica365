@@ -1,0 +1,266 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Headers,
+  BadRequestException,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { AuthService } from './auth.service';
+import { LoginDto } from './dto/login.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ProfileResponseDto } from './dto/profile-response.dto';
+import { FindTenantByEmailDto } from './dto/find-tenant-by-email.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { TenantId } from '../../../common/decorators/tenant.decorator';
+import { Public } from '../../../common/decorators/public.decorator';
+import { TenantsService } from '../../core/tenants/tenants.service';
+
+@ApiTags('Auth')
+@Controller('auth')
+export class AuthController {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly tenantsService: TenantsService,
+  ) {}
+
+  @Post('login')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Fazer login',
+    description: 'Autentica um usuário e retorna access token e refresh token. Requer header X-Tenant-Subdomain.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login realizado com sucesso',
+    type: LoginResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos (email ou senha não fornecidos)',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Credenciais inválidas, usuário inativo ou tenant inativo',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  async login(
+    @Body() loginDto: LoginDto,
+    @Headers('x-tenant-subdomain') subdomain?: string,
+    @TenantId() tenantId?: string,
+  ): Promise<LoginResponseDto> {
+    // Se tenantId não foi injetado pelo middleware (rota pública),
+    // buscar pelo subdomain do header
+    let resolvedTenantId = tenantId;
+    
+    if (!resolvedTenantId && subdomain) {
+      try {
+        const tenant = await this.tenantsService.findBySubdomain(subdomain);
+        resolvedTenantId = tenant.id;
+      } catch (error) {
+        throw new BadRequestException(
+          `Tenant não encontrado: ${subdomain}. Verifique o subdomain e tente novamente.`,
+        );
+      }
+    }
+
+    if (!resolvedTenantId) {
+      throw new BadRequestException(
+        'Tenant subdomain é obrigatório. Use o header X-Tenant-Subdomain.',
+      );
+    }
+
+    return this.authService.login(loginDto, resolvedTenantId);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Fazer logout',
+    description: 'Revoga o refresh token do usuário. Requer autenticação JWT.',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Logout realizado com sucesso',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Refresh token não fornecido',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado (token inválido ou expirado)',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  async logout(
+    @CurrentUser() user: { id: string },
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ): Promise<void> {
+    return this.authService.logout(user.id, refreshTokenDto.refreshToken);
+  }
+
+  @Post('refresh')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Renovar access token',
+    description: 'Renova o access token usando um refresh token válido. Gera um novo par de tokens.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Token renovado com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: {
+          type: 'string',
+          description: 'Novo access token JWT',
+        },
+        refreshToken: {
+          type: 'string',
+          description: 'Novo refresh token UUID',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Refresh token não fornecido',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token inválido, expirado ou revogado',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  async refresh(
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    return this.authService.refreshToken(refreshTokenDto);
+  }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Obter perfil do usuário autenticado',
+    description: 'Retorna os dados do perfil do usuário autenticado. Requer autenticação JWT.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil obtido com sucesso',
+    type: ProfileResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado (token inválido ou expirado)',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Usuário não encontrado',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  async getProfile(
+    @CurrentUser() user: { id: string },
+  ): Promise<ProfileResponseDto> {
+    return this.authService.getProfile(user.id);
+  }
+
+  @Patch('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Alterar senha',
+    description: 'Altera a senha do usuário autenticado. Requer autenticação JWT. Após alterar, todos os refresh tokens são revogados.',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Senha alterada com sucesso',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos (senhas não coincidem, nova senha igual à atual, senha muito curta)',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado (token inválido) ou senha atual incorreta',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Usuário não encontrado',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  async changePassword(
+    @CurrentUser() user: { id: string },
+    @Body() changePasswordDto: ChangePasswordDto,
+  ): Promise<void> {
+    return this.authService.changePassword(user.id, changePasswordDto);
+  }
+
+  @Post('find-tenant')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Buscar tenant por email',
+    description: 'Retorna o subdomain do tenant associado ao email do usuário',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tenant encontrado',
+    schema: {
+      type: 'object',
+      properties: {
+        subdomain: { type: 'string' },
+        tenantId: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tenant não encontrado',
+    schema: {
+      type: 'object',
+      properties: {
+        subdomain: { type: 'null' },
+        tenantId: { type: 'null' },
+      },
+    },
+  })
+  async findTenantByEmail(
+    @Body() findTenantDto: FindTenantByEmailDto,
+  ): Promise<{ subdomain: string; tenantId: string } | null> {
+    return this.authService.findTenantByEmail(findTenantDto);
+  }
+}
+
