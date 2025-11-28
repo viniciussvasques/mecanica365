@@ -35,11 +35,9 @@ jobs:
           cache: 'npm'
           cache-dir: ./workshops/backend/node_modules
 
-            - name: Install dependencies
-              working-directory: ./workshops/backend
-              run: npm ci
-              env:
-                NODE_ENV: test
+      - name: Install dependencies
+        working-directory: ./workshops/backend
+        run: npm ci
 
       - name: Generate Prisma Client
         working-directory: ./workshops/backend
