@@ -217,7 +217,6 @@ model CustomerVehicle {
   updatedAt  DateTime @updatedAt
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  @@unique([customerId, renavan])
   @@index([renavan])
   @@map("customer_vehicles")
 }
