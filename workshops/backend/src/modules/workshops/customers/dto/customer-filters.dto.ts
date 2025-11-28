@@ -31,6 +31,16 @@ export class CustomerFiltersDto {
   email?: string;
 
   @ApiProperty({
+    description: 'Tipo de documento para filtrar',
+    example: 'cpf',
+    enum: ['cpf', 'cnpj'],
+    required: false,
+  })
+  @IsString({ message: 'documentType deve ser uma string' })
+  @IsOptional()
+  documentType?: string;
+
+  @ApiProperty({
     description: 'Buscar por CPF',
     example: '12345678901',
     required: false,
@@ -38,6 +48,15 @@ export class CustomerFiltersDto {
   @IsString({ message: 'CPF deve ser uma string' })
   @IsOptional()
   cpf?: string;
+
+  @ApiProperty({
+    description: 'Buscar por CNPJ',
+    example: '123456780001',
+    required: false,
+  })
+  @IsString({ message: 'CNPJ deve ser uma string' })
+  @IsOptional()
+  cnpj?: string;
 
   @ApiProperty({
     description: 'Página (para paginação)',

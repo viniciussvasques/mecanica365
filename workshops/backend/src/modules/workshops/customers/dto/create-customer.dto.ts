@@ -2,15 +2,21 @@ import {
   IsString,
   IsEmail,
   IsOptional,
+  IsEnum,
   MinLength,
   MaxLength,
   Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
+export enum DocumentType {
+  CPF = 'cpf',
+  CNPJ = 'cnpj',
+}
+
 export class CreateCustomerDto {
   @ApiProperty({
-    description: 'Nome completo do cliente',
+    description: 'Nome completo do cliente ou razão social da empresa',
     example: 'João Silva',
     minLength: 3,
     maxLength: 255,
@@ -41,7 +47,19 @@ export class CreateCustomerDto {
   phone: string;
 
   @ApiProperty({
-    description: 'CPF do cliente (apenas números, 11 dígitos)',
+    description: 'Tipo de documento (CPF para pessoa física ou CNPJ para empresa)',
+    example: 'cpf',
+    enum: DocumentType,
+    default: 'cpf',
+  })
+  @IsEnum(DocumentType, {
+    message: 'Tipo de documento deve ser "cpf" ou "cnpj"',
+  })
+  @IsOptional()
+  documentType?: DocumentType = DocumentType.CPF;
+
+  @ApiProperty({
+    description: 'CPF do cliente (apenas números, 11 dígitos) - Obrigatório se documentType for "cpf"',
     example: '12345678901',
     required: false,
   })
@@ -51,6 +69,18 @@ export class CreateCustomerDto {
   })
   @IsOptional()
   cpf?: string;
+
+  @ApiProperty({
+    description: 'CNPJ da empresa (apenas números, 14 dígitos) - Obrigatório se documentType for "cnpj"',
+    example: '12345678000199',
+    required: false,
+  })
+  @IsString({ message: 'CNPJ deve ser uma string' })
+  @Matches(/^[0-9]{14}$/, {
+    message: 'CNPJ deve conter exatamente 14 dígitos numéricos',
+  })
+  @IsOptional()
+  cnpj?: string;
 
   @ApiProperty({
     description: 'Endereço completo do cliente',

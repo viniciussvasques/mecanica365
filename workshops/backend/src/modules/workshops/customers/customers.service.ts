@@ -11,6 +11,7 @@ import {
   UpdateCustomerDto,
   CustomerResponseDto,
   CustomerFiltersDto,
+  DocumentType,
 } from './dto';
 import { Prisma } from '@prisma/client';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
@@ -32,9 +33,23 @@ export class CustomersService {
     createCustomerDto: CreateCustomerDto,
   ): Promise<CustomerResponseDto> {
     try {
-      // Validar CPF se fornecido
-      if (createCustomerDto.cpf && !this.isValidCPF(createCustomerDto.cpf)) {
-        throw new BadRequestException('CPF inválido');
+      const documentType = createCustomerDto.documentType || DocumentType.CPF;
+
+      // Validar documento conforme o tipo
+      if (documentType === DocumentType.CPF) {
+        if (!createCustomerDto.cpf) {
+          throw new BadRequestException('CPF é obrigatório para pessoa física');
+        }
+        if (!this.isValidCPF(createCustomerDto.cpf)) {
+          throw new BadRequestException('CPF inválido');
+        }
+      } else if (documentType === DocumentType.CNPJ) {
+        if (!createCustomerDto.cnpj) {
+          throw new BadRequestException('CNPJ é obrigatório para pessoa jurídica');
+        }
+        if (!this.isValidCNPJ(createCustomerDto.cnpj)) {
+          throw new BadRequestException('CNPJ inválido');
+        }
       }
 
       // Verificar se já existe cliente com mesmo telefone no tenant
@@ -51,8 +66,8 @@ export class CustomersService {
         );
       }
 
-      // Verificar se já existe cliente com mesmo CPF no tenant (se fornecido)
-      if (createCustomerDto.cpf) {
+      // Verificar se já existe cliente com mesmo documento no tenant
+      if (documentType === DocumentType.CPF && createCustomerDto.cpf) {
         const existingByCpf = await this.prisma.customer.findFirst({
           where: {
             tenantId,
@@ -65,6 +80,19 @@ export class CustomersService {
             'Já existe um cliente cadastrado com este CPF',
           );
         }
+      } else if (documentType === DocumentType.CNPJ && createCustomerDto.cnpj) {
+        const existingByCnpj = await this.prisma.customer.findFirst({
+          where: {
+            tenantId,
+            cnpj: createCustomerDto.cnpj,
+          },
+        });
+
+        if (existingByCnpj) {
+          throw new ConflictException(
+            'Já existe um cliente cadastrado com este CNPJ',
+          );
+        }
       }
 
       // Criar cliente
@@ -74,7 +102,9 @@ export class CustomersService {
           name: createCustomerDto.name.trim(),
           email: createCustomerDto.email?.trim() || null,
           phone: createCustomerDto.phone.trim(),
-          cpf: createCustomerDto.cpf?.trim() || null,
+          documentType,
+          cpf: documentType === DocumentType.CPF ? createCustomerDto.cpf?.trim() || null : null,
+          cnpj: documentType === DocumentType.CNPJ ? createCustomerDto.cnpj?.trim() || null : null,
           address: createCustomerDto.address?.trim() || null,
           notes: createCustomerDto.notes?.trim() || null,
         },
@@ -143,8 +173,22 @@ export class CustomersService {
         };
       }
 
+      if (filters.documentType) {
+        where.documentType = filters.documentType;
+      }
+
       if (filters.cpf) {
-        where.cpf = filters.cpf.trim();
+        where.cpf = {
+          contains: filters.cpf.trim(),
+          mode: 'insensitive',
+        };
+      }
+
+      if (filters.cnpj) {
+        where.cnpj = {
+          contains: filters.cnpj.trim(),
+          mode: 'insensitive',
+        };
       }
 
       // Buscar clientes e total
@@ -227,9 +271,12 @@ export class CustomersService {
         throw new NotFoundException('Cliente não encontrado');
       }
 
-      // Validar CPF se fornecido
+      // Validar documento se fornecido
       if (updateCustomerDto.cpf && !this.isValidCPF(updateCustomerDto.cpf)) {
         throw new BadRequestException('CPF inválido');
+      }
+      if (updateCustomerDto.cnpj && !this.isValidCNPJ(updateCustomerDto.cnpj)) {
+        throw new BadRequestException('CNPJ inválido');
       }
 
       // Verificar conflito de telefone (se alterado)
@@ -252,7 +299,7 @@ export class CustomersService {
         }
       }
 
-      // Verificar conflito de CPF (se alterado)
+      // Verificar conflito de documento (se alterado)
       if (
         updateCustomerDto.cpf &&
         updateCustomerDto.cpf !== existingCustomer.cpf
@@ -272,6 +319,25 @@ export class CustomersService {
         }
       }
 
+      if (
+        updateCustomerDto.cnpj &&
+        updateCustomerDto.cnpj !== (existingCustomer as { cnpj?: string | null }).cnpj
+      ) {
+        const customerWithCnpj = await this.prisma.customer.findFirst({
+          where: {
+            tenantId,
+            cnpj: updateCustomerDto.cnpj,
+            NOT: { id },
+          },
+        });
+
+        if (customerWithCnpj) {
+          throw new ConflictException(
+            'Já existe um cliente cadastrado com este CNPJ',
+          );
+        }
+      }
+
       // Preparar dados para atualização
       const updateData: Prisma.CustomerUpdateInput = {};
 
@@ -287,8 +353,24 @@ export class CustomersService {
         updateData.phone = updateCustomerDto.phone.trim();
       }
 
+      if (updateCustomerDto.documentType !== undefined) {
+        updateData.documentType = updateCustomerDto.documentType;
+      }
+
       if (updateCustomerDto.cpf !== undefined) {
         updateData.cpf = updateCustomerDto.cpf?.trim() || null;
+        // Se está atualizando CPF, limpar CNPJ
+        if (updateCustomerDto.cpf) {
+          updateData.cnpj = null;
+        }
+      }
+
+      if (updateCustomerDto.cnpj !== undefined) {
+        updateData.cnpj = updateCustomerDto.cnpj?.trim() || null;
+        // Se está atualizando CNPJ, limpar CPF
+        if (updateCustomerDto.cnpj) {
+          updateData.cpf = null;
+        }
       }
 
       if (updateCustomerDto.address !== undefined) {
@@ -398,13 +480,20 @@ export class CustomersService {
    * Converte Customer do Prisma para CustomerResponseDto
    */
   private toResponseDto(customer: PrismaCustomer): CustomerResponseDto {
+    const customerWithDoc = customer as PrismaCustomer & {
+      documentType?: string;
+      cnpj?: string | null;
+    };
+
     return {
       id: customer.id,
       tenantId: customer.tenantId,
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
+      documentType: customerWithDoc.documentType || 'cpf',
       cpf: customer.cpf,
+      cnpj: customerWithDoc.cnpj || null,
       address: customer.address,
       notes: customer.notes,
       createdAt: customer.createdAt,
@@ -459,6 +548,64 @@ export class CustomersService {
     }
 
     if (remainder !== parseInt(cleanCpf.substring(10, 11))) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Valida CNPJ
+   */
+  private isValidCNPJ(cnpj: string): boolean {
+    // Remove caracteres não numéricos
+    const cleanCnpj = cnpj.replace(/\D/g, '');
+
+    // Verifica se tem 14 dígitos
+    if (cleanCnpj.length !== 14) {
+      return false;
+    }
+
+    // Verifica se todos os dígitos são iguais
+    if (/^(\d)\1{13}$/.test(cleanCnpj)) {
+      return false;
+    }
+
+    // Validação dos dígitos verificadores
+    let length = cleanCnpj.length - 2;
+    let numbers = cleanCnpj.substring(0, length);
+    const digits = cleanCnpj.substring(length);
+    let sum = 0;
+    let pos = length - 7;
+
+    // Valida primeiro dígito
+    for (let i = length; i >= 1; i--) {
+      sum += parseInt(numbers.charAt(length - i)) * pos--;
+      if (pos < 2) {
+        pos = 9;
+      }
+    }
+
+    let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    if (result !== parseInt(digits.charAt(0))) {
+      return false;
+    }
+
+    // Valida segundo dígito
+    length = length + 1;
+    numbers = cleanCnpj.substring(0, length);
+    sum = 0;
+    pos = length - 7;
+
+    for (let i = length; i >= 1; i--) {
+      sum += parseInt(numbers.charAt(length - i)) * pos--;
+      if (pos < 2) {
+        pos = 9;
+      }
+    }
+
+    result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    if (result !== parseInt(digits.charAt(1))) {
       return false;
     }
 

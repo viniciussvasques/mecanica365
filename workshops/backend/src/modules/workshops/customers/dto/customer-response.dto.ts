@@ -34,12 +34,27 @@ export class CustomerResponseDto {
   phone: string;
 
   @ApiProperty({
-    description: 'CPF do cliente',
+    description: 'Tipo de documento',
+    example: 'cpf',
+    enum: ['cpf', 'cnpj'],
+  })
+  documentType: string;
+
+  @ApiProperty({
+    description: 'CPF do cliente (se pessoa física)',
     example: '12345678901',
     required: false,
     nullable: true,
   })
   cpf: string | null;
+
+  @ApiProperty({
+    description: 'CNPJ da empresa (se pessoa jurídica)',
+    example: '12345678000199',
+    required: false,
+    nullable: true,
+  })
+  cnpj: string | null;
 
   @ApiProperty({
     description: 'Endereço completo do cliente',

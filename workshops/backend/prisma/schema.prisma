@@ -132,12 +132,17 @@ model ServiceOrderService {
   serviceOrderId String
   serviceId      String?
   serviceName    String
+  serviceType    String?      @map("service_type") @db.VarChar(50)
   description    String?
   hours          Decimal
   cost           Decimal
+  performedAt    DateTime?    @map("performed_at")
   createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
 
+  @@index([serviceOrderId])
+  @@index([serviceType])
   @@map("service_order_services")
 }
 
@@ -185,7 +190,9 @@ model Customer {
   name          String
   email         String?
   phone         String
+  documentType  String            @default("cpf") @map("document_type") @db.VarChar(10)
   cpf           String?
+  cnpj          String?
   address       String?
   notes         String?
   createdAt     DateTime          @default(now())
@@ -197,7 +204,10 @@ model Customer {
   serviceOrders ServiceOrder[]
 
   @@unique([tenantId, phone])
+  @@unique([tenantId, cpf])
+  @@unique([tenantId, cnpj])
   @@index([tenantId, name])
+  @@index([tenantId, documentType])
   @@map("customers")
 }
 
