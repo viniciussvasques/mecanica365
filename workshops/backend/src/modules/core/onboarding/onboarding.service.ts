@@ -17,12 +17,16 @@ import { generateRandomPassword } from './utils/password-generator.util';
 import { UserRole } from '../users/dto/create-user.dto';
 import {
   BillingCycle,
+  SubscriptionPlan,
   SubscriptionStatus,
 } from '../billing/dto/subscription-response.dto';
-import { TenantStatus } from '../tenants/dto/create-tenant.dto';
+import { TenantStatus, TenantPlan } from '../tenants/dto/create-tenant.dto';
 
 // Type helpers para evitar warnings de type safety com Stripe e Prisma
-type StripeError = Error & { message?: string; stack?: string };
+type StripeError = {
+  message?: string;
+  stack?: string;
+};
 type TenantWithUsers = {
   id: string;
   subdomain: string;
@@ -40,6 +44,16 @@ type AdminUser = {
   email: string;
   name: string;
   role: string;
+};
+type DbSubscription = {
+  id: string;
+  tenantId: string;
+  plan: string;
+  status: string;
+  billingCycle: string;
+  currentPeriodEnd: Date;
+  stripeSubscriptionId: string | null;
+  stripeCustomerId: string | null;
 };
 
 @Injectable()
@@ -162,7 +176,7 @@ export class OnboardingService {
       throw new BadRequestException('Tenant não encontrado');
     }
 
-    if (tenant.status !== TenantStatus.PENDING) {
+    if (tenant.status !== 'pending') {
       throw new BadRequestException(
         `Tenant já foi processado. Status atual: ${tenant.status}`,
       );
@@ -281,7 +295,7 @@ export class OnboardingService {
         throw new BadRequestException(`Tenant não encontrado: ${tenantId}`);
       }
 
-      if (tenant.status !== TenantStatus.PENDING) {
+      if (tenant.status !== 'pending') {
         this.logger.warn(
           `Tenant ${tenantId} já foi processado. Status atual: ${tenant.status}`,
         );
@@ -295,7 +309,7 @@ export class OnboardingService {
       // 1. Ativar Tenant
       await this.tenantsService.update(tenant.id, {
         status: TenantStatus.ACTIVE,
-        plan: plan as any,
+        plan: plan as TenantPlan,
       });
 
       this.logger.log(`Tenant ativado: ${tenant.id}`);
@@ -307,21 +321,20 @@ export class OnboardingService {
 
         // Se existe, atualizar
         await this.billingService.update(tenant.id, {
-          plan: plan as any,
-          billingCycle: billingCycle as any,
+          plan: plan as SubscriptionPlan,
+          billingCycle: billingCycle as BillingCycle,
           stripeCustomerId: session.customer as string,
           stripeSubscriptionId: session.subscription as string,
           status: SubscriptionStatus.ACTIVE,
         });
         this.logger.log(`Subscription atualizada para tenant ${tenant.id}`);
       } catch (error: unknown) {
-        const err = error as StripeError;
         // Se não existe (NotFoundException), criar nova
         if (error instanceof NotFoundException) {
           await this.billingService.create({
             tenantId: tenant.id,
-            plan: plan as any,
-            billingCycle: billingCycle as any,
+            plan: plan as SubscriptionPlan,
+            billingCycle: billingCycle as BillingCycle,
             stripeCustomerId: session.customer as string,
             stripeSubscriptionId: session.subscription as string,
           });
@@ -332,7 +345,7 @@ export class OnboardingService {
       }
 
       // 3. Criar User Admin (se ainda não existe)
-      let adminUser = tenant.users.find((u) => u.role === UserRole.ADMIN);
+      let adminUser = tenant.users.find((u) => u.role === 'admin');
       let userPassword: string | undefined;
 
       if (!adminUser) {
@@ -420,7 +433,7 @@ export class OnboardingService {
     subscriptionId?: string | null,
   ): Promise<{
     tenant: TenantWithUsers;
-    subscription: unknown;
+    subscription: DbSubscription | null;
     adminUser: AdminUser | null;
   } | null> {
     try {
@@ -446,10 +459,21 @@ export class OnboardingService {
         });
 
         if (dbSubscription) {
+          const subscriptionData: DbSubscription = {
+            id: dbSubscription.id,
+            tenantId: dbSubscription.tenantId,
+            plan: dbSubscription.plan,
+            status: dbSubscription.status,
+            billingCycle: dbSubscription.billingCycle,
+            currentPeriodEnd: dbSubscription.currentPeriodEnd,
+            stripeSubscriptionId: dbSubscription.stripeSubscriptionId,
+            stripeCustomerId: dbSubscription.stripeCustomerId,
+          };
           return {
-            tenant: dbSubscription.tenant,
-            subscription: dbSubscription,
-            adminUser: dbSubscription.tenant.users[0] || null,
+            tenant: dbSubscription.tenant as TenantWithUsers,
+            subscription: subscriptionData,
+            adminUser:
+              (dbSubscription.tenant.users[0] as AdminUser | undefined) || null,
           };
         }
       }
@@ -581,8 +605,11 @@ export class OnboardingService {
       );
 
       // Tentar buscar tenant pelo checkout session (mais confiável)
-      let result: { tenant: any; subscription: any; adminUser: any } | null =
-        null;
+      let result: {
+        tenant: TenantWithUsers;
+        subscription: unknown;
+        adminUser: AdminUser | null;
+      } | null = null;
 
       if (this.stripe && customerId) {
         try {
@@ -606,20 +633,23 @@ export class OnboardingService {
               });
 
               if (tenant) {
-                let adminUser = tenant.users[0];
+                let adminUser: AdminUser | null = tenant.users[0]
+                  ? {
+                      id: tenant.users[0].id,
+                      email: tenant.users[0].email,
+                      name: tenant.users[0].name,
+                      role: tenant.users[0].role,
+                    }
+                  : null;
 
                 // Se não tem usuário, usar email da session
                 if (!adminUser && session.customer_email) {
                   adminUser = {
                     id: 'temp',
                     email: session.customer_email,
-                    name: session.metadata.tenantName || tenant.name,
-                    role: UserRole.ADMIN,
-                    tenantId: tenant.id,
-                    isActive: true,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                  } as any;
+                    name: session.metadata?.tenantName || tenant.name,
+                    role: 'admin',
+                  };
                 }
 
                 if (adminUser) {
@@ -700,7 +730,14 @@ export class OnboardingService {
             `Tenant pendente encontrado: ${pendingTenant.id} (${pendingTenant.subdomain})`,
           );
           // Se não tem usuário, usar email do billing ou criar um objeto temporário
-          let adminUser = pendingTenant.users[0];
+          let adminUser: AdminUser | null = pendingTenant.users[0]
+            ? {
+                id: pendingTenant.users[0].id,
+                email: pendingTenant.users[0].email,
+                name: pendingTenant.users[0].name,
+                role: pendingTenant.users[0].role,
+              }
+            : null;
 
           if (!adminUser && charge.billing_details?.email) {
             // Criar objeto temporário com dados do billing
@@ -711,12 +748,8 @@ export class OnboardingService {
               id: 'temp',
               email: charge.billing_details.email,
               name: charge.billing_details.name || pendingTenant.name,
-              role: UserRole.ADMIN,
-              tenantId: pendingTenant.id,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            } as any;
+              role: 'admin',
+            };
           } else if (!adminUser) {
             // Tentar buscar o email usado no checkout session
             // Buscar checkout sessions recentes do Stripe para este customer
@@ -734,12 +767,8 @@ export class OnboardingService {
                     id: 'temp',
                     email: sessionEmail,
                     name: pendingTenant.name,
-                    role: UserRole.ADMIN,
-                    tenantId: pendingTenant.id,
-                    isActive: true,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                  } as any;
+                    role: 'admin',
+                  };
                 }
               } catch (error: unknown) {
                 const err = error as { message?: string };
@@ -757,12 +786,8 @@ export class OnboardingService {
                 id: 'temp',
                 email: tenantEmail,
                 name: pendingTenant.name,
-                role: UserRole.ADMIN,
-                tenantId: pendingTenant.id,
-                isActive: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              } as any;
+                role: 'admin',
+              };
             }
           }
 
@@ -850,6 +875,12 @@ export class OnboardingService {
       }
 
       const { tenant, adminUser } = result;
+      if (!adminUser) {
+        this.logger.warn(
+          `Admin user não encontrado para payment intent: ${paymentIntent.id}`,
+        );
+        return;
+      }
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const retryUrl = `${frontendUrl}/onboarding/checkout?tenantId=${tenant.id}`;
 
@@ -915,12 +946,18 @@ export class OnboardingService {
       }
 
       const { tenant, adminUser } = result;
+      if (!adminUser) {
+        this.logger.warn(
+          `Admin user não encontrado para invoice: ${invoice.id}`,
+        );
+        return;
+      }
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const retryUrl = `${frontendUrl}/billing/update-payment?tenantId=${tenant.id}`;
 
       // Atualizar status da subscription para past_due
       await this.billingService.update(tenant.id, {
-        status: SubscriptionStatus.PAST_DUE as any,
+        status: SubscriptionStatus.PAST_DUE,
       });
 
       await this.emailService.sendPaymentFailedEmail({
@@ -985,10 +1022,16 @@ export class OnboardingService {
       }
 
       const { tenant, adminUser } = result;
+      if (!adminUser) {
+        this.logger.warn(
+          `Admin user não encontrado para invoice: ${invoice.id}`,
+        );
+        return;
+      }
 
       // Atualizar status da subscription para active
       await this.billingService.update(tenant.id, {
-        status: SubscriptionStatus.ACTIVE as any,
+        status: SubscriptionStatus.ACTIVE,
       });
 
       // Buscar subscription atualizada para pegar next billing date
@@ -1054,6 +1097,12 @@ export class OnboardingService {
       }
 
       const { tenant, adminUser } = result;
+      if (!adminUser) {
+        this.logger.warn(
+          `Admin user não encontrado para invoice: ${invoice.id}`,
+        );
+        return;
+      }
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
       await this.emailService.sendInvoiceUpcomingEmail({
@@ -1101,11 +1150,23 @@ export class OnboardingService {
       }
 
       const { tenant, subscription: dbSubscription, adminUser } = result;
+      if (!adminUser) {
+        this.logger.warn(
+          `Admin user não encontrado para subscription: ${subscription.id}`,
+        );
+        return;
+      }
+      if (!dbSubscription) {
+        this.logger.warn(
+          `Subscription não encontrada no banco para: ${subscription.id}`,
+        );
+        return;
+      }
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
       // Atualizar status da subscription para cancelled
       await this.billingService.update(tenant.id, {
-        status: SubscriptionStatus.CANCELLED as any,
+        status: SubscriptionStatus.CANCELLED,
       });
 
       // Suspender tenant
@@ -1168,6 +1229,18 @@ export class OnboardingService {
       }
 
       const { tenant, subscription: dbSubscription, adminUser } = result;
+      if (!adminUser) {
+        this.logger.warn(
+          `Admin user não encontrado para subscription: ${subscription.id}`,
+        );
+        return;
+      }
+      if (!dbSubscription) {
+        this.logger.warn(
+          `Subscription não encontrada no banco para: ${subscription.id}`,
+        );
+        return;
+      }
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
       // Buscar plano atualizado do Stripe
@@ -1175,19 +1248,19 @@ export class OnboardingService {
         subscription.items.data[0]?.price?.nickname || dbSubscription.plan;
       const billingCycle =
         subscription.items.data[0]?.price?.recurring?.interval === 'year'
-          ? 'annual'
-          : 'monthly';
+          ? BillingCycle.ANNUAL
+          : BillingCycle.MONTHLY;
       const amount = subscription.items.data[0]?.price?.unit_amount || 0;
       const currency = subscription.items.data[0]?.price?.currency || 'brl';
 
       // Atualizar subscription no banco
       await this.billingService.update(tenant.id, {
-        plan: planName,
-        billingCycle: billingCycle as any,
+        plan: planName as SubscriptionPlan,
+        billingCycle,
         status:
           subscription.status === 'active'
-            ? (SubscriptionStatus.ACTIVE as any)
-            : dbSubscription.status,
+            ? SubscriptionStatus.ACTIVE
+            : (dbSubscription.status as SubscriptionStatus),
       });
 
       await this.emailService.sendSubscriptionUpdatedEmail({
@@ -1236,6 +1309,18 @@ export class OnboardingService {
       }
 
       const { tenant, subscription: dbSubscription, adminUser } = result;
+      if (!adminUser) {
+        this.logger.warn(
+          `Admin user não encontrado para subscription: ${subscription.id}`,
+        );
+        return;
+      }
+      if (!dbSubscription) {
+        this.logger.warn(
+          `Subscription não encontrada no banco para: ${subscription.id}`,
+        );
+        return;
+      }
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
       const planName = dbSubscription.plan || 'Plano';
