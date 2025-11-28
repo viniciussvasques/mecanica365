@@ -31,8 +31,8 @@ build/
 Thumbs.db
 
 # Prisma
-prisma/migrations/*.sql
-!prisma/migrations/migration_lock.toml
+# Manter migrations mas ignorar arquivos temporários
+*.prisma.bak
 
 # Temporary files
 *.tmp
@@ -41,3 +41,10 @@ prisma/migrations/*.sql
 
 # Docker
 .dockerignore
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
