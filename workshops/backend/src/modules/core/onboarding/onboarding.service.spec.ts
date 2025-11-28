@@ -96,7 +96,6 @@ describe('OnboardingService', () => {
     billingService = module.get(BillingService);
     usersService = module.get(UsersService);
     emailService = module.get(EmailService);
-    const configService = module.get(ConfigService);
 
     // Mock Stripe
     process.env.STRIPE_SECRET_KEY = 'sk_test_mock';
@@ -198,6 +197,7 @@ describe('OnboardingService', () => {
 
     it('deve lançar erro se Stripe não estiver configurado', async () => {
       process.env.STRIPE_SECRET_KEY = '';
+      const configService = module.get(ConfigService);
       const serviceWithoutStripe = new OnboardingService(
         prismaService,
         tenantsService,
