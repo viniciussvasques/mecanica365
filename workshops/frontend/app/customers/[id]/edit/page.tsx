@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { customersApi, Customer, UpdateCustomerDto } from '@/lib/api/customers';
 import { Button } from '@/components/ui/Button';
@@ -14,7 +16,14 @@ export default function EditCustomerPage() {
   const [loading, setLoading] = useState(false);
   const [loadingCustomer, setLoadingCustomer] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formData, setFormData] = useState<UpdateCustomerDto>({
+  const [formData, setFormData] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    cpf: string;
+    address: string;
+    notes: string;
+  }>({
     name: '',
     email: '',
     phone: '',
@@ -84,12 +93,12 @@ export default function EditCustomerPage() {
     try {
       setLoading(true);
       const data: UpdateCustomerDto = {
-        name: formData.name.trim(),
-        phone: formData.phone?.trim() || undefined,
-        email: formData.email?.trim() || undefined,
-        cpf: formData.cpf?.trim() || undefined,
-        address: formData.address?.trim() || undefined,
-        notes: formData.notes?.trim() || undefined,
+        name: formData.name.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
+        email: formData.email.trim() || undefined,
+        cpf: formData.cpf.trim() || undefined,
+        address: formData.address.trim() || undefined,
+        notes: formData.notes.trim() || undefined,
       };
 
       await customersApi.update(id, data);

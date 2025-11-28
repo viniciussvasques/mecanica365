@@ -42,9 +42,11 @@ interface SidebarProps {
 
 export function Sidebar({ onToggle }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
+    setMounted(true);
     // Carregar estado do sidebar do localStorage
     const savedState = localStorage.getItem('sidebarCollapsed');
     if (savedState !== null) {
@@ -55,6 +57,7 @@ export function Sidebar({ onToggle }: SidebarProps) {
   }, [onToggle]);
 
   const isActive = (href: string) => {
+    if (!mounted || !pathname) return false;
     if (href === '/dashboard') {
       return pathname === '/dashboard';
     }
@@ -62,9 +65,9 @@ export function Sidebar({ onToggle }: SidebarProps) {
   };
 
   return (
-    <div
+    <aside
       className={`
-        fixed left-0 top-0 h-full bg-[#1A1E23] border-r border-[#2A3038] z-50
+        fixed left-0 top-0 h-screen bg-[#1A1E23] border-r border-[#2A3038] z-50
         transition-all duration-300 ease-in-out
         ${collapsed ? 'w-20' : 'w-64'}
         flex flex-col

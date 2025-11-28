@@ -13,10 +13,12 @@ const publicRoutes = ['/login', '/register', '/onboarding', '/'];
 
 export function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname();
-  const isPublicRoute = publicRoutes.includes(pathname);
+  const isPublicRoute = publicRoutes.includes(pathname || '');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     // Verificar estado do sidebar no localStorage
     const savedState = localStorage.getItem('sidebarCollapsed');
     if (savedState !== null) {
@@ -28,6 +30,11 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     setSidebarCollapsed(collapsed);
     localStorage.setItem('sidebarCollapsed', String(collapsed));
   };
+
+  // Durante SSR, não renderizar sidebar
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   if (isPublicRoute) {
     return <>{children}</>;

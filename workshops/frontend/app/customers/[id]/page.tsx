@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { customersApi, Customer } from '@/lib/api/customers';
 import { Button } from '@/components/ui/Button';
