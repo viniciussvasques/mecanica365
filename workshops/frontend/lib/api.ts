@@ -1,12 +1,41 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Função para obter a URL base da API com subdomain
+const getApiUrl = (): string => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const subdomain = localStorage.getItem('subdomain');
+  
+  // Se houver subdomain, usar no host (ex: oficinartee.localhost:3001)
+  if (subdomain && baseUrl.includes('localhost')) {
+    return `http://${subdomain}.localhost:3001/api`;
+  }
+  
+  // Caso contrário, usar URL padrão
+  return `${baseUrl}/api`;
+};
 
 const api = axios.create({
-  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Interceptor para configurar URL dinamicamente
+api.interceptors.request.use((config) => {
+  config.baseURL = getApiUrl();
+  
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  
+  // Adicionar subdomain no header também (fallback)
+  const subdomain = localStorage.getItem('subdomain');
+  if (subdomain) {
+    config.headers['X-Tenant-Subdomain'] = subdomain;
+  }
+  
+  return config;
 });
 
 export interface RegisterData {
