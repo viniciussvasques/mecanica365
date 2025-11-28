@@ -318,6 +318,33 @@ expect(body.accessToken).toBeDefined();
 expect(body.user.email).toBe('test@test.com');
 ```
 
+### 11. Warnings de Type Safety em Testes
+
+**Contexto:** Em testes, especialmente ao fazer mocks de serviços e objetos complexos (como Stripe), é comum usar `any` para facilitar a criação de mocks. O ESLint pode gerar warnings sobre `no-unsafe-assignment`, `no-unsafe-member-access`, `no-unsafe-call`, etc.
+
+**❌ ERRADO:**
+```typescript
+// Sem supressões - gera warnings
+const mockService = service as any;
+mockService.stripe.checkout.sessions.list.mockResolvedValue({...});
+```
+
+**✅ CORRETO:**
+```typescript
+// Com supressões específicas apenas onde necessário
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+const mockService = service as any;
+// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+mockService.stripe.checkout.sessions.list.mockResolvedValue({...});
+```
+
+**Como evitar:**
+- Use supressões do ESLint apenas onde necessário
+- Seja específico: adicione apenas as regras que realmente geram warnings
+- Remova supressões não utilizadas (o ESLint avisa quando uma diretiva não é necessária)
+- Em testes, é aceitável usar `any` para mocks, mas documente com comentários
+- Prefira supressões inline (`// eslint-disable-next-line`) ao invés de desabilitar regras globalmente
+
 ## 🔧 Ferramentas e Comandos Úteis
 
 ```bash
@@ -397,5 +424,6 @@ Isso corrige automaticamente todos os problemas do ESLint ao salvar o arquivo.
 - ✅ **Type safety** em 100% do código
 - ✅ **ESLint configurado** para bloquear `any` explicitamente
 - ✅ **Testes E2E** completamente tipados
+- ✅ **Testes unitários** com supressões ESLint apropriadas para mocks
 
 
