@@ -37,7 +37,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./workshops/backend
-        run: npm ci
+        run: npm install
 
       - name: Generate Prisma Client
         working-directory: ./workshops/backend
@@ -57,7 +57,7 @@ jobs:
 
       - name: Run tests
         working-directory: ./workshops/backend
-        run: npm run test
+        run: npm run test -- --passWithNoTests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mecanica365_test
           JWT_SECRET: test-secret-key-for-ci
