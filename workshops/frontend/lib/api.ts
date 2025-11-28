@@ -100,8 +100,14 @@ export const authApi = {
   findTenantByEmail: async (email: string) => {
     try {
       // Para find-tenant, usar URL sem subdomain (rota pública)
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await axios.post(`${baseUrl}/api/auth/find-tenant`, { email });
+      // Garantir que baseUrl não tenha /api duplicado
+      let baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      // Remover /api do final se existir
+      baseUrl = baseUrl.replace(/\/api\/?$/, '');
+      // Construir URL completa
+      const apiUrl = `${baseUrl}/api/auth/find-tenant`;
+      console.log('[authApi] Buscando tenant em:', apiUrl);
+      const response = await axios.post(apiUrl, { email });
       return response.data;
     } catch (error: any) {
       // Se não encontrar tenant (404) ou erro de rede, retornar null
