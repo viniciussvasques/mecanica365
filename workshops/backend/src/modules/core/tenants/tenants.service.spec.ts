@@ -8,12 +8,7 @@ import { TenantsService } from './tenants.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { UsersService } from '../users/users.service';
-import {
-  CreateTenantDto,
-  TenantStatus,
-  DocumentType,
-  TenantPlan,
-} from './dto';
+import { CreateTenantDto, TenantStatus, DocumentType, TenantPlan } from './dto';
 
 describe('TenantsService', () => {
   let service: TenantsService;

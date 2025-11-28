@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EmailService } from './email.service';
+import { getErrorMessage } from '../../../common/utils/error.utils';
 import { BulkEmailData } from './interfaces/email-data.interfaces';
 
 interface BulkEmailResult {
@@ -57,7 +58,19 @@ export class BulkEmailService {
             const customData = recipient.customData;
             Object.keys(customData).forEach((key) => {
               const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-              const value = String(customData[key] || '');
+              const rawValue = customData[key];
+              let value = '';
+              if (rawValue != null) {
+                if (
+                  typeof rawValue === 'string' ||
+                  typeof rawValue === 'number' ||
+                  typeof rawValue === 'boolean'
+                ) {
+                  value = String(rawValue);
+                } else {
+                  value = JSON.stringify(rawValue);
+                }
+              }
               htmlContent = htmlContent.replace(regex, value);
               textContent = textContent.replace(regex, value);
             });
@@ -77,14 +90,15 @@ export class BulkEmailService {
 
           result.sent++;
           this.logger.debug(`Email enviado para: ${recipient.email}`);
-        } catch (error: any) {
+        } catch (error: unknown) {
           result.failed++;
+          const errorMessage = getErrorMessage(error);
           result.errors.push({
             email: recipient.email,
-            error: error.message || 'Erro desconhecido',
+            error: errorMessage,
           });
           this.logger.error(
-            `Falha ao enviar email para ${recipient.email}: ${error.message}`,
+            `Falha ao enviar email para ${recipient.email}: ${errorMessage}`,
           );
         }
       });
@@ -112,7 +126,7 @@ export class BulkEmailService {
     recipient: {
       email: string;
       name?: string;
-      customData?: Record<string, any>;
+      customData?: Record<string, unknown>;
     },
   ): string {
     let result = template;
@@ -126,7 +140,19 @@ export class BulkEmailService {
       const customData = recipient.customData;
       Object.keys(customData).forEach((key) => {
         const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-        const value = String(customData[key] || '');
+        const rawValue = customData[key];
+        let value = '';
+        if (rawValue != null) {
+          if (
+            typeof rawValue === 'string' ||
+            typeof rawValue === 'number' ||
+            typeof rawValue === 'boolean'
+          ) {
+            value = String(rawValue);
+          } else {
+            value = JSON.stringify(rawValue);
+          }
+        }
         result = result.replace(regex, value);
       });
     }

@@ -110,7 +110,7 @@ describe('OnboardingService', () => {
       (prismaService.tenant.findFirst as jest.Mock).mockResolvedValue({
         id: 'tenant-id',
         subdomain: 'oficina-teste',
-      } as any);
+      } as unknown);
 
       const result = await service.checkPendingTenant(
         '12345678000199',
@@ -151,7 +151,7 @@ describe('OnboardingService', () => {
       (prismaService.tenant.findFirst as jest.Mock).mockResolvedValue({
         id: 'existing-tenant-id',
         subdomain: 'oficina-teste',
-      } as any);
+      } as unknown);
 
       const result = await service.register(createOnboardingDto);
 
@@ -175,6 +175,7 @@ describe('OnboardingService', () => {
         tenantId: 'new-tenant-id',
         subdomain: 'oficina-teste',
       });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(tenantsService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           name: createOnboardingDto.name,
@@ -206,11 +207,11 @@ describe('OnboardingService', () => {
         billingService,
         usersService,
         emailService,
-        mockConfigService as any,
+        mockConfigService as unknown,
       );
 
       (prismaService.tenant.findUnique as jest.Mock).mockResolvedValue(
-        mockTenant as any,
+        mockTenant as unknown,
       );
 
       await expect(
@@ -288,12 +289,13 @@ describe('OnboardingService', () => {
         ...mockTenant,
         status: TenantStatus.ACTIVE,
         users: [],
-      } as any);
+      } as unknown);
 
       await service.handleCheckoutCompleted(
         mockSession as Stripe.Checkout.Session,
       );
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(tenantsService.update as jest.Mock).not.toHaveBeenCalled();
     });
   });

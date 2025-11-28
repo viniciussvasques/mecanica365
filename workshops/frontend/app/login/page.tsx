@@ -134,25 +134,33 @@ export default function LoginPage() {
           </h2>
           <p className="mt-2 text-sm text-[#7E8691] animate-fade-in-delay-2">
             Ou{' '}
-            <Link href="/register" className="font-semibold text-[#00E0B8] hover:text-[#3ABFF8] transition-colors">
+            <Link href="/register" className="font-semibold text-[#00E0B8] hover:text-[#3ABFF8] transition-colors underline-offset-2 hover:underline">
               crie uma nova conta
             </Link>
           </p>
         </div>
 
-        <div className="bg-[#1A1E23] border border-[#2A3038] rounded-xl p-8 shadow-xl animate-fade-in-delay-3 relative overflow-hidden">
+        <div className="bg-[#1A1E23] border border-[#2A3038] rounded-2xl p-8 shadow-2xl animate-fade-in-delay-3 relative overflow-hidden">
           <div className="hud-line"></div>
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-[#FF4E3D]/10 border-l-4 border-[#FF4E3D] text-[#FF4E3D] px-4 py-3 rounded-lg shadow-sm animate-shake">
-                <p className="text-sm font-medium">{error}</p>
+              <div className="bg-[#FF4E3D]/20 border-l-4 border-[#FF4E3D] text-[#FF4E3D] px-4 py-3 rounded-lg shadow-sm animate-shake">
+                <p className="text-sm font-medium flex items-center">
+                  <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {error}
+                </p>
               </div>
             )}
 
             {subdomain && (
-              <div className="bg-[#00E0B8]/10 border-l-4 border-[#00E0B8] text-[#00E0B8] px-4 py-3 rounded-lg shadow-sm">
-                <p className="text-sm font-medium">
-                  ✓ Conta encontrada: <span className="font-semibold">{subdomain}.mecanica365.app</span>
+              <div className="bg-[#00E0B8]/20 border-l-4 border-[#00E0B8] text-[#00E0B8] px-4 py-3 rounded-lg shadow-sm">
+                <p className="text-sm font-medium flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Conta encontrada: <span className="font-semibold ml-1">{subdomain}.mecanica365.app</span>
                 </p>
               </div>
             )}

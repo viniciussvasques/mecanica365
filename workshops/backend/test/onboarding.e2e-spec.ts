@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app/app.module';
 import { PrismaService } from '../src/database/prisma.service';
 import {
@@ -50,14 +51,15 @@ describe('OnboardingController (e2e)', () => {
         password: 'TestPassword123',
       };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post('/api/onboarding/register')
         .send(registerData)
         .expect(201);
 
-      expect(response.body).toHaveProperty('tenantId');
-      expect(response.body).toHaveProperty('subdomain', testSubdomain);
-      testTenantId = response.body.tenantId;
+      const body = response.body as { tenantId: string; subdomain: string };
+      expect(body).toHaveProperty('tenantId');
+      expect(body).toHaveProperty('subdomain', testSubdomain);
+      testTenantId = body.tenantId;
 
       // Verificar se tenant foi criado com status PENDING
       const tenant = await prisma.tenant.findUnique({
@@ -77,7 +79,7 @@ describe('OnboardingController (e2e)', () => {
         plan: TenantPlan.WORKSHOPS_STARTER,
       };
 
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as App)
         .post('/api/onboarding/register')
         .send(invalidData)
         .expect(400);
@@ -88,7 +90,7 @@ describe('OnboardingController (e2e)', () => {
       const document = '98765432000111';
 
       // Criar primeiro tenant
-      const firstResponse = await request(app.getHttpServer())
+      const firstResponse = await request(app.getHttpServer() as App)
         .post('/api/onboarding/register')
         .send({
           name: 'Primeiro Tenant',
@@ -101,7 +103,7 @@ describe('OnboardingController (e2e)', () => {
         .expect(201);
 
       // Tentar criar segundo com mesmo documento
-      const secondResponse = await request(app.getHttpServer())
+      const secondResponse = await request(app.getHttpServer() as App)
         .post('/api/onboarding/register')
         .send({
           name: 'Segundo Tenant',
@@ -114,7 +116,9 @@ describe('OnboardingController (e2e)', () => {
         .expect(201);
 
       // Deve retornar o mesmo tenant
-      expect(secondResponse.body.tenantId).toBe(firstResponse.body.tenantId);
+      const firstBody = firstResponse.body as { tenantId: string };
+      const secondBody = secondResponse.body as { tenantId: string };
+      expect(secondBody.tenantId).toBe(firstBody.tenantId);
     });
   });
 
@@ -124,7 +128,7 @@ describe('OnboardingController (e2e)', () => {
       const testEmail = `status-${Date.now()}@test.com`;
 
       // Criar tenant pendente
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as App)
         .post('/api/onboarding/register')
         .send({
           name: 'Tenant Status Test',
@@ -137,7 +141,7 @@ describe('OnboardingController (e2e)', () => {
         .expect(201);
 
       // Verificar status
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post('/api/onboarding/check-status')
         .send({
           document: testDocument,
@@ -145,13 +149,18 @@ describe('OnboardingController (e2e)', () => {
         })
         .expect(200);
 
-      expect(response.body).toHaveProperty('exists', true);
-      expect(response.body).toHaveProperty('tenantId');
-      expect(response.body).toHaveProperty('subdomain');
+      const body = response.body as {
+        exists: boolean;
+        tenantId?: string;
+        subdomain?: string;
+      };
+      expect(body).toHaveProperty('exists', true);
+      expect(body).toHaveProperty('tenantId');
+      expect(body).toHaveProperty('subdomain');
     });
 
     it('deve retornar exists: false se não houver tenant pendente', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post('/api/onboarding/check-status')
         .send({
           document: '99999999000199',
@@ -159,7 +168,8 @@ describe('OnboardingController (e2e)', () => {
         })
         .expect(200);
 
-      expect(response.body).toHaveProperty('exists', false);
+      const body = response.body as { exists: boolean };
+      expect(body).toHaveProperty('exists', false);
     });
   });
 
@@ -168,7 +178,7 @@ describe('OnboardingController (e2e)', () => {
 
     beforeEach(async () => {
       // Criar tenant pendente para checkout
-      const registerResponse = await request(app.getHttpServer())
+      const registerResponse = await request(app.getHttpServer() as App)
         .post('/api/onboarding/register')
         .send({
           name: 'Checkout Test',
@@ -180,7 +190,8 @@ describe('OnboardingController (e2e)', () => {
         })
         .expect(201);
 
-      checkoutTenantId = registerResponse.body.tenantId;
+      const registerBody = registerResponse.body as { tenantId: string };
+      checkoutTenantId = registerBody.tenantId;
     });
 
     it('deve retornar erro 400 se Stripe não estiver configurado', async () => {
@@ -188,7 +199,7 @@ describe('OnboardingController (e2e)', () => {
       const originalKey = process.env.STRIPE_SECRET_KEY;
       delete process.env.STRIPE_SECRET_KEY;
 
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as App)
         .post('/api/onboarding/checkout')
         .send({
           tenantId: checkoutTenantId,
@@ -203,7 +214,7 @@ describe('OnboardingController (e2e)', () => {
     });
 
     it('deve retornar erro 400 se tenant não for encontrado', async () => {
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as App)
         .post('/api/onboarding/checkout')
         .send({
           tenantId: 'non-existent-id',

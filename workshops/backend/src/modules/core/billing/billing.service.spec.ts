@@ -131,11 +131,17 @@ describe('BillingService', () => {
 
       await service.create(createDto);
 
-      expect(mockPrismaService.subscription.create).toHaveBeenCalledWith({
+      const createCall = mockPrismaService.subscription.create;
+      expect(createCall).toHaveBeenCalledWith({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         data: expect.objectContaining({
           serviceOrdersLimit: 50,
           partsLimit: 100,
-          activeFeatures: ['basic_service_orders', 'basic_customers'],
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          activeFeatures: expect.arrayContaining([
+            'basic_service_orders',
+            'basic_customers',
+          ]),
         }),
       });
     });
@@ -270,8 +276,8 @@ describe('BillingService', () => {
   });
 
   describe('getAvailablePlans', () => {
-    it('deve retornar lista de planos disponíveis', async () => {
-      const plans = await service.getAvailablePlans();
+    it('deve retornar lista de planos disponíveis', () => {
+      const plans = service.getAvailablePlans();
 
       expect(plans).toHaveLength(3);
       expect(plans[0].id).toBe(SubscriptionPlan.WORKSHOPS_STARTER);

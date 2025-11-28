@@ -45,8 +45,8 @@ export const Input: React.FC<InputProps> = ({
       </div>
       {helperText && !error && (
         <p className="mt-2 text-xs text-[#7E8691] flex items-center space-x-1">
-          <span className="w-1 h-1 rounded-full bg-[#00E0B8] opacity-50"></span>
-          <span>{helperText}</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#00E0B8] opacity-70 mr-1"></span>
+          <span className="text-[#7E8691]">{helperText}</span>
         </p>
       )}
       {error && (

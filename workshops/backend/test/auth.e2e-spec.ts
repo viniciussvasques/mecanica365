@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { App } from 'supertest/types';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/database/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -86,10 +86,15 @@ describe('AuthController (e2e)', () => {
       expect(response.body).toHaveProperty('accessToken');
       expect(response.body).toHaveProperty('refreshToken');
       expect(response.body).toHaveProperty('user');
-      expect(response.body.user.email).toBe(testUserEmail);
+      const body = response.body as {
+        accessToken: string;
+        refreshToken: string;
+        user: { email: string };
+      };
+      expect(body.user.email).toBe(testUserEmail);
 
-      accessToken = response.body.accessToken;
-      refreshToken = response.body.refreshToken;
+      accessToken = body.accessToken;
+      refreshToken = body.refreshToken;
     });
 
     it('deve retornar 401 com credenciais inválidas', async () => {
@@ -151,11 +156,15 @@ describe('AuthController (e2e)', () => {
 
       expect(response.body).toHaveProperty('accessToken');
       expect(response.body).toHaveProperty('refreshToken');
-      expect(response.body.refreshToken).not.toBe(refreshToken);
+      const body = response.body as {
+        accessToken: string;
+        refreshToken: string;
+      };
+      expect(body.refreshToken).not.toBe(refreshToken);
 
       // Atualizar tokens para próximos testes
-      accessToken = response.body.accessToken;
-      refreshToken = response.body.refreshToken;
+      accessToken = body.accessToken;
+      refreshToken = body.refreshToken;
     });
 
     it('deve retornar 401 com refresh token inválido', async () => {

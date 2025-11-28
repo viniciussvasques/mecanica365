@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { Public } from '../../../common/decorators/public.decorator';
+import { getErrorMessage } from '../../../common/utils/error.utils';
 
 @Controller('email')
 export class EmailController {
@@ -23,17 +24,17 @@ export class EmailController {
         success: true,
         message: `Email de teste enviado para ${body.to}`,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        message: `Erro ao enviar email: ${error.message}`,
+        message: `Erro ao enviar email: ${getErrorMessage(error)}`,
       };
     }
   }
 
   @Public()
   @Get('status')
-  async getStatus() {
+  getStatus() {
     return {
       smtpConfigured: !!process.env.SMTP_USER,
       smtpHost: process.env.SMTP_HOST,

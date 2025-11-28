@@ -103,14 +103,14 @@ describe('OnboardingService - Webhook Handlers', () => {
     emailService = module.get(EmailService);
 
     // Garantir que billingService.findByTenantId retorna um objeto válido
-    (mockBillingService.findByTenantId as jest.Mock).mockResolvedValue({
+    mockBillingService.findByTenantId.mockResolvedValue({
       id: 'sub-id',
       currentPeriodEnd: new Date(),
     });
 
     // Mock Stripe
     process.env.STRIPE_SECRET_KEY = 'sk_test_mock';
-    (service as any).stripe = {
+    (service as unknown).stripe = {
       checkout: {
         sessions: {
           list: jest.fn(),
@@ -133,12 +133,13 @@ describe('OnboardingService - Webhook Handlers', () => {
         address: null,
         phone: null,
       },
-    } as any;
+    } as unknown;
 
     it('deve encontrar tenant via checkout session e enviar email', async () => {
-      (
-        (service as any).stripe.checkout.sessions.list as jest.Mock
-      ).mockResolvedValue({
+      const mockService = service as {
+        stripe: { checkout: { sessions: { list: jest.Mock } } };
+      };
+      mockService.stripe.checkout.sessions.list.mockResolvedValue({
         data: [
           {
             id: 'cs_test',
@@ -154,13 +155,15 @@ describe('OnboardingService - Webhook Handlers', () => {
 
       await service.handleChargeFailed(mockCharge as Stripe.Charge);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emailService.sendPaymentFailedEmail).toHaveBeenCalled();
     });
 
     it('deve usar email do billing_details quando disponível', async () => {
-      (
-        (service as any).stripe.checkout.sessions.list as jest.Mock
-      ).mockResolvedValue({
+      const mockService = service as {
+        stripe: { checkout: { sessions: { list: jest.Mock } } };
+      };
+      mockService.stripe.checkout.sessions.list.mockResolvedValue({
         data: [
           {
             id: 'cs_test',
@@ -176,6 +179,7 @@ describe('OnboardingService - Webhook Handlers', () => {
 
       await service.handleChargeFailed(mockCharge as Stripe.Charge);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emailService.sendPaymentFailedEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'admin@oficina.com',
@@ -190,7 +194,7 @@ describe('OnboardingService - Webhook Handlers', () => {
       customer: 'cus_test_123',
       amount_due: 9900,
       currency: 'brl',
-    } as any;
+    } as unknown;
 
     it('deve encontrar tenant e enviar email de pagamento falhado', async () => {
       (prismaService.subscription.findFirst as jest.Mock).mockResolvedValue({
@@ -203,6 +207,7 @@ describe('OnboardingService - Webhook Handlers', () => {
 
       await service.handleInvoicePaymentFailed(mockInvoice as Stripe.Invoice);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emailService.sendPaymentFailedEmail).toHaveBeenCalled();
     });
   });
@@ -214,7 +219,7 @@ describe('OnboardingService - Webhook Handlers', () => {
       amount_paid: 9900,
       currency: 'brl',
       invoice_pdf: 'https://invoice.pdf',
-    } as any;
+    } as unknown;
 
     it('deve encontrar tenant e enviar email de pagamento bem-sucedido', async () => {
       (prismaService.subscription.findFirst as jest.Mock).mockResolvedValue({
@@ -229,6 +234,7 @@ describe('OnboardingService - Webhook Handlers', () => {
         mockInvoice as Stripe.Invoice,
       );
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emailService.sendInvoicePaymentSucceededEmail).toHaveBeenCalled();
     });
   });
@@ -253,6 +259,7 @@ describe('OnboardingService - Webhook Handlers', () => {
         mockSubscription as Stripe.Subscription,
       );
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emailService.sendSubscriptionCancelledEmail).toHaveBeenCalled();
     });
   });
@@ -301,6 +308,7 @@ describe('OnboardingService - Webhook Handlers', () => {
 
       await service.handleSubscriptionUpdated(mockSubscription);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emailService.sendSubscriptionUpdatedEmail).toHaveBeenCalled();
     });
   });

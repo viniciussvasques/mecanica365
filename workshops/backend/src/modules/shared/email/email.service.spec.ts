@@ -9,7 +9,10 @@ jest.mock('nodemailer');
 
 describe('EmailService', () => {
   let service: EmailService;
-  let mockTransporter: any;
+  let mockTransporter: {
+    verify: jest.Mock;
+    sendMail: jest.Mock;
+  };
 
   beforeEach(async () => {
     mockTransporter = {
@@ -55,7 +58,8 @@ describe('EmailService', () => {
 
     it('deve logar email se SMTP não estiver configurado', async () => {
       // Limpar transporter para simular não configurado
-      (service as any).transporter = null;
+
+      (service as unknown).transporter = null;
       const loggerSpy = jest.spyOn(service['logger'], 'log');
 
       await service.sendWelcomeEmail(emailData);

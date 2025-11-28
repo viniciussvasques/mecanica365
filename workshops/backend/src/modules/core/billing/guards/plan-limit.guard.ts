@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { BillingService } from '../billing.service';
-import { TenantId } from '../../../../common/decorators/tenant.decorator';
+import { RequestWithTenant } from '@common/interfaces/request-with-tenant.interface';
 
 export enum LimitType {
   SERVICE_ORDERS = 'serviceOrders',
@@ -23,7 +23,7 @@ export class PlanLimitGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RequestWithTenant>();
     const tenantId = request.tenantId;
 
     if (!tenantId) {

@@ -12,6 +12,7 @@ import { RawBodyRequest } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Request } from 'express';
 import { OnboardingService } from './onboarding.service';
+import { getErrorMessage } from '../../../common/utils/error.utils';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreateOnboardingDto } from './dto/create-onboarding.dto';
 import { CheckTenantStatusDto } from './dto/check-tenant-status.dto';
@@ -132,8 +133,9 @@ export class OnboardingController {
         signature,
         webhookSecret,
       );
-    } catch (err: any) {
-      throw new Error(`Webhook signature verification failed: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err);
+      throw new Error(`Webhook signature verification failed: ${errorMessage}`);
     }
 
     // Processar eventos do Stripe
@@ -212,7 +214,11 @@ export class OnboardingController {
         }
 
         default:
-          this.logger.log(`Evento não tratado: ${event.type}`);
+          // Eventos não tratados são opcionais/redundantes (ver EVENTOS_STRIPE.md)
+          // Log apenas em nível debug para não poluir os logs
+          this.logger.debug(
+            `Evento Stripe não tratado (opcional): ${event.type}`,
+          );
       }
     } catch (error: unknown) {
       const err = error as { message?: string; stack?: string };

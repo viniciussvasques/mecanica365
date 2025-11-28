@@ -176,13 +176,15 @@ export class OnboardingService {
       throw new BadRequestException('Tenant não encontrado');
     }
 
-    if (tenant.status !== 'pending') {
+    const tenantStatus = tenant.status;
+    if (tenantStatus !== 'pending') {
       throw new BadRequestException(
-        `Tenant já foi processado. Status atual: ${tenant.status}`,
+        `Tenant já foi processado. Status atual: ${tenantStatus}`,
       );
     }
 
     // Buscar email do admin: primeiro do campo adminEmail do tenant, depois do usuário existente
+    const tenantName = tenant.name;
     const tenantEmail =
       tenant.adminEmail ||
       (
@@ -190,7 +192,7 @@ export class OnboardingService {
           where: { tenantId: tenant.id },
         })
       )?.email ||
-      tenant.name.toLowerCase().replace(/\s+/g, '.') + '@temp.com';
+      tenantName.toLowerCase().replace(/\s+/g, '.') + '@temp.com';
 
     if (!tenantEmail || tenantEmail.includes('@temp.com')) {
       this.logger.warn(
@@ -229,8 +231,8 @@ export class OnboardingService {
       ],
       metadata: {
         tenantId: tenant.id,
-        tenantName: tenant.name,
-        tenantEmail,
+        tenantName: tenantName,
+        tenantEmail: tenantEmail,
         plan: createCheckoutDto.plan,
         billingCycle: createCheckoutDto.billingCycle || BillingCycle.MONTHLY,
       },
@@ -241,14 +243,20 @@ export class OnboardingService {
       allow_promotion_codes: true,
     });
 
+    const sessionId = session.id;
+    const sessionUrl = session.url;
+    const sessionStatus = session.status as string;
+    const sessionExpiresAt = session.expires_at as number | null;
     this.logger.log(
-      `Checkout session criada: ${session.id} para tenant ${tenant.id}`,
+      `Checkout session criada: ${sessionId} para tenant ${tenant.id}`,
     );
-    this.logger.log(`URL da sessão: ${session.url}`);
-    this.logger.log(`Status da sessão: ${session.status}`);
-    this.logger.log(
-      `Expira em: ${new Date(session.expires_at * 1000).toISOString()}`,
-    );
+    this.logger.log(`URL da sessão: ${sessionUrl}`);
+    this.logger.log(`Status da sessão: ${sessionStatus}`);
+    if (sessionExpiresAt) {
+      this.logger.log(
+        `Expira em: ${new Date(sessionExpiresAt * 1000).toISOString()}`,
+      );
+    }
 
     if (!session.url) {
       this.logger.error(
@@ -621,9 +629,14 @@ export class OnboardingService {
 
           // Procurar session com metadata contendo tenantId
           for (const session of sessions.data) {
-            if (session.metadata?.tenantId) {
+            const currentSessionMetadata = session.metadata as Record<
+              string,
+              string
+            > | null;
+            const sessionTenantId = currentSessionMetadata?.tenantId;
+            if (sessionTenantId) {
               const tenant = await this.prisma.tenant.findUnique({
-                where: { id: session.metadata.tenantId },
+                where: { id: sessionTenantId },
                 include: {
                   users: {
                     where: { role: UserRole.ADMIN },
@@ -644,10 +657,14 @@ export class OnboardingService {
 
                 // Se não tem usuário, usar email da session
                 if (!adminUser && session.customer_email) {
+                  const sessionTenantName =
+                    (currentSessionMetadata?.tenantName as
+                      | string
+                      | undefined) || tenant.name;
                   adminUser = {
                     id: 'temp',
-                    email: session.customer_email,
-                    name: session.metadata?.tenantName || tenant.name,
+                    email: session.customer_email || '',
+                    name: sessionTenantName,
                     role: 'admin',
                   };
                 }
@@ -941,7 +958,10 @@ export class OnboardingService {
         subscriptionId,
       );
       if (!result) {
-        this.logger.warn(`Tenant não encontrado para invoice: ${invoice.id}`);
+        // Invoice pode não estar relacionado ao nosso sistema (ex: invoices de teste do Stripe)
+        this.logger.debug(
+          `Invoice ${invoice.id} não está associado a nenhum tenant do sistema. Customer: ${customerId}, Subscription: ${subscriptionId}`,
+        );
         return;
       }
 
@@ -1017,7 +1037,10 @@ export class OnboardingService {
         subscriptionId,
       );
       if (!result) {
-        this.logger.warn(`Tenant não encontrado para invoice: ${invoice.id}`);
+        // Invoice pode não estar relacionado ao nosso sistema (ex: invoices de teste do Stripe)
+        this.logger.debug(
+          `Invoice ${invoice.id} não está associado a nenhum tenant do sistema. Customer: ${customerId}, Subscription: ${subscriptionId}`,
+        );
         return;
       }
 
@@ -1092,7 +1115,10 @@ export class OnboardingService {
         subscriptionId,
       );
       if (!result) {
-        this.logger.warn(`Tenant não encontrado para invoice: ${invoice.id}`);
+        // Invoice pode não estar relacionado ao nosso sistema (ex: invoices de teste do Stripe)
+        this.logger.debug(
+          `Invoice ${invoice.id} não está associado a nenhum tenant do sistema. Customer: ${customerId}, Subscription: ${subscriptionId}`,
+        );
         return;
       }
 

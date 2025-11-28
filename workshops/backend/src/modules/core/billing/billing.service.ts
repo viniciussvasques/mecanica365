@@ -6,13 +6,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
+import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
 import {
   CreateSubscriptionDto,
   UpdateSubscriptionDto,
   SubscriptionResponseDto,
   SubscriptionPlan,
   SubscriptionStatus,
+  BillingCycle,
 } from './dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class BillingService {
@@ -83,14 +86,22 @@ export class BillingService {
       }
 
       // Obter limites do plano
-      const planConfig = this.planLimits[createSubscriptionDto.plan];
+      const planConfig = this.planLimits[createSubscriptionDto.plan] as
+        | {
+            serviceOrdersLimit: number | null;
+            partsLimit: number | null;
+            usersLimit: number | null;
+            features: string[];
+          }
+        | undefined;
       if (!planConfig) {
         throw new BadRequestException('Plano inválido');
       }
 
       // Calcular período (30 dias para monthly, 365 para annual)
-      const billingCycle = createSubscriptionDto.billingCycle || 'monthly';
-      const periodDays = billingCycle === 'annual' ? 365 : 30;
+      const billingCycle =
+        createSubscriptionDto.billingCycle || BillingCycle.MONTHLY;
+      const periodDays = billingCycle === BillingCycle.ANNUAL ? 365 : 30;
       const now = new Date();
       const periodEnd = new Date(now);
       periodEnd.setDate(periodEnd.getDate() + periodDays);
@@ -125,8 +136,8 @@ export class BillingService {
       return this.toResponseDto(subscription);
     } catch (error) {
       this.logger.error(
-        `Erro ao criar subscription: ${error.message}`,
-        error.stack,
+        `Erro ao criar subscription: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -145,8 +156,8 @@ export class BillingService {
       return this.toResponseDto(subscription);
     } catch (error) {
       this.logger.error(
-        `Erro ao buscar subscription do tenant ${tenantId}: ${error.message}`,
-        error.stack,
+        `Erro ao buscar subscription do tenant ${tenantId}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -165,11 +176,18 @@ export class BillingService {
         throw new NotFoundException('Subscription não encontrada');
       }
 
-      const updateData: any = {};
+      const updateData: Prisma.SubscriptionUpdateInput = {};
 
       if (updateSubscriptionDto.plan) {
         // Atualizar limites e features quando o plano muda
-        const planConfig = this.planLimits[updateSubscriptionDto.plan];
+        const planConfig = this.planLimits[updateSubscriptionDto.plan] as
+          | {
+              serviceOrdersLimit: number | null;
+              partsLimit: number | null;
+              usersLimit: number | null;
+              features: string[];
+            }
+          | undefined;
         if (!planConfig) {
           throw new BadRequestException('Plano inválido');
         }
@@ -219,8 +237,8 @@ export class BillingService {
       return this.toResponseDto(updatedSubscription);
     } catch (error) {
       this.logger.error(
-        `Erro ao atualizar subscription ${tenantId}: ${error.message}`,
-        error.stack,
+        `Erro ao atualizar subscription ${tenantId}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -252,7 +270,14 @@ export class BillingService {
       }
 
       // Obter configuração do novo plano
-      const planConfig = this.planLimits[newPlan];
+      const planConfig = this.planLimits[newPlan] as
+        | {
+            serviceOrdersLimit: number | null;
+            partsLimit: number | null;
+            usersLimit: number | null;
+            features: string[];
+          }
+        | undefined;
       if (!planConfig) {
         throw new BadRequestException('Plano inválido');
       }
@@ -281,8 +306,8 @@ export class BillingService {
       return this.toResponseDto(updatedSubscription);
     } catch (error) {
       this.logger.error(
-        `Erro ao fazer upgrade da subscription ${tenantId}: ${error.message}`,
-        error.stack,
+        `Erro ao fazer upgrade da subscription ${tenantId}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -314,7 +339,14 @@ export class BillingService {
       }
 
       // Obter configuração do novo plano
-      const planConfig = this.planLimits[newPlan];
+      const planConfig = this.planLimits[newPlan] as
+        | {
+            serviceOrdersLimit: number | null;
+            partsLimit: number | null;
+            usersLimit: number | null;
+            features: string[];
+          }
+        | undefined;
       if (!planConfig) {
         throw new BadRequestException('Plano inválido');
       }
@@ -343,8 +375,8 @@ export class BillingService {
       return this.toResponseDto(updatedSubscription);
     } catch (error) {
       this.logger.error(
-        `Erro ao fazer downgrade da subscription ${tenantId}: ${error.message}`,
-        error.stack,
+        `Erro ao fazer downgrade da subscription ${tenantId}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -369,8 +401,8 @@ export class BillingService {
       return this.toResponseDto(updatedSubscription);
     } catch (error) {
       this.logger.error(
-        `Erro ao cancelar subscription ${tenantId}: ${error.message}`,
-        error.stack,
+        `Erro ao cancelar subscription ${tenantId}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -395,14 +427,19 @@ export class BillingService {
       return this.toResponseDto(updatedSubscription);
     } catch (error) {
       this.logger.error(
-        `Erro ao reativar subscription ${tenantId}: ${error.message}`,
-        error.stack,
+        `Erro ao reativar subscription ${tenantId}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
   }
 
-  async getAvailablePlans(): Promise<any[]> {
+  getAvailablePlans(): Array<{
+    id: SubscriptionPlan;
+    name: string;
+    price: { monthly: number; annual: number };
+    limits: unknown;
+  }> {
     return [
       {
         id: SubscriptionPlan.WORKSHOPS_STARTER,
@@ -473,28 +510,19 @@ export class BillingService {
     // Verificar cada feature usando o FeatureFlagsService
     const enabledFeatures: string[] = [];
 
-    // Usar um tenant temporário para verificar features (ou criar método público no FeatureFlagsService)
-    // Por enquanto, vamos usar a matriz diretamente via reflection
+    // Usar método público do FeatureFlagsService
     try {
-      const featureMatrix = (this.featureFlagsService as any).featureMatrix;
-      if (featureMatrix && featureMatrix[featureFlagsPlan]) {
-        const planFeatures = featureMatrix[featureFlagsPlan];
-        for (const featureName of allFeatures) {
-          const config = planFeatures[featureName];
-          if (config && config.enabled) {
-            enabledFeatures.push(featureName);
-          }
+      const planFeatures =
+        this.featureFlagsService.getEnabledFeaturesForPlan(featureFlagsPlan);
+      for (const featureName of allFeatures) {
+        const config = planFeatures[featureName];
+        if (config && config.enabled) {
+          enabledFeatures.push(featureName);
         }
-      } else {
-        // Fallback: usar features do planLimits
-        this.logger.warn(
-          `Plano ${plan} não encontrado no FeatureFlagsService, usando features padrão`,
-        );
-        return this.planLimits[plan as SubscriptionPlan]?.features || [];
       }
     } catch (error) {
       this.logger.warn(
-        `Erro ao obter features do FeatureFlagsService: ${error.message}`,
+        `Erro ao obter features do FeatureFlagsService: ${getErrorMessage(error)}`,
       );
       return this.planLimits[plan as SubscriptionPlan]?.features || [];
     }
@@ -506,7 +534,23 @@ export class BillingService {
     return enabledFeatures;
   }
 
-  private toResponseDto(subscription: any): SubscriptionResponseDto {
+  private toResponseDto(subscription: {
+    id: string;
+    tenantId: string;
+    plan: string;
+    status: string;
+    currentPeriodStart: Date;
+    currentPeriodEnd: Date;
+    activeFeatures: string[];
+    serviceOrdersLimit: number | null;
+    serviceOrdersUsed: number;
+    partsLimit: number | null;
+    stripeSubscriptionId: string | null;
+    stripeCustomerId: string | null;
+    billingCycle: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }): SubscriptionResponseDto {
     return {
       id: subscription.id,
       tenantId: subscription.tenantId,
@@ -520,7 +564,7 @@ export class BillingService {
       partsLimit: subscription.partsLimit,
       stripeSubscriptionId: subscription.stripeSubscriptionId,
       stripeCustomerId: subscription.stripeCustomerId,
-      billingCycle: subscription.billingCycle,
+      billingCycle: subscription.billingCycle as BillingCycle,
       createdAt: subscription.createdAt,
       updatedAt: subscription.updatedAt,
     };

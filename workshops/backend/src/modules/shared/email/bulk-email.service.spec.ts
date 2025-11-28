@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BulkEmailService } from './bulk-email.service';
 import { EmailService } from './email.service';
-import { Logger } from '@nestjs/common';
 
 describe('BulkEmailService', () => {
   let service: BulkEmailService;
@@ -45,6 +44,7 @@ describe('BulkEmailService', () => {
       expect(result.total).toBe(2);
       expect(result.sent).toBe(2);
       expect(result.failed).toBe(0);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emailService.sendEmail).toHaveBeenCalledTimes(2);
     });
 
@@ -59,6 +59,7 @@ describe('BulkEmailService', () => {
 
       await service.sendBulkEmail(data);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emailService.sendEmail).toHaveBeenCalledWith(
         'user1@test.com',
         'Hello User 1',
@@ -85,6 +86,7 @@ describe('BulkEmailService', () => {
 
       await service.sendBulkEmail(data);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emailService.sendEmail).toHaveBeenCalledWith(
         'user1@test.com',
         'Hello User 1',
@@ -110,6 +112,7 @@ describe('BulkEmailService', () => {
 
       expect(result.total).toBe(25);
       expect(result.sent).toBe(25);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emailService.sendEmail).toHaveBeenCalledTimes(25);
     });
 

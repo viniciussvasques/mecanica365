@@ -54,7 +54,7 @@ export class BillingController {
     status: 200,
     description: 'Lista de planos disponíveis',
   })
-  async getAvailablePlans(): Promise<any[]> {
+  getAvailablePlans() {
     return this.billingService.getAvailablePlans();
   }
 

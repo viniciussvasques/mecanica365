@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app/app.module';
 import { PrismaService } from '../src/database/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -11,7 +12,6 @@ describe('UsersController (e2e)', () => {
   let accessToken: string;
   let testTenantId: string;
   let testUserId: string;
-  let adminUserId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -41,7 +41,7 @@ describe('UsersController (e2e)', () => {
 
     // Create admin user for authentication
     const hashedPassword = await bcrypt.hash('Admin123', 10);
-    const adminUser = await prisma.user.create({
+    await prisma.user.create({
       data: {
         tenantId: testTenantId,
         email: 'admin@e2e.com',
@@ -51,15 +51,15 @@ describe('UsersController (e2e)', () => {
         isActive: true,
       },
     });
-    adminUserId = adminUser.id;
 
     // Login to get access token
-    const loginResponse = await request(app.getHttpServer())
+    const loginResponse = await request(app.getHttpServer() as App)
       .post('/api/auth/login')
       .set('Host', 'e2e-users.localhost:3001')
       .send({ email: 'admin@e2e.com', password: 'Admin123' });
 
-    accessToken = loginResponse.body.accessToken;
+    const loginBody = loginResponse.body as { accessToken: string };
+    accessToken = loginBody.accessToken;
   });
 
   afterAll(async () => {
@@ -69,7 +69,7 @@ describe('UsersController (e2e)', () => {
   });
 
   it('/api/users (POST) - should create a user', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .post('/api/users')
       .set('Host', 'e2e-users.localhost:3001')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -82,41 +82,54 @@ describe('UsersController (e2e)', () => {
       })
       .expect(201);
 
-    expect(response.body).toHaveProperty('id');
-    expect(response.body.email).toBe('newuser@e2e.com');
-    expect(response.body.name).toBe('New User');
-    expect(response.body.role).toBe('technician');
-    expect(response.body).not.toHaveProperty('password');
+    const body = response.body as {
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+    };
+    expect(body).toHaveProperty('id');
+    expect(body.email).toBe('newuser@e2e.com');
+    expect(body.name).toBe('New User');
+    expect(body.role).toBe('technician');
+    expect(body).not.toHaveProperty('password');
 
-    testUserId = response.body.id;
+    testUserId = body.id;
   });
 
   it('/api/users (GET) - should list all users', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .get('/api/users')
       .set('Host', 'e2e-users.localhost:3001')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBeGreaterThan(0);
-    expect(response.body[0]).not.toHaveProperty('password');
+    const body = response.body as Array<{
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+    }>;
+    expect(Array.isArray(body)).toBe(true);
+    expect(body.length).toBeGreaterThan(0);
+    expect(body[0]).not.toHaveProperty('password');
   });
 
   it('/api/users/:id (GET) - should get a user by id', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .get(`/api/users/${testUserId}`)
       .set('Host', 'e2e-users.localhost:3001')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(response.body.id).toBe(testUserId);
-    expect(response.body.email).toBe('newuser@e2e.com');
-    expect(response.body).not.toHaveProperty('password');
+    const body = response.body as { id: string; email: string };
+    expect(body.id).toBe(testUserId);
+    expect(body.email).toBe('newuser@e2e.com');
+    expect(body).not.toHaveProperty('password');
   });
 
   it('/api/users/:id (PATCH) - should update a user', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .patch(`/api/users/${testUserId}`)
       .set('Host', 'e2e-users.localhost:3001')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -126,12 +139,13 @@ describe('UsersController (e2e)', () => {
       })
       .expect(200);
 
-    expect(response.body.name).toBe('Updated Name');
-    expect(response.body.role).toBe('manager');
+    const body = response.body as { name: string; role: string };
+    expect(body.name).toBe('Updated Name');
+    expect(body.role).toBe('manager');
   });
 
   it('/api/users/:id (DELETE) - should soft delete a user', async () => {
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .delete(`/api/users/${testUserId}`)
       .set('Host', 'e2e-users.localhost:3001')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -145,7 +159,7 @@ describe('UsersController (e2e)', () => {
   });
 
   it('/api/users (POST) - should reject duplicate email', async () => {
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post('/api/users')
       .set('Host', 'e2e-users.localhost:3001')
       .set('Authorization', `Bearer ${accessToken}`)

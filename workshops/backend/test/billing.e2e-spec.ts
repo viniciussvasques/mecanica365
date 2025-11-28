@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app/app.module';
 import { PrismaService } from '../src/database/prisma.service';
 
@@ -70,12 +71,13 @@ describe('BillingController (e2e)', () => {
     });
 
     // Login to get access token
-    const loginResponse = await request(app.getHttpServer())
+    const loginResponse = await request(app.getHttpServer() as App)
       .post('/api/auth/login')
       .set('Host', 'billing-test.localhost:3001')
       .send({ email: 'admin@billing.com', password: 'Admin123' });
 
-    accessToken = loginResponse.body.accessToken;
+    const loginBody = loginResponse.body as { accessToken: string };
+    accessToken = loginBody.accessToken;
   });
 
   afterAll(async () => {
@@ -86,69 +88,75 @@ describe('BillingController (e2e)', () => {
   });
 
   it('/api/billing/subscription (GET) - should get current subscription', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .get('/api/billing/subscription')
       .set('Authorization', `Bearer ${accessToken}`)
       .set('X-Tenant-Subdomain', 'billing-test')
       .expect(200);
 
-    expect(response.body).toHaveProperty('id', subscriptionId);
-    expect(response.body.plan).toBe('workshops_starter');
+    const body = response.body as { id: string; plan: string };
+    expect(body).toHaveProperty('id', subscriptionId);
+    expect(body.plan).toBe('workshops_starter');
   });
 
   it('/api/billing/plans (GET) - should list available plans', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .get('/api/billing/plans')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBe(3);
-    expect(response.body[0]).toHaveProperty('id');
-    expect(response.body[0]).toHaveProperty('name');
+    const body = response.body as Array<{ id: string; name: string }>;
+    expect(Array.isArray(body)).toBe(true);
+    expect(body.length).toBe(3);
+    expect(body[0]).toHaveProperty('id');
+    expect(body[0]).toHaveProperty('name');
   });
 
   it('/api/billing/subscription/upgrade (POST) - should upgrade plan', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .post('/api/billing/subscription/upgrade')
       .set('Authorization', `Bearer ${accessToken}`)
       .set('X-Tenant-Subdomain', 'billing-test')
       .send({ newPlan: 'workshops_professional' })
       .expect(200);
 
-    expect(response.body.plan).toBe('workshops_professional');
-    expect(response.body.serviceOrdersLimit).toBe(500);
+    const body = response.body as { plan: string; serviceOrdersLimit: number };
+    expect(body.plan).toBe('workshops_professional');
+    expect(body.serviceOrdersLimit).toBe(500);
   });
 
   it('/api/billing/subscription/downgrade (POST) - should downgrade plan', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .post('/api/billing/subscription/downgrade')
       .set('Authorization', `Bearer ${accessToken}`)
       .set('X-Tenant-Subdomain', 'billing-test')
       .send({ newPlan: 'workshops_starter' })
       .expect(200);
 
-    expect(response.body.plan).toBe('workshops_starter');
-    expect(response.body.serviceOrdersLimit).toBe(50);
+    const body = response.body as { plan: string; serviceOrdersLimit: number };
+    expect(body.plan).toBe('workshops_starter');
+    expect(body.serviceOrdersLimit).toBe(50);
   });
 
   it('/api/billing/subscription/cancel (POST) - should cancel subscription', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .post('/api/billing/subscription/cancel')
       .set('Authorization', `Bearer ${accessToken}`)
       .set('X-Tenant-Subdomain', 'billing-test')
       .expect(200);
 
-    expect(response.body.status).toBe('cancelled');
+    const body = response.body as { status: string };
+    expect(body.status).toBe('cancelled');
   });
 
   it('/api/billing/subscription/reactivate (POST) - should reactivate subscription', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .post('/api/billing/subscription/reactivate')
       .set('Authorization', `Bearer ${accessToken}`)
       .set('X-Tenant-Subdomain', 'billing-test')
       .expect(200);
 
-    expect(response.body.status).toBe('active');
+    const body = response.body as { status: string };
+    expect(body.status).toBe('active');
   });
 });

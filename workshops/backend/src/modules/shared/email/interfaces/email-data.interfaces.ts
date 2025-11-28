@@ -96,7 +96,7 @@ export interface BulkEmailData {
   recipients: Array<{
     email: string;
     name?: string;
-    customData?: Record<string, any>;
+    customData?: Record<string, unknown>;
   }>;
   subject: string;
   htmlContent: string;

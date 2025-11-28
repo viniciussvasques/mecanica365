@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app/app.module';
 import { PrismaService } from '../src/database/prisma.service';
 
@@ -50,12 +51,13 @@ describe('TenantsController (e2e)', () => {
     });
 
     // Login to get access token
-    const loginResponse = await request(app.getHttpServer())
+    const loginResponse = await request(app.getHttpServer() as App)
       .post('/api/auth/login')
       .set('Host', 'admin-tenant.localhost:3001')
       .send({ email: 'admin@tenant.com', password: 'Admin123' });
 
-    accessToken = loginResponse.body.accessToken;
+    const loginBody = loginResponse.body as { accessToken: string };
+    accessToken = loginBody.accessToken;
   });
 
   afterAll(async () => {
@@ -64,7 +66,7 @@ describe('TenantsController (e2e)', () => {
   });
 
   it('/api/tenants (POST) - should create a tenant', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .post('/api/tenants')
       .send({
         name: 'Nova Oficina',
@@ -75,41 +77,50 @@ describe('TenantsController (e2e)', () => {
       })
       .expect(201);
 
-    expect(response.body).toHaveProperty('id');
-    expect(response.body.name).toBe('Nova Oficina');
-    expect(response.body.cnpj).toBe('33444555000192');
-    expect(response.body.subdomain).toBe('nova-oficina');
+    const body = response.body as {
+      id: string;
+      name: string;
+      cnpj: string;
+      subdomain: string;
+    };
+    expect(body).toHaveProperty('id');
+    expect(body.name).toBe('Nova Oficina');
+    expect(body.cnpj).toBe('33444555000192');
+    expect(body.subdomain).toBe('nova-oficina');
   });
 
   it('/api/tenants (GET) - should list all tenants (admin)', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .get('/api/tenants')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBeGreaterThan(0);
+    const body = response.body as unknown[];
+    expect(Array.isArray(body)).toBe(true);
+    expect(body.length).toBeGreaterThan(0);
   });
 
   it('/api/tenants/subdomain/:subdomain (GET) - should get tenant by subdomain', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .get('/api/tenants/subdomain/admin-tenant')
       .expect(200);
 
-    expect(response.body.subdomain).toBe('admin-tenant');
+    const body = response.body as { subdomain: string };
+    expect(body.subdomain).toBe('admin-tenant');
   });
 
   it('/api/tenants/:id (GET) - should get tenant by id', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .get(`/api/tenants/${testTenantId}`)
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(response.body.id).toBe(testTenantId);
+    const body = response.body as { id: string };
+    expect(body.id).toBe(testTenantId);
   });
 
   it('/api/tenants/:id (PATCH) - should update tenant', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .patch(`/api/tenants/${testTenantId}`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
@@ -117,7 +128,8 @@ describe('TenantsController (e2e)', () => {
       })
       .expect(200);
 
-    expect(response.body.name).toBe('Oficina Atualizada');
+    const body = response.body as { name: string };
+    expect(body.name).toBe('Oficina Atualizada');
   });
 
   it('/api/tenants/:id/activate (POST) - should activate tenant', async () => {
@@ -132,21 +144,23 @@ describe('TenantsController (e2e)', () => {
       },
     });
 
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .post(`/api/tenants/${tenant.id}/activate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(response.body.status).toBe('active');
+    const body = response.body as { status: string };
+    expect(body.status).toBe('active');
   });
 
   it('/api/tenants/:id/suspend (POST) - should suspend tenant', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .post(`/api/tenants/${testTenantId}/suspend`)
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(response.body.status).toBe('suspended');
+    const body = response.body as { status: string };
+    expect(body.status).toBe('suspended');
   });
 
   it('/api/tenants/:id/cancel (POST) - should cancel tenant', async () => {
@@ -160,16 +174,17 @@ describe('TenantsController (e2e)', () => {
       },
     });
 
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as App)
       .post(`/api/tenants/${tenant.id}/cancel`)
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(response.body.status).toBe('cancelled');
+    const body = response.body as { status: string };
+    expect(body.status).toBe('cancelled');
   });
 
   it('/api/tenants (POST) - should reject duplicate CNPJ', async () => {
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post('/api/tenants')
       .send({
         name: 'Duplicate CNPJ',

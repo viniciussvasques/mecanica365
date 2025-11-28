@@ -6,11 +6,29 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import { CreateTenantDto, UpdateTenantDto, TenantResponseDto } from './dto';
+import {
+  CreateTenantDto,
+  UpdateTenantDto,
+  TenantResponseDto,
+  DocumentType,
+} from './dto';
 import { BillingService } from '../billing/billing.service';
 import { UsersService } from '../users/users.service';
-import { BillingCycle } from '../billing/dto/subscription-response.dto';
+import {
+  BillingCycle,
+  SubscriptionPlan,
+} from '../billing/dto/subscription-response.dto';
 import { UserRole } from '../users/dto/create-user.dto';
+import {
+  getErrorMessage,
+  getErrorStack,
+} from '../../../common/utils/error.utils';
+import { Prisma } from '@prisma/client';
+
+// Tipo para Tenant com subscription incluída
+type TenantWithSubscription = Prisma.TenantGetPayload<{
+  include: { subscription: true };
+}>;
 
 @Injectable()
 export class TenantsService {
@@ -29,11 +47,11 @@ export class TenantsService {
         .trim();
 
       // Determinar tipo de documento (padrão: CNPJ)
-      const documentType = createTenantDto.documentType || 'cnpj';
+      const documentType = createTenantDto.documentType || DocumentType.CNPJ;
       const document = createTenantDto.document;
 
       // Validar documento (CPF ou CNPJ)
-      if (documentType === 'cpf') {
+      if (documentType === DocumentType.CPF) {
         if (!this.isValidCPF(document)) {
           throw new BadRequestException('CPF inválido');
         }
@@ -85,15 +103,16 @@ export class TenantsService {
       try {
         await this.billingService.create({
           tenantId: tenant.id,
-          plan: (createTenantDto.plan || 'workshops_starter') as any,
+          plan: (createTenantDto.plan ||
+            'workshops_starter') as SubscriptionPlan,
           billingCycle: BillingCycle.MONTHLY,
         });
         this.logger.log(
           `Subscription criada automaticamente para tenant ${tenant.id}`,
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         this.logger.error(
-          `Erro ao criar subscription automaticamente: ${error.message}`,
+          `Erro ao criar subscription automaticamente: ${getErrorMessage(error)}`,
         );
       }
 
@@ -114,9 +133,9 @@ export class TenantsService {
           this.logger.log(
             `Usuário admin criado automaticamente para tenant ${tenant.id}`,
           );
-        } catch (error: any) {
+        } catch (error: unknown) {
           this.logger.error(
-            `Erro ao criar usuário admin automaticamente: ${error.message}`,
+            `Erro ao criar usuário admin automaticamente: ${getErrorMessage(error)}`,
           );
         }
       }
@@ -131,9 +150,12 @@ export class TenantsService {
         throw new NotFoundException('Tenant não encontrado após criação');
       }
 
-      return this.toResponseDto(tenantWithSubscription as any);
+      return this.toResponseDto(tenantWithSubscription);
     } catch (error) {
-      this.logger.error(`Erro ao criar tenant: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao criar tenant: ${getErrorMessage(error)}`,
+        getErrorStack(error),
+      );
       throw error;
     }
   }
@@ -145,11 +167,11 @@ export class TenantsService {
         orderBy: { createdAt: 'desc' },
       });
 
-      return tenants.map((tenant) => this.toResponseDto(tenant as any));
+      return tenants.map((tenant) => this.toResponseDto(tenant));
     } catch (error) {
       this.logger.error(
-        `Erro ao listar tenants: ${error.message}`,
-        error.stack,
+        `Erro ao listar tenants: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -166,11 +188,11 @@ export class TenantsService {
         throw new NotFoundException('Tenant não encontrado');
       }
 
-      return this.toResponseDto(tenant as any);
+      return this.toResponseDto(tenant);
     } catch (error) {
       this.logger.error(
-        `Erro ao buscar tenant ${id}: ${error.message}`,
-        error.stack,
+        `Erro ao buscar tenant ${id}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -190,11 +212,11 @@ export class TenantsService {
         );
       }
 
-      return this.toResponseDto(tenant as any);
+      return this.toResponseDto(tenant);
     } catch (error) {
       this.logger.error(
-        `Erro ao buscar tenant por subdomain ${subdomain}: ${error.message}`,
-        error.stack,
+        `Erro ao buscar tenant por subdomain ${subdomain}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -213,7 +235,7 @@ export class TenantsService {
         throw new NotFoundException('Tenant não encontrado');
       }
 
-      const updateData: any = {};
+      const updateData: Prisma.TenantUpdateInput = {};
 
       if (updateTenantDto.name) {
         updateData.name = updateTenantDto.name.trim();
@@ -234,11 +256,11 @@ export class TenantsService {
       });
 
       this.logger.log(`Tenant atualizado: ${id}`);
-      return this.toResponseDto(updatedTenant as any);
+      return this.toResponseDto(updatedTenant);
     } catch (error) {
       this.logger.error(
-        `Erro ao atualizar tenant ${id}: ${error.message}`,
-        error.stack,
+        `Erro ao atualizar tenant ${id}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -261,11 +283,11 @@ export class TenantsService {
       });
 
       this.logger.log(`Tenant ativado: ${id}`);
-      return this.toResponseDto(updatedTenant as any);
+      return this.toResponseDto(updatedTenant);
     } catch (error) {
       this.logger.error(
-        `Erro ao ativar tenant ${id}: ${error.message}`,
-        error.stack,
+        `Erro ao ativar tenant ${id}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -288,11 +310,11 @@ export class TenantsService {
       });
 
       this.logger.log(`Tenant suspenso: ${id}`);
-      return this.toResponseDto(updatedTenant as any);
+      return this.toResponseDto(updatedTenant);
     } catch (error) {
       this.logger.error(
-        `Erro ao suspender tenant ${id}: ${error.message}`,
-        error.stack,
+        `Erro ao suspender tenant ${id}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -315,11 +337,11 @@ export class TenantsService {
       });
 
       this.logger.log(`Tenant cancelado: ${id}`);
-      return this.toResponseDto(updatedTenant as any);
+      return this.toResponseDto(updatedTenant);
     } catch (error) {
       this.logger.error(
-        `Erro ao cancelar tenant ${id}: ${error.message}`,
-        error.stack,
+        `Erro ao cancelar tenant ${id}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -408,24 +430,13 @@ export class TenantsService {
     return true;
   }
 
-  private toResponseDto(tenant: {
-    id: string;
-    name: string;
-    documentType: string;
-    document: string;
-    subdomain: string;
-    plan: string;
-    status: string;
-    subscription?: {
-      id: string;
-      plan: string;
-      status: string;
-      currentPeriodStart: Date;
-      currentPeriodEnd: Date;
-    } | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }): TenantResponseDto {
+  private toResponseDto(
+    tenant:
+      | TenantWithSubscription
+      | Prisma.TenantGetPayload<{
+          include: { subscription: true };
+        }>,
+  ): TenantResponseDto {
     return {
       id: tenant.id,
       name: tenant.name,

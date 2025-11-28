@@ -168,19 +168,19 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-[#0F1115]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-4">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold neon-turquoise">
               Mecânica365
             </h1>
           </Link>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="text-3xl font-bold text-[#D0D6DE] mb-2">
             {step === 1 ? 'Crie sua conta e escolha seu plano' : 'Finalize seu pagamento'}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-[#7E8691]">
             {step === 1 
               ? 'Preencha os dados abaixo e selecione o plano que melhor atende sua oficina'
               : 'Escolha o ciclo de cobrança e finalize seu pagamento'
@@ -199,7 +199,7 @@ export default function RegisterPage() {
         />
 
         {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10">
+        <div className="bg-[#1A1E23] border border-[#2A3038] rounded-2xl shadow-xl p-8 md:p-10">
           {step === 1 ? (
             <form onSubmit={handleRegister} className="space-y-6">
               {/* Dados da Oficina */}
@@ -301,8 +301,8 @@ export default function RegisterPage() {
                   })}
                 </div>
                 {formData.plan && (
-                  <p className="mt-4 text-center text-sm text-gray-600">
-                    Plano selecionado: <strong className="text-primary-600 font-semibold">
+                  <p className="mt-4 text-center text-sm text-[#7E8691]">
+                    Plano selecionado: <strong className="text-[#00E0B8] font-semibold">
                       {plans.find(p => p.value === formData.plan)?.label}
                     </strong>
                   </p>
@@ -322,36 +322,36 @@ export default function RegisterPage() {
           ) : (
             <div className="space-y-6">
               {/* Resumo do Plano */}
-              <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl p-6 border border-primary-200">
+              <div className="bg-gradient-to-r from-[#00E0B8]/10 to-[#3ABFF8]/10 rounded-xl p-6 border border-[#00E0B8]/30">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">Plano selecionado</p>
-                    <p className="text-2xl font-bold text-primary-700">
+                    <p className="text-sm text-[#7E8691] mb-1">Plano selecionado</p>
+                    <p className="text-2xl font-bold text-[#00E0B8]">
                       {plans.find(p => p.value === formData.plan)?.label}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-[#7E8691] mt-1">
                       {formData.billingCycle === 'annual' ? (
                         <>
-                          <span className="text-lg font-semibold text-primary-700">
+                          <span className="text-lg font-semibold text-[#00E0B8]">
                             {formatPrice(getPlanPrice(formData.plan, 'annual'))}
                           </span>
-                          <span className="text-gray-500">/ano</span>
-                          <span className="ml-2 text-xs text-green-600 font-semibold">
+                          <span className="text-[#7E8691]">/ano</span>
+                          <span className="ml-2 text-xs text-[#00E0B8] font-semibold">
                             (Economia de {formatPrice((getPlanPrice(formData.plan, 'monthly') * 12) - getPlanPrice(formData.plan, 'annual'))})
                           </span>
                         </>
                       ) : (
                         <>
-                          <span className="text-lg font-semibold text-primary-700">
+                          <span className="text-lg font-semibold text-[#00E0B8]">
                             {formatPrice(getPlanPrice(formData.plan, 'monthly'))}
                           </span>
-                          <span className="text-gray-500">/mês</span>
+                          <span className="text-[#7E8691]">/mês</span>
                         </>
                       )}
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-full text-sm font-semibold">
+                    <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#00E0B8] to-[#3ABFF8] text-[#0F1115] rounded-full text-sm font-semibold">
                       ✓ Confirmado
                     </div>
                   </div>
@@ -370,19 +370,19 @@ export default function RegisterPage() {
                     className={`
                       p-6 border-2 rounded-xl text-left transition-all
                       ${formData.billingCycle === 'monthly'
-                        ? 'border-primary-600 bg-primary-50 shadow-md'
-                        : 'border-gray-200 hover:border-primary-300'
+                        ? 'border-[#00E0B8] bg-[#00E0B8]/10 shadow-md'
+                        : 'border-[#2A3038] hover:border-[#00E0B8]/50 bg-[#1A1E23]'
                       }
                     `}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className="font-semibold text-lg text-gray-900">Mensal</div>
-                      <div className="text-lg font-bold text-primary-600">
+                      <div className="font-semibold text-lg text-[#D0D6DE]">Mensal</div>
+                      <div className="text-lg font-bold text-[#00E0B8]">
                         {formatPrice(getPlanPrice(formData.plan, 'monthly'))}
-                        <span className="text-sm font-normal text-gray-600">/mês</span>
+                        <span className="text-sm font-normal text-[#7E8691]">/mês</span>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600">Cobrança recorrente mensal</div>
+                    <div className="text-sm text-[#7E8691]">Cobrança recorrente mensal</div>
                   </button>
                   <button
                     type="button"
@@ -390,29 +390,29 @@ export default function RegisterPage() {
                     className={`
                       p-6 border-2 rounded-xl text-left transition-all
                       ${formData.billingCycle === 'annual'
-                        ? 'border-primary-600 bg-primary-50 shadow-md'
-                        : 'border-gray-200 hover:border-primary-300'
+                        ? 'border-[#00E0B8] bg-[#00E0B8]/10 shadow-md'
+                        : 'border-[#2A3038] hover:border-[#00E0B8]/50 bg-[#1A1E23]'
                       }
                     `}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <div className="font-semibold text-lg text-gray-900">Anual</div>
-                        <div className="text-xs text-green-600 font-semibold mt-1">
+                        <div className="font-semibold text-lg text-[#D0D6DE]">Anual</div>
+                        <div className="text-xs text-[#00E0B8] font-semibold mt-1">
                           Economia de {formatPrice((getPlanPrice(formData.plan, 'monthly') * 12) - getPlanPrice(formData.plan, 'annual'))}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-primary-600">
+                        <div className="text-lg font-bold text-[#00E0B8]">
                           {formatPrice(getPlanPrice(formData.plan, 'annual'))}
-                          <span className="text-sm font-normal text-gray-600">/ano</span>
+                          <span className="text-sm font-normal text-[#7E8691]">/ano</span>
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-[#7E8691] mt-1">
                           {formatPrice(getPlanPrice(formData.plan, 'annual') / 12)}/mês
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600">Pagamento único anual com desconto</div>
+                    <div className="text-sm text-[#7E8691]">Pagamento único anual com desconto</div>
                   </button>
                 </div>
               </FormSection>
@@ -432,9 +432,9 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <div className="text-center mt-6">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-[#7E8691]">
             Já tem uma conta?{' '}
-            <Link href="/login" className="text-primary-600 font-semibold hover:text-primary-700">
+            <Link href="/login" className="text-[#00E0B8] font-semibold hover:text-[#3ABFF8] transition-colors">
               Fazer login
             </Link>
           </p>

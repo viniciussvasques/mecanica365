@@ -230,6 +230,13 @@ export class FeatureFlagsService {
   }
 
   /**
+   * Obtém todas as features habilitadas para um plano (método público)
+   */
+  getEnabledFeaturesForPlan(plan: string): Record<string, FeatureConfig> {
+    return this.featureMatrix[plan] || {};
+  }
+
+  /**
    * Obtém a configuração de uma feature para um plano
    */
   private getFeatureConfig(

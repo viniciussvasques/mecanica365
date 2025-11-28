@@ -97,6 +97,8 @@ setTimeout(logMessage, 1000);
 ```typescript
 const url = `https://example.com/${session.invoice}`;
 // session.invoice pode ser um objeto, não uma string
+const value = String(customData[key] || '');
+// customData[key] pode ser um objeto, causando '[object Object]'
 ```
 
 **✅ CORRETO:**
@@ -105,12 +107,24 @@ const invoiceId = typeof session.invoice === 'string'
   ? session.invoice 
   : session.invoice?.toString() || '';
 const url = `https://example.com/${invoiceId}`;
+
+// Para valores que podem ser objetos:
+const rawValue = customData[key];
+let value = '';
+if (rawValue != null) {
+  if (typeof rawValue === 'string' || typeof rawValue === 'number' || typeof rawValue === 'boolean') {
+    value = String(rawValue);
+  } else {
+    value = JSON.stringify(rawValue);
+  }
+}
 ```
 
 **Como evitar:**
 - Sempre verifique o tipo antes de usar em template literals
 - Use type guards para garantir tipos corretos
 - Prefira propriedades específicas ao invés de objetos genéricos
+- **Nunca use `String()` diretamente em valores que podem ser objetos** - use type guards primeiro
 
 ### 6. Destructuring de Variáveis Não Usadas
 
@@ -135,18 +149,108 @@ const { tenant, adminUser } = result;
 **❌ ERRADO:**
 ```typescript
 const plan = metadata.plan as any;
+const updateData: any = {};
+const featureMatrix = (this.featureFlagsService as any).featureMatrix;
 ```
 
 **✅ CORRETO:**
 ```typescript
 const plan = metadata.plan as SubscriptionPlan;
+const updateData: Prisma.SubscriptionUpdateInput = {};
+const planFeatures = this.featureFlagsService.getEnabledFeaturesForPlan(plan);
 // Use tipos específicos ao invés de 'any'
+// Crie métodos públicos ao invés de acessar propriedades privadas via 'as any'
 ```
 
 **Como evitar:**
 - Defina tipos apropriados para todas as variáveis
 - Use `unknown` ao invés de `any` quando o tipo é realmente desconhecido
 - Crie interfaces/tipos para estruturas de dados complexas
+- Use tipos do Prisma (`Prisma.ModelUpdateInput`) ao invés de `any`
+- Crie métodos públicos ao invés de acessar propriedades privadas via type casting
+- **ESLint está configurado para converter `any` para `unknown` automaticamente** (ver `eslint.config.mjs`)
+
+### 8. Acesso Direto a `error.message` e `error.stack`
+
+**❌ ERRADO:**
+```typescript
+catch (error: any) {
+  this.logger.error(`Erro: ${error.message}`, error.stack);
+}
+```
+
+**✅ CORRETO:**
+```typescript
+import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
+
+catch (error: unknown) {
+  this.logger.error(
+    `Erro: ${getErrorMessage(error)}`,
+    getErrorStack(error),
+  );
+}
+```
+
+**Como evitar:**
+- Sempre use `unknown` ao invés de `any` para erros
+- Use funções helper `getErrorMessage()` e `getErrorStack()` para tratamento seguro
+- Essas funções verificam se o erro é uma instância de `Error` antes de acessar propriedades
+
+### 9. `await` em Métodos Não-Async
+
+**❌ ERRADO:**
+```typescript
+async getAvailablePlans(): Promise<any[]> {
+  return [...]; // Método não precisa ser async
+}
+
+// No teste:
+const plans = await service.getAvailablePlans(); // Erro: await-thenable
+```
+
+**✅ CORRETO:**
+```typescript
+getAvailablePlans(): Array<{
+  id: SubscriptionPlan;
+  name: string;
+  price: { monthly: number; annual: number };
+  limits: unknown;
+}> {
+  return [...]; // Método síncrono
+}
+
+// No teste:
+const plans = service.getAvailablePlans(); // Sem await
+```
+
+**Como evitar:**
+- Remova `async` de métodos que não usam `await`
+- Verifique se o método realmente precisa ser assíncrono
+- Use tipos de retorno explícitos ao invés de `Promise<any[]>`
+
+### 10. Acesso a Propriedades Privadas Via Type Casting
+
+**❌ ERRADO:**
+```typescript
+const featureMatrix = (this.featureFlagsService as any).featureMatrix;
+const planFeatures = featureMatrix[plan];
+```
+
+**✅ CORRETO:**
+```typescript
+// Criar método público no FeatureFlagsService:
+getEnabledFeaturesForPlan(plan: string): Record<string, FeatureConfig> {
+  return this.featureMatrix[plan] || {};
+}
+
+// Usar o método público:
+const planFeatures = this.featureFlagsService.getEnabledFeaturesForPlan(plan);
+```
+
+**Como evitar:**
+- Nunca acesse propriedades privadas via `(service as any).property`
+- Crie métodos públicos quando necessário acessar dados internos
+- Mantenha encapsulamento adequado
 
 ## ✅ Boas Práticas
 
@@ -161,6 +265,9 @@ const plan = metadata.plan as SubscriptionPlan;
 - Sempre use tipos explícitos
 - Evite `any` - use `unknown` quando necessário
 - Use type guards para validação de tipos
+- **Use tipos do Prisma (`Prisma.ModelUpdateInput`, `Prisma.ModelCreateInput`) ao invés de `any`**
+- **Crie métodos públicos ao invés de acessar propriedades privadas via type casting**
+- **Remova `async` de métodos que não usam `await`**
 
 ### 3. Organização de Imports
 
@@ -179,6 +286,8 @@ const plan = metadata.plan as SubscriptionPlan;
 - Sempre trate erros adequadamente
 - Use tipos específicos de exceção (NotFoundException, BadRequestException, etc.)
 - Log erros com contexto suficiente
+- **SEMPRE use `unknown` para erros capturados, nunca `any`**
+- **Use funções helper `getErrorMessage()` e `getErrorStack()` para acesso seguro a propriedades de erro**
 
 ### 6. Testes
 
@@ -192,8 +301,10 @@ const plan = metadata.plan as SubscriptionPlan;
 # Verificar erros de linting
 npm run lint
 
-# Corrigir erros automaticamente
-npm run lint -- --fix
+# Corrigir erros automaticamente (ESLint corrige automaticamente o que for possível)
+npm run lint
+# ou
+npx eslint . --fix
 
 # Verificar apenas um arquivo
 npm run lint src/modules/core/onboarding/onboarding.service.ts
@@ -203,7 +314,38 @@ npm run test
 
 # Build do projeto
 npm run build
+
+# Verificar tipos TypeScript sem compilar
+npx tsc --noEmit
 ```
+
+### Configuração ESLint para Evitar `any`
+
+O projeto está configurado com ESLint que:
+- **Converte `any` para `unknown` automaticamente** quando possível
+- **Bloqueia uso explícito de `any`** (regra `@typescript-eslint/no-explicit-any: error`)
+- **Avisa sobre acessos inseguros** a propriedades de objetos `any`
+
+Configuração em `eslint.config.mjs`:
+```javascript
+'@typescript-eslint/no-explicit-any': [
+  'error',
+  { fixToUnknown: true, ignoreRestArgs: false },
+],
+```
+
+### Configuração VS Code (Recomendada)
+
+Adicione ao `settings.json` do VS Code:
+```json
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  }
+}
+```
+
+Isso corrige automaticamente todos os problemas do ESLint ao salvar o arquivo.
 
 ## 📝 Checklist Antes de Commit
 

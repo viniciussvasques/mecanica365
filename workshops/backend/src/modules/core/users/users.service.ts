@@ -1,13 +1,20 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
   ConflictException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import { CreateUserDto, UpdateUserDto, UserResponseDto } from './dto';
+import { CreateUserDto, UpdateUserDto, UserResponseDto, UserRole } from './dto';
 import * as bcrypt from 'bcrypt';
+import {
+  getErrorMessage,
+  getErrorStack,
+} from '../../../common/utils/error.utils';
+import { Prisma } from '@prisma/client';
+
+// Tipo para User do Prisma
+type PrismaUser = Prisma.UserGetPayload<Record<string, never>>;
 
 @Injectable()
 export class UsersService {
@@ -56,7 +63,10 @@ export class UsersService {
       );
       return this.toResponseDto(user);
     } catch (error) {
-      this.logger.error(`Erro ao criar usuário: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao criar usuário: ${getErrorMessage(error)}`,
+        getErrorStack(error),
+      );
       throw error;
     }
   }
@@ -79,8 +89,8 @@ export class UsersService {
       return users.map((user) => this.toResponseDto(user));
     } catch (error) {
       this.logger.error(
-        `Erro ao listar usuários: ${error.message}`,
-        error.stack,
+        `Erro ao listar usuários: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -102,8 +112,8 @@ export class UsersService {
       return this.toResponseDto(user);
     } catch (error) {
       this.logger.error(
-        `Erro ao buscar usuário ${id}: ${error.message}`,
-        error.stack,
+        `Erro ao buscar usuário ${id}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -147,7 +157,7 @@ export class UsersService {
       }
 
       // Preparar dados para atualização
-      const updateData: any = {};
+      const updateData: Prisma.UserUpdateInput = {};
 
       if (updateUserDto.email) {
         updateData.email = updateUserDto.email.toLowerCase().trim();
@@ -178,8 +188,8 @@ export class UsersService {
       return this.toResponseDto(updatedUser);
     } catch (error) {
       this.logger.error(
-        `Erro ao atualizar usuário ${id}: ${error.message}`,
-        error.stack,
+        `Erro ao atualizar usuário ${id}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -207,20 +217,20 @@ export class UsersService {
       this.logger.log(`Usuário removido (soft delete): ${id}`);
     } catch (error) {
       this.logger.error(
-        `Erro ao remover usuário ${id}: ${error.message}`,
-        error.stack,
+        `Erro ao remover usuário ${id}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw error;
     }
   }
 
-  private toResponseDto(user: any): UserResponseDto {
+  private toResponseDto(user: PrismaUser): UserResponseDto {
     return {
       id: user.id,
       tenantId: user.tenantId,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: user.role as UserRole,
       isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

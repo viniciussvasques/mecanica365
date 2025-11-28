@@ -14,11 +14,11 @@ export const FormSection: React.FC<FormSectionProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`border-t border-gray-200 pt-6 mt-6 ${className}`}>
+    <div className={`border-t border-[#2A3038] pt-6 mt-6 ${className}`}>
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <h3 className="text-lg font-semibold text-[#D0D6DE]">{title}</h3>
         {description && (
-          <p className="mt-1 text-sm text-gray-600">{description}</p>
+          <p className="mt-1 text-sm text-[#7E8691]">{description}</p>
         )}
       </div>
       {children}

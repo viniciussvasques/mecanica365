@@ -10,6 +10,10 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../database/prisma.service';
+import {
+  getErrorMessage,
+  getErrorStack,
+} from '../../../common/utils/error.utils';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -127,8 +131,8 @@ export class AuthService {
         throw error;
       }
       this.logger.error(
-        `Erro ao realizar login: ${error.message}`,
-        error.stack,
+        `Erro ao realizar login: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw new InternalServerErrorException('Erro ao realizar login');
     }
@@ -149,8 +153,8 @@ export class AuthService {
         throw error;
       }
       this.logger.error(
-        `Erro ao realizar logout: ${error.message}`,
-        error.stack,
+        `Erro ao realizar logout: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw new InternalServerErrorException('Erro ao realizar logout');
     }
@@ -221,7 +225,10 @@ export class AuthService {
       ) {
         throw error;
       }
-      this.logger.error(`Erro ao renovar token: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao renovar token: ${getErrorMessage(error)}`,
+        getErrorStack(error),
+      );
       throw new InternalServerErrorException('Erro ao renovar token');
     }
   }
@@ -257,7 +264,10 @@ export class AuthService {
       ) {
         throw error;
       }
-      this.logger.error(`Erro ao obter perfil: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao obter perfil: ${getErrorMessage(error)}`,
+        getErrorStack(error),
+      );
       throw new InternalServerErrorException('Erro ao obter perfil');
     }
   }
@@ -349,7 +359,10 @@ export class AuthService {
       ) {
         throw error;
       }
-      this.logger.error(`Erro ao alterar senha: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao alterar senha: ${getErrorMessage(error)}`,
+        getErrorStack(error),
+      );
       throw new InternalServerErrorException('Erro ao alterar senha');
     }
   }
@@ -398,8 +411,8 @@ export class AuthService {
       });
     } catch (error) {
       this.logger.error(
-        `Erro ao salvar refresh token: ${error.message}`,
-        error.stack,
+        `Erro ao salvar refresh token: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw new InternalServerErrorException('Erro ao salvar refresh token');
     }
@@ -455,8 +468,8 @@ export class AuthService {
         throw error;
       }
       this.logger.error(
-        `Erro ao validar refresh token: ${error.message}`,
-        error.stack,
+        `Erro ao validar refresh token: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       throw new InternalServerErrorException('Erro ao validar refresh token');
     }
@@ -501,8 +514,8 @@ export class AuthService {
       };
     } catch (error) {
       this.logger.error(
-        `Erro ao buscar tenant por email ${findTenantDto.email}: ${error.message}`,
-        error.stack,
+        `Erro ao buscar tenant por email ${findTenantDto.email}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       return null;
     }

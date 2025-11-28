@@ -12,6 +12,7 @@ import { BillingModule } from '../modules/core/billing/billing.module';
 import { OnboardingModule } from '../modules/core/onboarding/onboarding.module';
 import { FeatureFlagsModule } from '../modules/core/feature-flags/feature-flags.module';
 import { EmailModule } from '../modules/shared/email/email.module';
+import { CustomersModule } from '../modules/workshops/customers/customers.module';
 import { TenantResolverMiddleware } from '../common/middleware/tenant-resolver.middleware';
 import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
 import { ValidationPipe } from '../common/pipes/validation.pipe';
@@ -32,6 +33,7 @@ import appConfig from '../config/app.config';
     OnboardingModule,
     FeatureFlagsModule,
     EmailModule,
+    CustomersModule,
     // TODO: Adicionar outros módulos aqui
   ],
   controllers: [AppController],
