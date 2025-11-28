@@ -197,14 +197,16 @@ describe('OnboardingService', () => {
 
     it('deve lançar erro se Stripe não estiver configurado', async () => {
       process.env.STRIPE_SECRET_KEY = '';
-      const configService = module.get(ConfigService);
+      const mockConfigService = {
+        get: jest.fn(),
+      };
       const serviceWithoutStripe = new OnboardingService(
         prismaService,
         tenantsService,
         billingService,
         usersService,
         emailService,
-        configService,
+        mockConfigService as any,
       );
 
       (prismaService.tenant.findUnique as jest.Mock).mockResolvedValue(

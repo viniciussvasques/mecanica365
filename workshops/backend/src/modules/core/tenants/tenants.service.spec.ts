@@ -1,10 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { UsersService } from '../users/users.service';
-import { CreateTenantDto, TenantStatus, DocumentType } from './dto';
+import {
+  CreateTenantDto,
+  TenantStatus,
+  DocumentType,
+  TenantPlan,
+} from './dto';
 
 describe('TenantsService', () => {
   let service: TenantsService;

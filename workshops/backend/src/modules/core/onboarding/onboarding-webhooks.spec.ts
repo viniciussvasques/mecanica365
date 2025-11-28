@@ -19,7 +19,14 @@ describe('OnboardingService - Webhook Handlers', () => {
     subdomain: 'oficina-teste',
     adminEmail: 'admin@oficina.com',
     status: 'pending',
-    users: [],
+    users: [
+      {
+        id: 'user-id',
+        email: 'admin@oficina.com',
+        name: 'Admin',
+        role: 'admin',
+      },
+    ],
   };
 
   const mockSubscription = {
@@ -27,6 +34,10 @@ describe('OnboardingService - Webhook Handlers', () => {
     tenantId: 'tenant-id',
     stripeCustomerId: 'cus_test',
     stripeSubscriptionId: 'sub_test',
+    plan: 'workshops_starter',
+    status: 'active',
+    billingCycle: 'monthly',
+    currentPeriodEnd: new Date(),
   };
 
   beforeEach(async () => {
@@ -34,18 +45,26 @@ describe('OnboardingService - Webhook Handlers', () => {
       tenant: {
         findFirst: jest.fn(),
         findUnique: jest.fn(),
+        findMany: jest.fn(),
       },
       user: {
+        findFirst: jest.fn(),
+      },
+      subscription: {
         findFirst: jest.fn(),
       },
     };
 
     const mockTenantsService = {
       update: jest.fn(),
+      suspend: jest.fn(),
     };
 
     const mockBillingService = {
-      findByTenantId: jest.fn(),
+      findByTenantId: jest.fn().mockResolvedValue({
+        id: 'sub-id',
+        currentPeriodEnd: new Date(),
+      }),
       update: jest.fn(),
     };
 
@@ -82,6 +101,12 @@ describe('OnboardingService - Webhook Handlers', () => {
     service = module.get<OnboardingService>(OnboardingService);
     prismaService = module.get(PrismaService);
     emailService = module.get(EmailService);
+
+    // Garantir que billingService.findByTenantId retorna um objeto válido
+    (mockBillingService.findByTenantId as jest.Mock).mockResolvedValue({
+      id: 'sub-id',
+      currentPeriodEnd: new Date(),
+    });
 
     // Mock Stripe
     process.env.STRIPE_SECRET_KEY = 'sk_test_mock';
@@ -168,14 +193,12 @@ describe('OnboardingService - Webhook Handlers', () => {
     } as any;
 
     it('deve encontrar tenant e enviar email de pagamento falhado', async () => {
-      (prismaService.tenant.findFirst as jest.Mock).mockResolvedValue(
-        mockTenant,
-      );
-      (prismaService.user.findFirst as jest.Mock).mockResolvedValue({
-        id: 'user-id',
-        email: 'admin@oficina.com',
-        name: 'Admin',
-        role: 'admin',
+      (prismaService.subscription.findFirst as jest.Mock).mockResolvedValue({
+        ...mockSubscription,
+        tenant: {
+          ...mockTenant,
+          users: mockTenant.users,
+        },
       });
 
       await service.handleInvoicePaymentFailed(mockInvoice as Stripe.Invoice);
@@ -196,13 +219,10 @@ describe('OnboardingService - Webhook Handlers', () => {
     it('deve encontrar tenant e enviar email de pagamento bem-sucedido', async () => {
       (prismaService.subscription.findFirst as jest.Mock).mockResolvedValue({
         ...mockSubscription,
-        tenant: mockTenant,
-      });
-      (prismaService.user.findFirst as jest.Mock).mockResolvedValue({
-        id: 'user-id',
-        email: 'admin@oficina.com',
-        name: 'Admin',
-        role: 'admin',
+        tenant: {
+          ...mockTenant,
+          users: mockTenant.users,
+        },
       });
 
       await service.handleInvoicePaymentSucceeded(
@@ -221,14 +241,12 @@ describe('OnboardingService - Webhook Handlers', () => {
     };
 
     it('deve encontrar tenant e enviar email de cancelamento', async () => {
-      (prismaService.tenant.findFirst as jest.Mock).mockResolvedValue(
-        mockTenant,
-      );
-      (prismaService.user.findFirst as jest.Mock).mockResolvedValue({
-        id: 'user-id',
-        email: 'admin@oficina.com',
-        name: 'Admin',
-        role: 'admin',
+      (prismaService.subscription.findFirst as jest.Mock).mockResolvedValue({
+        ...mockSubscription,
+        tenant: {
+          ...mockTenant,
+          users: mockTenant.users,
+        },
       });
 
       await service.handleSubscriptionDeleted(
@@ -275,13 +293,10 @@ describe('OnboardingService - Webhook Handlers', () => {
     it('deve encontrar tenant e enviar email de atualização', async () => {
       (prismaService.subscription.findFirst as jest.Mock).mockResolvedValue({
         ...mockSubscription,
-        tenant: mockTenant,
-      });
-      (prismaService.user.findFirst as jest.Mock).mockResolvedValue({
-        id: 'user-id',
-        email: 'admin@oficina.com',
-        name: 'Admin',
-        role: 'admin',
+        tenant: {
+          ...mockTenant,
+          users: mockTenant.users,
+        },
       });
 
       await service.handleSubscriptionUpdated(mockSubscription);
