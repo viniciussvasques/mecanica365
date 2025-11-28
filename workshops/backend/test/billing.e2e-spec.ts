@@ -4,6 +4,7 @@ import * as request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from '../src/app/app.module';
 import { PrismaService } from '../src/database/prisma.service';
+import { DocumentType } from '../src/modules/core/tenants/dto/create-tenant.dto';
 
 describe('BillingController (e2e)', () => {
   let app: INestApplication;
@@ -30,7 +31,8 @@ describe('BillingController (e2e)', () => {
     const tenant = await prisma.tenant.create({
       data: {
         name: 'Billing Test Tenant',
-        cnpj: '11222333000181',
+        documentType: DocumentType.CNPJ,
+        document: '11222333000181',
         subdomain: 'billing-test',
         plan: 'workshops_starter',
         status: 'active',

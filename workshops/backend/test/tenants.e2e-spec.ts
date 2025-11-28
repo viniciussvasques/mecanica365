@@ -4,6 +4,7 @@ import * as request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from '../src/app/app.module';
 import { PrismaService } from '../src/database/prisma.service';
+import { DocumentType } from '../src/modules/core/tenants/dto/create-tenant.dto';
 
 describe('TenantsController (e2e)', () => {
   let app: INestApplication;
@@ -28,7 +29,8 @@ describe('TenantsController (e2e)', () => {
     const tenant = await prisma.tenant.create({
       data: {
         name: 'Admin Tenant',
-        cnpj: '11222333000181',
+        documentType: DocumentType.CNPJ,
+        document: '11222333000181',
         subdomain: 'admin-tenant',
         plan: 'workshops_starter',
         status: 'active',
@@ -70,7 +72,8 @@ describe('TenantsController (e2e)', () => {
       .post('/api/tenants')
       .send({
         name: 'Nova Oficina',
-        cnpj: '33444555000192',
+        documentType: DocumentType.CNPJ,
+        document: '33444555000192',
         subdomain: 'nova-oficina',
         plan: 'workshops_starter',
         status: 'pending',
@@ -80,12 +83,13 @@ describe('TenantsController (e2e)', () => {
     const body = response.body as {
       id: string;
       name: string;
-      cnpj: string;
+      document: string;
+      documentType: string;
       subdomain: string;
     };
     expect(body).toHaveProperty('id');
     expect(body.name).toBe('Nova Oficina');
-    expect(body.cnpj).toBe('33444555000192');
+    expect(body.document).toBe('33444555000192');
     expect(body.subdomain).toBe('nova-oficina');
   });
 
@@ -137,7 +141,8 @@ describe('TenantsController (e2e)', () => {
     const tenant = await prisma.tenant.create({
       data: {
         name: 'Pending Tenant',
-        cnpj: '44555666000103',
+        documentType: DocumentType.CNPJ,
+        document: '44555666000103',
         subdomain: 'pending-tenant',
         plan: 'workshops_starter',
         status: 'pending',
@@ -167,7 +172,8 @@ describe('TenantsController (e2e)', () => {
     const tenant = await prisma.tenant.create({
       data: {
         name: 'Cancel Tenant',
-        cnpj: '55666777000114',
+        documentType: DocumentType.CNPJ,
+        document: '55666777000114',
         subdomain: 'cancel-tenant',
         plan: 'workshops_starter',
         status: 'active',
@@ -188,7 +194,8 @@ describe('TenantsController (e2e)', () => {
       .post('/api/tenants')
       .send({
         name: 'Duplicate CNPJ',
-        cnpj: '11222333000181', // Same as admin tenant
+        documentType: DocumentType.CNPJ,
+        document: '11222333000181', // Same as admin tenant
         subdomain: 'duplicate-cnpj',
         plan: 'workshops_starter',
       })

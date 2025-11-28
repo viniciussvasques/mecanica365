@@ -4,6 +4,7 @@ import * as request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/database/prisma.service';
+import { DocumentType } from '../src/modules/core/tenants/dto/create-tenant.dto';
 import * as bcrypt from 'bcrypt';
 
 describe('AuthController (e2e)', () => {
@@ -31,7 +32,8 @@ describe('AuthController (e2e)', () => {
     const tenant = await prismaService.tenant.create({
       data: {
         name: 'Test Tenant',
-        cnpj: '12345678000199',
+        documentType: DocumentType.CNPJ,
+        document: '12345678000199',
         subdomain: 'test-tenant',
         plan: 'workshops_starter',
         status: 'active',
