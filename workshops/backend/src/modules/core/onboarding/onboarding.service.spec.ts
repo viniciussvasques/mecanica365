@@ -27,7 +27,6 @@ describe('OnboardingService', () => {
   let billingService: jest.Mocked<BillingService>;
   let usersService: jest.Mocked<UsersService>;
   let emailService: jest.Mocked<EmailService>;
-  let configService: jest.Mocked<ConfigService>;
 
   const mockTenant = {
     id: 'tenant-id',
@@ -97,7 +96,7 @@ describe('OnboardingService', () => {
     billingService = module.get(BillingService);
     usersService = module.get(UsersService);
     emailService = module.get(EmailService);
-    configService = module.get(ConfigService);
+    const configService = module.get(ConfigService);
 
     // Mock Stripe
     process.env.STRIPE_SECRET_KEY = 'sk_test_mock';

@@ -12,7 +12,6 @@ import {
 
 describe('BillingService', () => {
   let service: BillingService;
-  let prismaService: PrismaService;
 
   const mockTenant = {
     id: 'tenant-id',
@@ -79,7 +78,6 @@ describe('BillingService', () => {
     }).compile();
 
     service = module.get<BillingService>(BillingService);
-    prismaService = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {

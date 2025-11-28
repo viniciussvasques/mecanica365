@@ -1,10 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  NotFoundException,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateUserDto, UpdateUserDto, UserRole } from './dto';
@@ -16,7 +11,6 @@ jest.mock('bcrypt', () => ({
 
 describe('UsersService', () => {
   let service: UsersService;
-  let prismaService: PrismaService;
 
   const mockTenantId = 'tenant-id';
   const mockUser = {
@@ -53,7 +47,6 @@ describe('UsersService', () => {
     }).compile();
 
     service = module.get<UsersService>(UsersService);
-    prismaService = module.get<PrismaService>(PrismaService);
 
     (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
   });

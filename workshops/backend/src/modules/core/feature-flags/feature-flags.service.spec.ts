@@ -1,10 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FeatureFlagsService, FeatureName } from './feature-flags.service';
+import { FeatureFlagsService } from './feature-flags.service';
 import { PrismaService } from '@database/prisma.service';
 
 describe('FeatureFlagsService', () => {
   let service: FeatureFlagsService;
-  let prismaService: PrismaService;
 
   const mockPrismaService = {
     tenant: {
@@ -24,7 +23,6 @@ describe('FeatureFlagsService', () => {
     }).compile();
 
     service = module.get<FeatureFlagsService>(FeatureFlagsService);
-    prismaService = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {

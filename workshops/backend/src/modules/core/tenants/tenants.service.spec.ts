@@ -1,18 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  NotFoundException,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { UsersService } from '../users/users.service';
-import { CreateTenantDto, TenantPlan, TenantStatus, DocumentType } from './dto';
+import { CreateTenantDto, TenantStatus, DocumentType } from './dto';
 
 describe('TenantsService', () => {
   let service: TenantsService;
-  let prismaService: PrismaService;
 
   const mockTenant = {
     id: 'tenant-id',
@@ -64,7 +59,6 @@ describe('TenantsService', () => {
     }).compile();
 
     service = module.get<TenantsService>(TenantsService);
-    prismaService = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {
