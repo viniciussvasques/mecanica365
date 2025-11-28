@@ -92,21 +92,46 @@ export default function EditCustomerPage() {
 
     try {
       setLoading(true);
+      
+      // Formatar telefone se fornecido
+      const formatPhone = (phone?: string): string | undefined => {
+        if (!phone) return undefined;
+        const numbers = phone.replace(/\D/g, '');
+        if (numbers.length === 10) {
+          return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+        } else if (numbers.length === 11) {
+          return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+        }
+        return phone;
+      };
+      
       const data: UpdateCustomerDto = {
         name: formData.name.trim() || undefined,
-        phone: formData.phone.trim() || undefined,
+        phone: formatPhone(formData.phone.trim()),
         email: formData.email.trim() || undefined,
         cpf: formData.cpf.trim() || undefined,
         address: formData.address.trim() || undefined,
         notes: formData.notes.trim() || undefined,
       };
 
+      console.log('[EditCustomer] Enviando dados:', data);
       await customersApi.update(id, data);
       router.push(`/customers/${id}`);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar cliente';
-      alert(errorMessage);
       console.error('Erro ao atualizar cliente:', err);
+      let errorMessage = 'Erro ao atualizar cliente';
+      
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { data?: { message?: string | string[] } } };
+        if (axiosError.response?.data?.message) {
+          const message = axiosError.response.data.message;
+          errorMessage = Array.isArray(message) ? message.join(', ') : message;
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -153,7 +178,25 @@ export default function EditCustomerPage() {
                 label="Telefone"
                 placeholder="(00) 00000-0000"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/\D/g, '');
+                  if (value.length > 11) value = value.slice(0, 11);
+                  
+                  let formatted = value;
+                  if (value.length > 0) {
+                    if (value.length <= 2) {
+                      formatted = `(${value}`;
+                    } else if (value.length <= 7) {
+                      formatted = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+                    } else if (value.length <= 10) {
+                      formatted = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6)}`;
+                    } else {
+                      formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+                    }
+                  }
+                  
+                  setFormData({ ...formData, phone: formatted });
+                }}
               />
             </div>
 
