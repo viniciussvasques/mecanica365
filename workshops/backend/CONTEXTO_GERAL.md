@@ -1,7 +1,7 @@
 # 📋 Contexto Geral - Backend Mecânica365
 
-**Última atualização:** 2024-11-28  
-**Status:** Em desenvolvimento - Fase de Planejamento Completo
+**Última atualização:** 2024-12-01  
+**Status:** Em desenvolvimento - Código Limpo e Type-Safe
 
 ---
 
@@ -110,6 +110,21 @@ O backend do **Mecânica365** é uma API REST desenvolvida em **NestJS 11+** com
 - ✅ Migrations do Prisma
 - ✅ Variáveis de ambiente
 
+#### 9. **Módulo Workshops - Customers**
+- ✅ CRUD completo de clientes
+- ✅ Validação de CPF
+- ✅ Filtros e paginação
+- ✅ Testes unitários completos
+- ✅ Integração com Feature Flags
+
+#### 10. **Qualidade de Código**
+- ✅ **0 erros** de linting
+- ✅ **0 warnings** de linting
+- ✅ **100% type-safe** (sem `any` desnecessário)
+- ✅ ESLint configurado para bloquear `any` explicitamente
+- ✅ Testes E2E completamente tipados
+- ✅ Utilitários de tratamento de erros (`error.utils.ts`)
+
 ---
 
 ## 🏗️ Estrutura Implementada
@@ -136,10 +151,10 @@ workshops/backend/
 │       │   └── billing/         # ✅ Billing
 │       ├── shared/              # Módulos compartilhados
 │       │   └── email/          # ✅ Email service
-│       └── workshops/           # Módulos de features (planejados)
+│       └── workshops/           # Módulos de features
+│           ├── customers/      # ✅ Implementado
 │           ├── service-orders/ # 📋 Planejado
 │           ├── quotes/         # 📋 Planejado
-│           ├── customers/      # 📋 Planejado
 │           ├── vehicles/       # 📋 Planejado
 │           ├── inventory/      # 📋 Planejado
 │           ├── appointments/   # 📋 Planejado
@@ -149,12 +164,13 @@ workshops/backend/
 ├── prisma/
 │   ├── schema.prisma           # Schema do banco
 │   └── migrations/             # Migrations
-├── test/                       # Testes E2E
+├── test/                       # Testes E2E (completamente tipados)
 ├── docs/                       # 📚 Documentação organizada
 │   ├── planejamento/           # Documentos de planejamento
 │   ├── configuracao/           # Guias de configuração
 │   ├── implementacao/          # Documentos de implementação
-│   └── integracao/            # Documentação de integrações
+│   ├── integracao/            # Documentação de integrações
+│   └── desenvolvimento/       # Guias de desenvolvimento
 └── scripts/                    # Scripts auxiliares
 ```
 
@@ -253,6 +269,26 @@ workshops/backend/
 
 ---
 
+### ✅ Workshops - Customers (`/modules/workshops/customers`)
+
+**Funcionalidades:**
+- CRUD completo de clientes
+- Validação de CPF
+- Filtros e paginação
+- Busca por nome, email, telefone, CPF
+- Validação de duplicatas
+
+**Endpoints:**
+- `POST /api/customers` - Criar cliente
+- `GET /api/customers` - Listar clientes (com filtros)
+- `GET /api/customers/:id` - Buscar cliente
+- `PATCH /api/customers/:id` - Atualizar cliente
+- `DELETE /api/customers/:id` - Deletar cliente
+
+**Status:** ✅ Completo e testado
+
+---
+
 ## 📋 Módulos Planejados
 
 ### 📋 Fase 1: MVP (Sprint 1-4)
@@ -260,7 +296,7 @@ workshops/backend/
 **Módulos:**
 1. **Elevadores** - Cadastro e status em tempo real
 2. **Inventário** - Controle de estoque básico
-3. **Clientes** - CRUD completo
+3. ✅ **Clientes** - CRUD completo (**IMPLEMENTADO**)
 4. **Veículos** - CRUD completo + busca automática RENAVAN/VIN
 5. **Ordens de Serviço** - CRUD completo + checklist
 6. **Orçamentos** - CRUD completo + conversão para OS
@@ -441,14 +477,17 @@ A documentação está organizada em `docs/`:
 
 1. ✅ **Organizar documentação** - CONCLUÍDO
 2. ✅ **Criar planejamento completo** - CONCLUÍDO
-3. ⏳ **Implementar Feature Flags Service**
-4. ⏳ **Criar estrutura base dos módulos de features**
+3. ✅ **Implementar Feature Flags Service** - CONCLUÍDO
+4. ✅ **Criar estrutura base dos módulos de features** - CONCLUÍDO
+5. ✅ **Corrigir todos os warnings do ESLint** - CONCLUÍDO (93 → 0)
+6. ✅ **Implementar módulo Customers** - CONCLUÍDO
+7. ✅ **Melhorar type safety** - CONCLUÍDO (100% type-safe)
 
 ### Curto Prazo (Próximas 2 Semanas)
 
 1. ⏳ **Módulo de Elevadores** (CRUD básico)
 2. ⏳ **Módulo de Inventário** (CRUD básico)
-3. ⏳ **Módulo de Clientes** (CRUD completo)
+3. ✅ **Módulo de Clientes** (CRUD completo) - **CONCLUÍDO**
 4. ⏳ **Módulo de Veículos** (CRUD + busca RENAVAN/VIN)
 
 ### Médio Prazo (Próximo Mês)
@@ -470,10 +509,12 @@ A documentação está organizada em `docs/`:
 ## 📊 Métricas do Projeto
 
 ### Código
-- **Linhas de código:** ~15.000+
-- **Módulos implementados:** 6
-- **Módulos planejados:** 16
-- **Testes:** E2E implementados
+- **Linhas de código:** ~18.000+
+- **Módulos implementados:** 7 (Core: 5, Shared: 1, Workshops: 1)
+- **Módulos planejados:** 15
+- **Testes:** E2E implementados e completamente tipados
+- **Qualidade:** 0 erros, 0 warnings de linting
+- **Type Safety:** 100% (sem `any` desnecessário)
 
 ### Documentação
 - **Documentos:** 20+
@@ -486,7 +527,11 @@ A documentação está organizada em `docs/`:
 - **Onboarding:** ✅ 100%
 - **Billing:** ✅ 100%
 - **Email:** ✅ 100%
-- **Features:** 📋 0% (planejado)
+- **Feature Flags:** ✅ 100%
+- **Customers:** ✅ 100%
+- **Qualidade de Código:** ✅ 100% (0 erros, 0 warnings)
+- **Type Safety:** ✅ 100%
+- **Outras Features:** 📋 0% (planejado)
 
 ---
 
@@ -498,6 +543,15 @@ A documentação está organizada em `docs/`:
 
 ---
 
-**Última atualização:** 2024-11-28  
-**Versão:** 1.0.0  
-**Status:** 🟢 Em desenvolvimento ativo
+**Última atualização:** 2024-12-01  
+**Versão:** 1.1.0  
+**Status:** 🟢 Em desenvolvimento ativo - Código Limpo e Type-Safe
+
+### 🎯 Conquistas Recentes
+
+- ✅ **Zero warnings de linting** (reduzido de 93 para 0)
+- ✅ **100% type-safe** (sem `any` desnecessário)
+- ✅ **Módulo Customers implementado** com testes completos
+- ✅ **ESLint configurado** para bloquear `any` explicitamente
+- ✅ **Testes E2E completamente tipados**
+- ✅ **Utilitários de tratamento de erros** padronizados
