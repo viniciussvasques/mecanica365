@@ -21,6 +21,27 @@ import {
 } from '../billing/dto/subscription-response.dto';
 import { TenantStatus } from '../tenants/dto/create-tenant.dto';
 
+// Type helpers para evitar warnings de type safety com Stripe e Prisma
+type StripeError = Error & { message?: string; stack?: string };
+type TenantWithUsers = {
+  id: string;
+  subdomain: string;
+  status: string;
+  adminEmail?: string | null;
+  users: Array<{
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+  }>;
+};
+type AdminUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+};
+
 @Injectable()
 export class OnboardingService {
   private readonly logger = new Logger(OnboardingService.name);
@@ -380,10 +401,11 @@ export class OnboardingService {
       this.logger.log(
         `Onboarding completo para tenant: ${tenant.subdomain} (${finalAdminUser.email})`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as StripeError;
       this.logger.error(
-        `Erro ao processar checkout: ${error.message}`,
-        error.stack,
+        `Erro ao processar checkout: ${err.message || 'Erro desconhecido'}`,
+        err.stack,
       );
       throw error;
     }
@@ -395,7 +417,11 @@ export class OnboardingService {
   private async findTenantByStripeId(
     customerId?: string | null,
     subscriptionId?: string | null,
-  ): Promise<{ tenant: any; subscription: any; adminUser: any } | null> {
+  ): Promise<{
+    tenant: TenantWithUsers;
+    subscription: unknown;
+    adminUser: AdminUser | null;
+  } | null> {
     try {
       // Primeiro, tentar buscar por subscription
       if (customerId || subscriptionId) {
