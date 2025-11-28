@@ -9,9 +9,3 @@ import { PrismaModule } from '../database/prisma.module';
   providers: [HealthService],
 })
 export class HealthModule {}
-
-
-
-
-
-

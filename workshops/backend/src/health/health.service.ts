@@ -7,7 +7,6 @@ export class HealthService {
 
   async checkDatabase(): Promise<boolean> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await this.prisma.$queryRaw`SELECT 1`;
       return true;
     } catch {

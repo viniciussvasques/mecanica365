@@ -11,5 +11,3 @@ export class UpgradeSubscriptionDto {
   @IsEnum(SubscriptionPlan)
   newPlan: SubscriptionPlan;
 }
-
-

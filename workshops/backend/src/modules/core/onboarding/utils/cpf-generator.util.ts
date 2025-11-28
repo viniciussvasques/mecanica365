@@ -29,4 +29,3 @@ export function generateValidCPF(): string {
 
   return digits.join('');
 }
-

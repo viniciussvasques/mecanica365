@@ -42,7 +42,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Fazer login',
-    description: 'Autentica um usuário e retorna access token e refresh token. Requer header X-Tenant-Subdomain.',
+    description:
+      'Autentica um usuário e retorna access token e refresh token. Requer header X-Tenant-Subdomain.',
   })
   @ApiResponse({
     status: 200,
@@ -69,12 +70,12 @@ export class AuthController {
     // Se tenantId não foi injetado pelo middleware (rota pública),
     // buscar pelo subdomain do header
     let resolvedTenantId = tenantId;
-    
+
     if (!resolvedTenantId && subdomain) {
       try {
         const tenant = await this.tenantsService.findBySubdomain(subdomain);
         resolvedTenantId = tenant.id;
-      } catch (error) {
+      } catch {
         throw new BadRequestException(
           `Tenant não encontrado: ${subdomain}. Verifique o subdomain e tente novamente.`,
         );
@@ -126,7 +127,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Renovar access token',
-    description: 'Renova o access token usando um refresh token válido. Gera um novo par de tokens.',
+    description:
+      'Renova o access token usando um refresh token válido. Gera um novo par de tokens.',
   })
   @ApiResponse({
     status: 200,
@@ -168,7 +170,8 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Obter perfil do usuário autenticado',
-    description: 'Retorna os dados do perfil do usuário autenticado. Requer autenticação JWT.',
+    description:
+      'Retorna os dados do perfil do usuário autenticado. Requer autenticação JWT.',
   })
   @ApiResponse({
     status: 200,
@@ -199,7 +202,8 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Alterar senha',
-    description: 'Altera a senha do usuário autenticado. Requer autenticação JWT. Após alterar, todos os refresh tokens são revogados.',
+    description:
+      'Altera a senha do usuário autenticado. Requer autenticação JWT. Após alterar, todos os refresh tokens são revogados.',
   })
   @ApiResponse({
     status: 204,
@@ -207,7 +211,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Dados inválidos (senhas não coincidem, nova senha igual à atual, senha muito curta)',
+    description:
+      'Dados inválidos (senhas não coincidem, nova senha igual à atual, senha muito curta)',
   })
   @ApiResponse({
     status: 401,
@@ -263,4 +268,3 @@ export class AuthController {
     return this.authService.findTenantByEmail(findTenantDto);
   }
 }
-

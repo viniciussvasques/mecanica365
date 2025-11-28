@@ -169,9 +169,9 @@ describe('UsersService', () => {
     it('deve lançar NotFoundException se usuário não existe', async () => {
       mockPrismaService.user.findFirst.mockResolvedValue(null);
 
-      await expect(service.findOne(mockTenantId, 'non-existent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.findOne(mockTenantId, 'non-existent'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -187,7 +187,11 @@ describe('UsersService', () => {
         name: 'Updated Name',
       });
 
-      const result = await service.update(mockTenantId, 'user-id', updateUserDto);
+      const result = await service.update(
+        mockTenantId,
+        'user-id',
+        updateUserDto,
+      );
 
       expect(result.name).toBe('Updated Name');
       expect(mockPrismaService.user.update).toHaveBeenCalled();
@@ -244,10 +248,9 @@ describe('UsersService', () => {
     it('deve lançar NotFoundException se usuário não existe', async () => {
       mockPrismaService.user.findFirst.mockResolvedValue(null);
 
-      await expect(service.remove(mockTenantId, 'non-existent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.remove(mockTenantId, 'non-existent'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
-

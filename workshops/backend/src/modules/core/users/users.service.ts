@@ -15,7 +15,10 @@ export class UsersService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(tenantId: string, createUserDto: CreateUserDto): Promise<UserResponseDto> {
+  async create(
+    tenantId: string,
+    createUserDto: CreateUserDto,
+  ): Promise<UserResponseDto> {
     try {
       const normalizedEmail = createUserDto.email.toLowerCase().trim();
 
@@ -48,7 +51,9 @@ export class UsersService {
         },
       });
 
-      this.logger.log(`Usuário criado: ${user.id} (${user.email}) no tenant ${tenantId}`);
+      this.logger.log(
+        `Usuário criado: ${user.id} (${user.email}) no tenant ${tenantId}`,
+      );
       return this.toResponseDto(user);
     } catch (error) {
       this.logger.error(`Erro ao criar usuário: ${error.message}`, error.stack);
@@ -56,7 +61,10 @@ export class UsersService {
     }
   }
 
-  async findAll(tenantId: string, includeInactive = false): Promise<UserResponseDto[]> {
+  async findAll(
+    tenantId: string,
+    includeInactive = false,
+  ): Promise<UserResponseDto[]> {
     try {
       const users = await this.prisma.user.findMany({
         where: {
@@ -70,7 +78,10 @@ export class UsersService {
 
       return users.map((user) => this.toResponseDto(user));
     } catch (error) {
-      this.logger.error(`Erro ao listar usuários: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao listar usuários: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -90,7 +101,10 @@ export class UsersService {
 
       return this.toResponseDto(user);
     } catch (error) {
-      this.logger.error(`Erro ao buscar usuário ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao buscar usuário ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -163,7 +177,10 @@ export class UsersService {
       this.logger.log(`Usuário atualizado: ${id}`);
       return this.toResponseDto(updatedUser);
     } catch (error) {
-      this.logger.error(`Erro ao atualizar usuário ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao atualizar usuário ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -189,7 +206,10 @@ export class UsersService {
 
       this.logger.log(`Usuário removido (soft delete): ${id}`);
     } catch (error) {
-      this.logger.error(`Erro ao remover usuário ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao remover usuário ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -207,4 +227,3 @@ export class UsersService {
     };
   }
 }
-

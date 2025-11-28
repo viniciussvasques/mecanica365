@@ -104,4 +104,3 @@ export interface BulkEmailData {
   fromName?: string;
   replyTo?: string;
 }
-

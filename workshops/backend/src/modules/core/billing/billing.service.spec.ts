@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { PrismaService } from '../../../database/prisma.service';
+import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import {
   CreateSubscriptionDto,
   SubscriptionPlan,
@@ -52,13 +53,27 @@ describe('BillingService', () => {
     },
   };
 
+  const mockFeatureFlagsService = {
+    getEnabledFeaturesForPlan: jest.fn(),
+  };
+
   beforeEach(async () => {
+    // Mock do FeatureFlagsService retornando features básicas
+    mockFeatureFlagsService.getEnabledFeaturesForPlan.mockReturnValue({
+      basic_service_orders: { enabled: true, limit: 50 },
+      basic_customers: { enabled: true, limit: null },
+    });
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BillingService,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: FeatureFlagsService,
+          useValue: mockFeatureFlagsService,
         },
       ],
     }).compile();
@@ -94,14 +109,20 @@ describe('BillingService', () => {
     it('deve lançar NotFoundException se tenant não existe', async () => {
       mockPrismaService.tenant.findUnique.mockResolvedValue(null);
 
-      await expect(service.create(createDto)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('deve lançar BadRequestException se subscription já existe', async () => {
       mockPrismaService.tenant.findUnique.mockResolvedValue(mockTenant);
-      mockPrismaService.subscription.findUnique.mockResolvedValue(mockSubscription);
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        mockSubscription,
+      );
 
-      await expect(service.create(createDto)).rejects.toThrow(BadRequestException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('deve configurar limites corretos para Starter', async () => {
@@ -124,7 +145,9 @@ describe('BillingService', () => {
 
   describe('findByTenantId', () => {
     it('deve retornar subscription do tenant', async () => {
-      mockPrismaService.subscription.findUnique.mockResolvedValue(mockSubscription);
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        mockSubscription,
+      );
 
       const result = await service.findByTenantId('tenant-id');
 
@@ -145,7 +168,9 @@ describe('BillingService', () => {
 
   describe('upgrade', () => {
     it('deve fazer upgrade de Starter para Professional', async () => {
-      mockPrismaService.subscription.findUnique.mockResolvedValue(mockSubscription);
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        mockSubscription,
+      );
       mockPrismaService.subscription.update.mockResolvedValue({
         ...mockSubscription,
         plan: SubscriptionPlan.WORKSHOPS_PROFESSIONAL,
@@ -166,7 +191,9 @@ describe('BillingService', () => {
         ...mockSubscription,
         plan: SubscriptionPlan.WORKSHOPS_PROFESSIONAL,
       };
-      mockPrismaService.subscription.findUnique.mockResolvedValue(professionalSubscription);
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        professionalSubscription,
+      );
 
       await expect(
         service.upgrade('tenant-id', SubscriptionPlan.WORKSHOPS_STARTER),
@@ -180,7 +207,9 @@ describe('BillingService', () => {
         ...mockSubscription,
         plan: SubscriptionPlan.WORKSHOPS_PROFESSIONAL,
       };
-      mockPrismaService.subscription.findUnique.mockResolvedValue(professionalSubscription);
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        professionalSubscription,
+      );
       mockPrismaService.subscription.update.mockResolvedValue({
         ...professionalSubscription,
         plan: SubscriptionPlan.WORKSHOPS_STARTER,
@@ -196,7 +225,9 @@ describe('BillingService', () => {
     });
 
     it('deve lançar BadRequestException se tentar upgrade', async () => {
-      mockPrismaService.subscription.findUnique.mockResolvedValue(mockSubscription);
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        mockSubscription,
+      );
 
       await expect(
         service.downgrade('tenant-id', SubscriptionPlan.WORKSHOPS_PROFESSIONAL),
@@ -206,7 +237,9 @@ describe('BillingService', () => {
 
   describe('cancel', () => {
     it('deve cancelar subscription', async () => {
-      mockPrismaService.subscription.findUnique.mockResolvedValue(mockSubscription);
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        mockSubscription,
+      );
       mockPrismaService.subscription.update.mockResolvedValue({
         ...mockSubscription,
         status: SubscriptionStatus.CANCELLED,
@@ -224,7 +257,9 @@ describe('BillingService', () => {
         ...mockSubscription,
         status: SubscriptionStatus.CANCELLED,
       };
-      mockPrismaService.subscription.findUnique.mockResolvedValue(cancelledSubscription);
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        cancelledSubscription,
+      );
       mockPrismaService.subscription.update.mockResolvedValue({
         ...cancelledSubscription,
         status: SubscriptionStatus.ACTIVE,
@@ -247,5 +282,3 @@ describe('BillingService', () => {
     });
   });
 });
-
-

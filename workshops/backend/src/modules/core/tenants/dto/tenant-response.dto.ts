@@ -34,13 +34,25 @@ export class TenantResponseDto {
   @ApiProperty({ description: 'Subdomain', example: 'oficina-joao' })
   subdomain: string;
 
-  @ApiProperty({ description: 'Plano', enum: TenantPlan, example: TenantPlan.WORKSHOPS_STARTER })
+  @ApiProperty({
+    description: 'Plano',
+    enum: TenantPlan,
+    example: TenantPlan.WORKSHOPS_STARTER,
+  })
   plan: TenantPlan;
 
-  @ApiProperty({ description: 'Status', enum: TenantStatus, example: TenantStatus.ACTIVE })
+  @ApiProperty({
+    description: 'Status',
+    enum: TenantStatus,
+    example: TenantStatus.ACTIVE,
+  })
   status: TenantStatus;
 
-  @ApiProperty({ description: 'Subscription', type: SubscriptionResponseDto, required: false })
+  @ApiProperty({
+    description: 'Subscription',
+    type: SubscriptionResponseDto,
+    required: false,
+  })
   subscription?: SubscriptionResponseDto;
 
   @ApiProperty({ description: 'Data de criação' })
@@ -49,4 +61,3 @@ export class TenantResponseDto {
   @ApiProperty({ description: 'Data de atualização' })
   updatedAt: Date;
 }
-

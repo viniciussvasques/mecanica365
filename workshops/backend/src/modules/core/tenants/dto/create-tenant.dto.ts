@@ -36,7 +36,8 @@ export class CreateTenantDto {
   name: string;
 
   @ApiProperty({
-    description: 'Tipo de documento (CNPJ para empresa, CPF para pessoa física)',
+    description:
+      'Tipo de documento (CNPJ para empresa, CPF para pessoa física)',
     enum: DocumentType,
     example: DocumentType.CNPJ,
     default: DocumentType.CNPJ,
@@ -57,7 +58,8 @@ export class CreateTenantDto {
   document: string;
 
   @ApiProperty({
-    description: 'Subdomain único para o tenant (apenas letras, números e hífen)',
+    description:
+      'Subdomain único para o tenant (apenas letras, números e hífen)',
     example: 'oficina-joao',
     pattern: '^[a-z0-9-]+$',
   })
@@ -118,4 +120,3 @@ export class CreateTenantDto {
   @IsOptional()
   adminPassword?: string;
 }
-

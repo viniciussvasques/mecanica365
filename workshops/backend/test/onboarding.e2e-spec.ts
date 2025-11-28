@@ -3,7 +3,10 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app/app.module';
 import { PrismaService } from '../src/database/prisma.service';
-import { TenantStatus, TenantPlan } from '../src/modules/core/tenants/dto/create-tenant.dto';
+import {
+  TenantStatus,
+  TenantPlan,
+} from '../src/modules/core/tenants/dto/create-tenant.dto';
 import { DocumentType } from '../src/modules/core/tenants/dto/create-tenant.dto';
 import { BillingCycle } from '../src/modules/core/billing/dto/subscription-response.dto';
 
@@ -211,4 +214,3 @@ describe('OnboardingController (e2e)', () => {
     });
   });
 });
-

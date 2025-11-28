@@ -205,7 +205,9 @@ export class FeatureFlagsService {
   /**
    * Obtém todas as features disponíveis para um tenant
    */
-  async getTenantFeatures(tenantId: string): Promise<Record<string, FeatureConfig>> {
+  async getTenantFeatures(
+    tenantId: string,
+  ): Promise<Record<string, FeatureConfig>> {
     try {
       const tenant = await this.prisma.tenant.findUnique({
         where: { id: tenantId },
@@ -257,4 +259,3 @@ export class FeatureFlagsService {
     return Object.keys(this.featureMatrix);
   }
 }
-

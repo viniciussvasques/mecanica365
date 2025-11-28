@@ -14,7 +14,8 @@ export class ChangePasswordDto {
   currentPassword: string;
 
   @ApiProperty({
-    description: 'Nova senha do usuário (deve conter maiúscula, minúscula e número)',
+    description:
+      'Nova senha do usuário (deve conter maiúscula, minúscula e número)',
     example: 'NovaSenha123',
     minLength: 8,
     maxLength: 100,
@@ -43,4 +44,3 @@ export class ChangePasswordDto {
   })
   confirmPassword: string;
 }
-

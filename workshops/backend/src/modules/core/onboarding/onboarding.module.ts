@@ -20,5 +20,3 @@ import { EmailModule } from '../../shared/email/email.module';
   exports: [OnboardingService],
 })
 export class OnboardingModule {}
-
-

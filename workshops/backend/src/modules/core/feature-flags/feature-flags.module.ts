@@ -11,4 +11,3 @@ import { PrismaModule } from '@database/prisma.module';
   exports: [FeatureFlagsService, FeatureGuard],
 })
 export class FeatureFlagsModule {}
-

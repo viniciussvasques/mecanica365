@@ -13,13 +13,14 @@ export class EmailTemplatesService {
     buttonText?: string,
     buttonUrl?: string,
   ): string {
-    const buttonHtml = buttonText && buttonUrl
-      ? `
+    const buttonHtml =
+      buttonText && buttonUrl
+        ? `
       <div style="text-align: center; margin: 30px 0;">
         <a href="${buttonUrl}" style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">${buttonText}</a>
       </div>
       `
-      : '';
+        : '';
 
     return `
 <!DOCTYPE html>
@@ -144,8 +145,9 @@ export class EmailTemplatesService {
     supportUrl?: string;
   }): string {
     const formattedAmount = this.formatCurrency(data.amount, data.currency);
-    const reason = data.failureReason || 'Não foi possível processar o pagamento.';
-    
+    const reason =
+      data.failureReason || 'Não foi possível processar o pagamento.';
+
     const content = `
       <p style="font-size: 16px; margin: 0 0 20px 0;">Olá <strong>${data.name}</strong>,</p>
       
@@ -172,19 +174,25 @@ export class EmailTemplatesService {
         </ol>
       </div>
       
-      ${data.invoiceUrl ? `
+      ${
+        data.invoiceUrl
+          ? `
       <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0066cc;">
         <p style="margin: 0; color: #004085;">
           <strong>📄 Visualizar Fatura:</strong> <a href="${data.invoiceUrl}" style="color: #0066cc;">Clique aqui para ver os detalhes da fatura</a>
         </p>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     `;
 
-    const retryButton = data.retryUrl ? {
-      text: 'Tentar Pagamento Novamente',
-      url: data.retryUrl,
-    } : undefined;
+    const retryButton = data.retryUrl
+      ? {
+          text: 'Tentar Pagamento Novamente',
+          url: data.retryUrl,
+        }
+      : undefined;
 
     return this.getBaseTemplate(
       'Pagamento Não Processado',
@@ -337,33 +345,38 @@ export class EmailTemplatesService {
             <td style="padding: 8px 0; font-weight: 600; color: #155724;">Valor Pago:</td>
             <td style="padding: 8px 0; color: #155724;"><strong>${formattedAmount}</strong></td>
           </tr>
-          ${data.nextBillingDate ? `
+          ${
+            data.nextBillingDate
+              ? `
           <tr>
             <td style="padding: 8px 0; font-weight: 600; color: #155724;">Próxima Cobrança:</td>
             <td style="padding: 8px 0; color: #155724;">${this.formatDate(data.nextBillingDate)}</td>
           </tr>
-          ` : ''}
+          `
+              : ''
+          }
         </table>
       </div>
       
-      ${data.invoiceUrl || data.receiptUrl ? `
+      ${
+        data.invoiceUrl || data.receiptUrl
+          ? `
       <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0066cc;">
         <p style="margin: 0; color: #004085;">
           ${data.invoiceUrl ? `<strong>📄 Visualizar Fatura:</strong> <a href="${data.invoiceUrl}" style="color: #0066cc;">Clique aqui</a><br>` : ''}
           ${data.receiptUrl ? `<strong>🧾 Recibo:</strong> <a href="${data.receiptUrl}" style="color: #0066cc;">Baixar recibo</a>` : ''}
         </p>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
       
       <p style="font-size: 16px; color: #555; margin: 20px 0;">
         Continue aproveitando todos os recursos do Mecânica365!
       </p>
     `;
 
-    return this.getBaseTemplate(
-      'Pagamento Confirmado',
-      content,
-    );
+    return this.getBaseTemplate('Pagamento Confirmado', content);
   }
 
   getInvoiceUpcomingEmailTemplate(data: {
@@ -407,13 +420,17 @@ export class EmailTemplatesService {
         </ul>
       </div>
       
-      ${data.invoiceUrl ? `
+      ${
+        data.invoiceUrl
+          ? `
       <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0066cc;">
         <p style="margin: 0; color: #004085;">
           <strong>📄 Visualizar Detalhes:</strong> <a href="${data.invoiceUrl}" style="color: #0066cc;">Clique aqui para ver a fatura</a>
         </p>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     `;
 
     return this.getBaseTemplate(
@@ -591,4 +608,3 @@ Se você tiver dúvidas, entre em contato com nosso suporte.
     `.trim();
   }
 }
-

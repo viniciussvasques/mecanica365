@@ -52,7 +52,9 @@ export class AuthService {
       });
 
       if (!user) {
-        this.logger.warn(`Tentativa de login com credenciais inválidas: ${normalizedEmail} (tenant: ${tenantId})`);
+        this.logger.warn(
+          `Tentativa de login com credenciais inválidas: ${normalizedEmail} (tenant: ${tenantId})`,
+        );
         throw new UnauthorizedException('Credenciais inválidas');
       }
 
@@ -75,7 +77,9 @@ export class AuthService {
       );
 
       if (!isPasswordValid) {
-        this.logger.warn(`Tentativa de login com senha incorreta: ${normalizedEmail} (tenant: ${tenantId})`);
+        this.logger.warn(
+          `Tentativa de login com senha incorreta: ${normalizedEmail} (tenant: ${tenantId})`,
+        );
         throw new UnauthorizedException('Credenciais inválidas');
       }
 
@@ -83,8 +87,11 @@ export class AuthService {
       const accessToken = this.generateAccessToken(user);
       const refreshToken = this.generateRefreshToken();
       const expiresAt = new Date();
-      const refreshExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
-      const days = refreshExpiresIn.includes('d') ? parseInt(refreshExpiresIn) : 7;
+      const refreshExpiresIn =
+        this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
+      const days = refreshExpiresIn.includes('d')
+        ? parseInt(refreshExpiresIn)
+        : 7;
       expiresAt.setDate(expiresAt.getDate() + days);
 
       // Salvar refresh token
@@ -93,10 +100,13 @@ export class AuthService {
       // Verificar se é primeiro login (usuário criado nas últimas 24 horas)
       const userCreatedAt = user.createdAt;
       const now = new Date();
-      const hoursSinceCreation = (now.getTime() - userCreatedAt.getTime()) / (1000 * 60 * 60);
+      const hoursSinceCreation =
+        (now.getTime() - userCreatedAt.getTime()) / (1000 * 60 * 60);
       const isFirstLogin = hoursSinceCreation < 24; // Usuário criado há menos de 24 horas
 
-      this.logger.log(`Login realizado com sucesso: ${user.id} (${normalizedEmail})${isFirstLogin ? ' [PRIMEIRO LOGIN]' : ''}`);
+      this.logger.log(
+        `Login realizado com sucesso: ${user.id} (${normalizedEmail})${isFirstLogin ? ' [PRIMEIRO LOGIN]' : ''}`,
+      );
 
       return {
         accessToken,
@@ -116,7 +126,10 @@ export class AuthService {
       ) {
         throw error;
       }
-      this.logger.error(`Erro ao realizar login: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao realizar login: ${error.message}`,
+        error.stack,
+      );
       throw new InternalServerErrorException('Erro ao realizar login');
     }
   }
@@ -135,7 +148,10 @@ export class AuthService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error(`Erro ao realizar logout: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao realizar logout: ${error.message}`,
+        error.stack,
+      );
       throw new InternalServerErrorException('Erro ao realizar logout');
     }
   }
@@ -162,12 +178,16 @@ export class AuthService {
       });
 
       if (!user || !user.isActive) {
-        this.logger.warn(`Tentativa de refresh com usuário inativo: ${refreshTokenRecord.userId}`);
+        this.logger.warn(
+          `Tentativa de refresh com usuário inativo: ${refreshTokenRecord.userId}`,
+        );
         throw new UnauthorizedException('Usuário não encontrado ou inativo');
       }
 
       if (user.tenant.status !== 'active') {
-        this.logger.warn(`Tentativa de refresh com tenant inativo: ${user.tenantId}`);
+        this.logger.warn(
+          `Tentativa de refresh com tenant inativo: ${user.tenantId}`,
+        );
         throw new UnauthorizedException('Tenant inativo');
       }
 
@@ -178,8 +198,11 @@ export class AuthService {
       const accessToken = this.generateAccessToken(user);
       const newRefreshToken = this.generateRefreshToken();
       const expiresAt = new Date();
-      const refreshExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
-      const days = refreshExpiresIn.includes('d') ? parseInt(refreshExpiresIn) : 7;
+      const refreshExpiresIn =
+        this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
+      const days = refreshExpiresIn.includes('d')
+        ? parseInt(refreshExpiresIn)
+        : 7;
       expiresAt.setDate(expiresAt.getDate() + days);
 
       // Salvar novo refresh token
@@ -245,7 +268,11 @@ export class AuthService {
   ): Promise<void> {
     try {
       // Validar entrada
-      if (!changePasswordDto.currentPassword || !changePasswordDto.newPassword || !changePasswordDto.confirmPassword) {
+      if (
+        !changePasswordDto.currentPassword ||
+        !changePasswordDto.newPassword ||
+        !changePasswordDto.confirmPassword
+      ) {
         throw new BadRequestException('Todos os campos são obrigatórios');
       }
 
@@ -263,7 +290,9 @@ export class AuthService {
 
       // Validar força da senha
       if (changePasswordDto.newPassword.length < 8) {
-        throw new BadRequestException('Nova senha deve ter no mínimo 8 caracteres');
+        throw new BadRequestException(
+          'Nova senha deve ter no mínimo 8 caracteres',
+        );
       }
 
       // Buscar usuário
@@ -282,12 +311,17 @@ export class AuthService {
       );
 
       if (!isCurrentPasswordValid) {
-        this.logger.warn(`Tentativa de alterar senha com senha atual incorreta: ${userId}`);
+        this.logger.warn(
+          `Tentativa de alterar senha com senha atual incorreta: ${userId}`,
+        );
         throw new UnauthorizedException('Senha atual incorreta');
       }
 
       // Hash da nova senha
-      const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
+      const hashedPassword = await bcrypt.hash(
+        changePasswordDto.newPassword,
+        10,
+      );
 
       // Atualizar senha
       await this.prisma.user.update({
@@ -363,7 +397,10 @@ export class AuthService {
         },
       });
     } catch (error) {
-      this.logger.error(`Erro ao salvar refresh token: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao salvar refresh token: ${error.message}`,
+        error.stack,
+      );
       throw new InternalServerErrorException('Erro ao salvar refresh token');
     }
   }
@@ -396,12 +433,16 @@ export class AuthService {
       }
 
       if (refreshToken.revokedAt) {
-        this.logger.warn(`Tentativa de usar refresh token revogado: ${refreshToken.id}`);
+        this.logger.warn(
+          `Tentativa de usar refresh token revogado: ${refreshToken.id}`,
+        );
         throw new UnauthorizedException('Refresh token revogado');
       }
 
       if (refreshToken.expiresAt < new Date()) {
-        this.logger.warn(`Tentativa de usar refresh token expirado: ${refreshToken.id}`);
+        this.logger.warn(
+          `Tentativa de usar refresh token expirado: ${refreshToken.id}`,
+        );
         throw new UnauthorizedException('Refresh token expirado');
       }
 
@@ -413,7 +454,10 @@ export class AuthService {
       ) {
         throw error;
       }
-      this.logger.error(`Erro ao validar refresh token: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erro ao validar refresh token: ${error.message}`,
+        error.stack,
+      );
       throw new InternalServerErrorException('Erro ao validar refresh token');
     }
   }

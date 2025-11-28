@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UnauthorizedException, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../../database/prisma.service';
@@ -11,9 +15,6 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prismaService: PrismaService;
-  let jwtService: JwtService;
-  let configService: ConfigService;
 
   const mockPrismaService = {
     user: {
@@ -55,9 +56,6 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    prismaService = module.get<PrismaService>(PrismaService);
-    jwtService = module.get<JwtService>(JwtService);
-    configService = module.get<ConfigService>(ConfigService);
 
     // Configurações padrão
     mockConfigService.get.mockImplementation((key: string) => {
@@ -85,6 +83,7 @@ describe('AuthService', () => {
       tenantId: 'tenant-id',
       password: 'hashedPassword',
       isActive: true,
+      createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000), // Criado há 12 horas (primeiro login)
       tenant: {
         id: 'tenant-id',
         status: 'active',
@@ -102,7 +101,9 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
       expect(result).toHaveProperty('user');
+      expect(result).toHaveProperty('isFirstLogin');
       expect(result.user.email).toBe(mockUser.email);
+      expect(result.isFirstLogin).toBe(true); // Criado há 12 horas, então é primeiro login
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: {
           tenantId_email: {
@@ -207,7 +208,9 @@ describe('AuthService', () => {
     };
 
     it('deve renovar token com sucesso', async () => {
-      mockPrismaService.refreshToken.findUnique.mockResolvedValue(mockRefreshToken);
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue(
+        mockRefreshToken,
+      );
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 1 });
       mockJwtService.sign.mockReturnValue('new-access-token');
@@ -282,9 +285,7 @@ describe('AuthService', () => {
     });
 
     it('deve lançar BadRequestException quando userId está vazio', async () => {
-      await expect(service.getProfile('')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.getProfile('')).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -303,7 +304,9 @@ describe('AuthService', () => {
     it('deve alterar senha com sucesso', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedNewPassword' as never);
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockResolvedValue('hashedNewPassword' as never);
       mockPrismaService.user.update.mockResolvedValue({});
       mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 1 });
 
@@ -319,9 +322,9 @@ describe('AuthService', () => {
         confirmPassword: 'DifferentPassword123',
       };
 
-      await expect(service.changePassword('user-id', invalidDto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.changePassword('user-id', invalidDto),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('deve lançar BadRequestException quando nova senha é igual à atual', async () => {
@@ -331,27 +334,26 @@ describe('AuthService', () => {
         confirmPassword: 'CurrentPass123',
       };
 
-      await expect(service.changePassword('user-id', invalidDto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.changePassword('user-id', invalidDto),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('deve lançar UnauthorizedException quando senha atual está incorreta', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
 
-      await expect(service.changePassword('user-id', changePasswordDto)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.changePassword('user-id', changePasswordDto),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('deve lançar NotFoundException quando usuário não existe', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.changePassword('user-id', changePasswordDto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.changePassword('user-id', changePasswordDto),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
-

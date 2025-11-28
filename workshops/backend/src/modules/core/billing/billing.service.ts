@@ -60,7 +60,9 @@ export class BillingService {
     private readonly featureFlagsService: FeatureFlagsService,
   ) {}
 
-  async create(createSubscriptionDto: CreateSubscriptionDto): Promise<SubscriptionResponseDto> {
+  async create(
+    createSubscriptionDto: CreateSubscriptionDto,
+  ): Promise<SubscriptionResponseDto> {
     try {
       // Verificar se tenant existe
       const tenant = await this.prisma.tenant.findUnique({
@@ -172,7 +174,9 @@ export class BillingService {
           throw new BadRequestException('Plano inválido');
         }
         // Obter features habilitadas do FeatureFlagsService baseado no plano
-        const enabledFeatures = this.getEnabledFeaturesForPlan(updateSubscriptionDto.plan);
+        const enabledFeatures = this.getEnabledFeaturesForPlan(
+          updateSubscriptionDto.plan,
+        );
         updateData.plan = updateSubscriptionDto.plan;
         updateData.activeFeatures = enabledFeatures;
         updateData.serviceOrdersLimit = planConfig.serviceOrdersLimit;
@@ -194,7 +198,8 @@ export class BillingService {
       }
 
       if (updateSubscriptionDto.serviceOrdersLimit !== undefined) {
-        updateData.serviceOrdersLimit = updateSubscriptionDto.serviceOrdersLimit;
+        updateData.serviceOrdersLimit =
+          updateSubscriptionDto.serviceOrdersLimit;
       }
 
       if (updateSubscriptionDto.partsLimit !== undefined) {
@@ -235,7 +240,9 @@ export class BillingService {
       }
 
       // Validar upgrade (só pode fazer upgrade, não downgrade)
-      const currentPlanOrder = this.getPlanOrder(subscription.plan as SubscriptionPlan);
+      const currentPlanOrder = this.getPlanOrder(
+        subscription.plan as SubscriptionPlan,
+      );
       const newPlanOrder = this.getPlanOrder(newPlan);
 
       if (newPlanOrder <= currentPlanOrder) {
@@ -295,7 +302,9 @@ export class BillingService {
       }
 
       // Validar downgrade
-      const currentPlanOrder = this.getPlanOrder(subscription.plan as SubscriptionPlan);
+      const currentPlanOrder = this.getPlanOrder(
+        subscription.plan as SubscriptionPlan,
+      );
       const newPlanOrder = this.getPlanOrder(newPlan);
 
       if (newPlanOrder >= currentPlanOrder) {
@@ -439,7 +448,7 @@ export class BillingService {
     };
 
     const featureFlagsPlan = planMapping[plan] || plan;
-    
+
     // Lista de todas as features possíveis
     const allFeatures: string[] = [
       'elevators',
@@ -463,7 +472,7 @@ export class BillingService {
 
     // Verificar cada feature usando o FeatureFlagsService
     const enabledFeatures: string[] = [];
-    
+
     // Usar um tenant temporário para verificar features (ou criar método público no FeatureFlagsService)
     // Por enquanto, vamos usar a matriz diretamente via reflection
     try {
@@ -478,11 +487,15 @@ export class BillingService {
         }
       } else {
         // Fallback: usar features do planLimits
-        this.logger.warn(`Plano ${plan} não encontrado no FeatureFlagsService, usando features padrão`);
+        this.logger.warn(
+          `Plano ${plan} não encontrado no FeatureFlagsService, usando features padrão`,
+        );
         return this.planLimits[plan as SubscriptionPlan]?.features || [];
       }
     } catch (error) {
-      this.logger.warn(`Erro ao obter features do FeatureFlagsService: ${error.message}`);
+      this.logger.warn(
+        `Erro ao obter features do FeatureFlagsService: ${error.message}`,
+      );
       return this.planLimits[plan as SubscriptionPlan]?.features || [];
     }
 
@@ -507,10 +520,9 @@ export class BillingService {
       partsLimit: subscription.partsLimit,
       stripeSubscriptionId: subscription.stripeSubscriptionId,
       stripeCustomerId: subscription.stripeCustomerId,
-      billingCycle: subscription.billingCycle as any,
+      billingCycle: subscription.billingCycle,
       createdAt: subscription.createdAt,
       updatedAt: subscription.updatedAt,
     };
   }
 }
-

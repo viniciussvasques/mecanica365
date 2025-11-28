@@ -89,5 +89,3 @@ export class SubscriptionResponseDto {
   @ApiProperty({ description: 'Data de atualização' })
   updatedAt: Date;
 }
-
-

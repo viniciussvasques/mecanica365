@@ -1,11 +1,9 @@
-import {
-  IsString,
-  IsEnum,
-  IsOptional,
-  IsUUID,
-} from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { SubscriptionPlan, BillingCycle } from '../../billing/dto/subscription-response.dto';
+import {
+  SubscriptionPlan,
+  BillingCycle,
+} from '../../billing/dto/subscription-response.dto';
 
 export class CreateCheckoutDto {
   @ApiProperty({

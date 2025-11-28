@@ -152,5 +152,3 @@ describe('BillingController (e2e)', () => {
     expect(response.body.status).toBe('active');
   });
 });
-
-

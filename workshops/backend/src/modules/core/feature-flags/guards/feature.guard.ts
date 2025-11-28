@@ -48,4 +48,3 @@ export class FeatureGuard implements CanActivate {
     return true;
   }
 }
-

@@ -1,6 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, IsArray } from 'class-validator';
-import { SubscriptionPlan, SubscriptionStatus, BillingCycle } from './subscription-response.dto';
+import {
+  SubscriptionPlan,
+  SubscriptionStatus,
+  BillingCycle,
+} from './subscription-response.dto';
 
 export class UpdateSubscriptionDto {
   @ApiProperty({
@@ -72,4 +76,3 @@ export class UpdateSubscriptionDto {
   @IsOptional()
   stripeCustomerId?: string;
 }
-

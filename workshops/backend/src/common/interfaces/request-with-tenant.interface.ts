@@ -9,4 +9,3 @@ export interface RequestWithTenant extends Request {
   tenant?: TenantWithSubscription;
   tenantId?: string;
 }
-

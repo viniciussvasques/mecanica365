@@ -27,7 +27,9 @@ export class BulkEmailService {
       errors: [],
     };
 
-    this.logger.log(`Iniciando disparo em massa para ${result.total} destinatários`);
+    this.logger.log(
+      `Iniciando disparo em massa para ${result.total} destinatários`,
+    );
 
     // Processar em lotes de 10 para não sobrecarregar o SMTP
     const batchSize = 10;
@@ -35,7 +37,9 @@ export class BulkEmailService {
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
-      this.logger.log(`Processando lote ${i + 1}/${batches.length} (${batch.length} emails)`);
+      this.logger.log(
+        `Processando lote ${i + 1}/${batches.length} (${batch.length} emails)`,
+      );
 
       // Processar emails do lote em paralelo
       const promises = batch.map(async (recipient) => {
@@ -46,7 +50,10 @@ export class BulkEmailService {
           const subject = this.replaceVariables(data.subject, recipient);
 
           // Substituir variáveis no HTML
-          if (recipient.customData && typeof recipient.customData === 'object') {
+          if (
+            recipient.customData &&
+            typeof recipient.customData === 'object'
+          ) {
             const customData = recipient.customData;
             Object.keys(customData).forEach((key) => {
               const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
@@ -76,7 +83,9 @@ export class BulkEmailService {
             email: recipient.email,
             error: error.message || 'Erro desconhecido',
           });
-          this.logger.error(`Falha ao enviar email para ${recipient.email}: ${error.message}`);
+          this.logger.error(
+            `Falha ao enviar email para ${recipient.email}: ${error.message}`,
+          );
         }
       });
 
@@ -95,17 +104,23 @@ export class BulkEmailService {
     return result;
   }
 
-
   /**
    * Substitui variáveis no template
    */
-  private replaceVariables(template: string, recipient: { email: string; name?: string; customData?: Record<string, any> }): string {
+  private replaceVariables(
+    template: string,
+    recipient: {
+      email: string;
+      name?: string;
+      customData?: Record<string, any>;
+    },
+  ): string {
     let result = template;
-    
+
     // Variáveis padrão
     result = result.replace(/\{\{email\}\}/g, recipient.email);
     result = result.replace(/\{\{name\}\}/g, recipient.name || 'Cliente');
-    
+
     // Variáveis customizadas
     if (recipient.customData && typeof recipient.customData === 'object') {
       const customData = recipient.customData;
@@ -115,7 +130,7 @@ export class BulkEmailService {
         result = result.replace(regex, value);
       });
     }
-    
+
     return result;
   }
 
@@ -137,4 +152,3 @@ export class BulkEmailService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
-

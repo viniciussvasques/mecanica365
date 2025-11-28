@@ -112,8 +112,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Remover um usuário (soft delete)' })
   @ApiResponse({ status: 204, description: 'Usuário removido com sucesso' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
-  async remove(@TenantId() tenantId: string, @Param('id') id: string): Promise<void> {
+  async remove(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<void> {
     return this.usersService.remove(tenantId, id);
   }
 }
-

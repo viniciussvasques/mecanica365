@@ -107,6 +107,4 @@ describe('JwtStrategy', () => {
       );
     });
   });
-
 });
-

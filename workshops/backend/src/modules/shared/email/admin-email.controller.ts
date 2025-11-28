@@ -174,7 +174,8 @@ export class AdminEmailController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Listar templates disponíveis',
-    description: 'Retorna informações sobre variáveis disponíveis nos templates',
+    description:
+      'Retorna informações sobre variáveis disponíveis nos templates',
   })
   @ApiResponse({
     status: 200,
@@ -192,7 +193,8 @@ export class AdminEmailController {
             },
             custom: {
               type: 'string',
-              description: 'Variáveis customizadas podem ser adicionadas via customData',
+              description:
+                'Variáveis customizadas podem ser adicionadas via customData',
             },
           },
         },
@@ -239,4 +241,3 @@ export class AdminEmailController {
     };
   }
 }
-

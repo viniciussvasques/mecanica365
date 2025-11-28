@@ -26,7 +26,8 @@ export class CreateOnboardingDto {
   email: string;
 
   @ApiProperty({
-    description: 'Tipo de documento (CNPJ para empresa, CPF para pessoa física)',
+    description:
+      'Tipo de documento (CNPJ para empresa, CPF para pessoa física)',
     enum: DocumentType,
     example: DocumentType.CNPJ,
   })
@@ -65,7 +66,8 @@ export class CreateOnboardingDto {
   plan: TenantPlan;
 
   @ApiProperty({
-    description: 'Senha do usuário admin (opcional - se não fornecido, será gerada após pagamento)',
+    description:
+      'Senha do usuário admin (opcional - se não fornecido, será gerada após pagamento)',
     example: 'MinhaSenh@123',
     required: false,
   })
@@ -74,4 +76,3 @@ export class CreateOnboardingDto {
   @IsOptional()
   password?: string;
 }
-

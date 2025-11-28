@@ -33,4 +33,3 @@ export class UpdateTenantDto {
   @IsEnum(TenantPlan, { message: 'Plano inválido' })
   plan?: TenantPlan;
 }
-

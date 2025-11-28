@@ -9,12 +9,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { RawBodyRequest } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Request } from 'express';
 import { OnboardingService } from './onboarding.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
@@ -33,10 +28,13 @@ export class OnboardingController {
   @Post('register')
   @Public()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Registrar novo tenant (status: pending) ou retornar existente' })
+  @ApiOperation({
+    summary: 'Registrar novo tenant (status: pending) ou retornar existente',
+  })
   @ApiResponse({
     status: 201,
-    description: 'Tenant registrado com sucesso (pendente de pagamento) ou tenant pendente existente retornado',
+    description:
+      'Tenant registrado com sucesso (pendente de pagamento) ou tenant pendente existente retornado',
     schema: {
       type: 'object',
       properties: {
@@ -46,7 +44,10 @@ export class OnboardingController {
     },
   })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 409, description: 'Subdomain ou documento já existe (tenant ativo)' })
+  @ApiResponse({
+    status: 409,
+    description: 'Subdomain ou documento já existe (tenant ativo)',
+  })
   async register(@Body() createOnboardingDto: CreateOnboardingDto) {
     return this.onboardingService.register(createOnboardingDto);
   }
@@ -78,7 +79,9 @@ export class OnboardingController {
   @Post('checkout')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Criar sessão de checkout no Stripe para tenant existente' })
+  @ApiOperation({
+    summary: 'Criar sessão de checkout no Stripe para tenant existente',
+  })
   @ApiResponse({
     status: 200,
     description: 'Sessão de checkout criada com sucesso',
@@ -90,7 +93,10 @@ export class OnboardingController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Dados inválidos ou tenant não encontrado' })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos ou tenant não encontrado',
+  })
   async createCheckout(@Body() createCheckoutDto: CreateCheckoutDto) {
     return this.onboardingService.createCheckoutSession(createCheckoutDto);
   }
@@ -133,55 +139,77 @@ export class OnboardingController {
     // Processar eventos do Stripe
     try {
       switch (event.type) {
-        case 'checkout.session.completed':
-          const session = event.data.object as Stripe.Checkout.Session;
+        case 'checkout.session.completed': {
+          const session = event.data.object;
           await this.onboardingService.handleCheckoutCompleted(session);
           break;
+        }
 
-        case 'checkout.session.async_payment_failed':
-          const asyncPaymentSession = event.data.object as Stripe.Checkout.Session;
-          await this.onboardingService.handleAsyncPaymentFailed(asyncPaymentSession);
+        case 'checkout.session.async_payment_failed': {
+          const asyncPaymentSession = event.data.object;
+          await this.onboardingService.handleAsyncPaymentFailed(
+            asyncPaymentSession,
+          );
           break;
+        }
 
-        case 'payment_intent.payment_failed':
-          const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        case 'payment_intent.payment_failed': {
+          const paymentIntent = event.data.object;
           await this.onboardingService.handlePaymentIntentFailed(paymentIntent);
           break;
+        }
 
-        case 'charge.failed':
-          const failedCharge = event.data.object as Stripe.Charge;
+        case 'charge.failed': {
+          const failedCharge = event.data.object;
           await this.onboardingService.handleChargeFailed(failedCharge);
           break;
+        }
 
-        case 'invoice.payment_failed':
-          const failedInvoice = event.data.object as Stripe.Invoice;
-          await this.onboardingService.handleInvoicePaymentFailed(failedInvoice);
+        case 'invoice.payment_failed': {
+          const failedInvoice = event.data.object;
+          await this.onboardingService.handleInvoicePaymentFailed(
+            failedInvoice,
+          );
           break;
+        }
 
-        case 'invoice.payment_succeeded':
-          const succeededInvoice = event.data.object as Stripe.Invoice;
-          await this.onboardingService.handleInvoicePaymentSucceeded(succeededInvoice);
+        case 'invoice.payment_succeeded': {
+          const succeededInvoice = event.data.object;
+          await this.onboardingService.handleInvoicePaymentSucceeded(
+            succeededInvoice,
+          );
           break;
+        }
 
-        case 'invoice.upcoming':
-          const upcomingInvoice = event.data.object as Stripe.Invoice;
+        case 'invoice.upcoming': {
+          const upcomingInvoice = event.data.object;
           await this.onboardingService.handleInvoiceUpcoming(upcomingInvoice);
           break;
+        }
 
-        case 'customer.subscription.deleted':
-          const deletedSubscription = event.data.object as Stripe.Subscription;
-          await this.onboardingService.handleSubscriptionDeleted(deletedSubscription);
+        case 'customer.subscription.deleted': {
+          const deletedSubscription = event.data.object;
+          await this.onboardingService.handleSubscriptionDeleted(
+            deletedSubscription,
+          );
           break;
+        }
 
-        case 'customer.subscription.updated':
-          const updatedSubscription = event.data.object as Stripe.Subscription;
-          await this.onboardingService.handleSubscriptionUpdated(updatedSubscription);
+        case 'customer.subscription.updated': {
+          const updatedSubscription = event.data.object;
+          await this.onboardingService.handleSubscriptionUpdated(
+            updatedSubscription,
+          );
           break;
+        }
 
-        case 'customer.subscription.trial_will_end':
-          const trialEndingSubscription = event.data.object as Stripe.Subscription;
-          await this.onboardingService.handleTrialWillEnd(trialEndingSubscription);
+        case 'customer.subscription.trial_will_end': {
+          const trialEndingSubscription = event.data.object;
+          await this.onboardingService.handleTrialWillEnd(
+            trialEndingSubscription,
+          );
           break;
+        }
 
         default:
           this.logger.log(`Evento não tratado: ${event.type}`);
@@ -198,4 +226,3 @@ export class OnboardingController {
     return { received: true };
   }
 }
-

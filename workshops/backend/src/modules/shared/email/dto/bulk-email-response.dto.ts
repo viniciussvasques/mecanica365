@@ -27,4 +27,3 @@ export class BulkEmailResponseDto {
   @ApiProperty({ description: 'Mensagem de status' })
   message: string;
 }
-

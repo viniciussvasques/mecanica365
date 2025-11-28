@@ -21,9 +21,3 @@ export class HealthController {
     };
   }
 }
-
-
-
-
-
-

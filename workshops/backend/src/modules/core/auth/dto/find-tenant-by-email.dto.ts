@@ -9,4 +9,3 @@ export class FindTenantByEmailDto {
   @IsEmail({}, { message: 'Email inválido' })
   email: string;
 }
-

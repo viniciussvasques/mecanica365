@@ -30,10 +30,10 @@ export class LoginResponseDto {
   };
 
   @ApiProperty({
-    description: 'Indica se é o primeiro login do usuário (usuário criado recentemente)',
+    description:
+      'Indica se é o primeiro login do usuário (usuário criado recentemente)',
     example: true,
     required: false,
   })
   isFirstLogin?: boolean;
 }
-

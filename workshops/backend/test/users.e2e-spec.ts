@@ -158,4 +158,3 @@ describe('UsersController (e2e)', () => {
       .expect(409);
   });
 });
-

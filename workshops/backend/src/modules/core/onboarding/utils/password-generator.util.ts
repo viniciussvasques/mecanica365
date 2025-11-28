@@ -31,5 +31,3 @@ export function generateRandomPassword(length: number = 12): string {
     .sort(() => crypto.randomInt(3) - 1)
     .join('');
 }
-
-

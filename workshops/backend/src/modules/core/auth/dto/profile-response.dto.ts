@@ -50,4 +50,3 @@ export class ProfileResponseDto {
   })
   updatedAt: Date;
 }
-

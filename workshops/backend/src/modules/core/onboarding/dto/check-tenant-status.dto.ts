@@ -3,7 +3,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CheckTenantStatusDto {
   @ApiProperty({
-    description: 'Documento (CPF ou CNPJ) para verificar se existe tenant pendente',
+    description:
+      'Documento (CPF ou CNPJ) para verificar se existe tenant pendente',
     example: '12345678000199',
   })
   @IsString()
@@ -16,4 +17,3 @@ export class CheckTenantStatusDto {
   @IsString()
   email: string;
 }
-

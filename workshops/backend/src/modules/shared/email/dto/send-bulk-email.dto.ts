@@ -1,4 +1,13 @@
-import { IsString, IsArray, IsEmail, IsOptional, ValidateNested, IsObject, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  IsEmail,
+  IsOptional,
+  ValidateNested,
+  IsObject,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -53,7 +62,8 @@ export class SendBulkEmailDto {
   subject: string;
 
   @ApiProperty({
-    description: 'Conteúdo HTML do email. Use {{name}}, {{email}} ou variáveis customizadas',
+    description:
+      'Conteúdo HTML do email. Use {{name}}, {{email}} ou variáveis customizadas',
     example: '<h1>Olá {{name}}</h1><p>Seu email é {{email}}</p>',
   })
   @IsString()
@@ -85,4 +95,3 @@ export class SendBulkEmailDto {
   @IsEmail({}, { message: 'Email de resposta inválido' })
   replyTo?: string;
 }
-

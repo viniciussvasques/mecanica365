@@ -1,5 +1,10 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
 import { TenantGuard } from '@common/guards/tenant.guard';
 import { TenantId } from '@common/decorators/tenant.decorator';
@@ -13,7 +18,9 @@ export class FeatureFlagsController {
   constructor(private readonly featureFlagsService: FeatureFlagsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar todas as features disponíveis para o tenant' })
+  @ApiOperation({
+    summary: 'Listar todas as features disponíveis para o tenant',
+  })
   @ApiResponse({
     status: 200,
     description: 'Features disponíveis',
@@ -39,4 +46,3 @@ export class FeatureFlagsController {
     };
   }
 }
-

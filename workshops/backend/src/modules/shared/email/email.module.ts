@@ -11,5 +11,3 @@ import { AdminEmailController } from './admin-email.controller';
   exports: [EmailService, EmailTemplatesService, BulkEmailService],
 })
 export class EmailModule {}
-
-

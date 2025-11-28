@@ -22,4 +22,3 @@ export default () => ({
     apiKey: process.env.VEHICLE_HISTORY_API_KEY,
   },
 });
-

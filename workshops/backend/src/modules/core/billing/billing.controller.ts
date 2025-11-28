@@ -168,5 +168,3 @@ export class BillingController {
     return this.billingService.reactivate(tenantId);
   }
 }
-
-

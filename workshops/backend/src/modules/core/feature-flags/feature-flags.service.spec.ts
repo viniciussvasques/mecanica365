@@ -158,10 +158,7 @@ describe('FeatureFlagsService', () => {
         subscription: { plan: 'workshops_starter' },
       });
 
-      const result = await service.checkFeatureAccess(
-        tenantId,
-        'diagnostics',
-      );
+      const result = await service.checkFeatureAccess(tenantId, 'diagnostics');
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('não está habilitada');
@@ -208,4 +205,3 @@ describe('FeatureFlagsService', () => {
     });
   });
 });
-

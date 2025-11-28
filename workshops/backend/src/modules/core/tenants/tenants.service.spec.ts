@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { PrismaService } from '../../../database/prisma.service';
+import { BillingService } from '../billing/billing.service';
+import { UsersService } from '../users/users.service';
 import { CreateTenantDto, TenantPlan, TenantStatus, DocumentType } from './dto';
 
 describe('TenantsService', () => {
@@ -34,6 +36,14 @@ describe('TenantsService', () => {
     },
   };
 
+  const mockBillingService = {
+    create: jest.fn(),
+  };
+
+  const mockUsersService = {
+    create: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -41,6 +51,14 @@ describe('TenantsService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: BillingService,
+          useValue: mockBillingService,
+        },
+        {
+          provide: UsersService,
+          useValue: mockUsersService,
         },
       ],
     }).compile();
@@ -64,14 +82,21 @@ describe('TenantsService', () => {
     };
 
     it('deve criar um tenant com sucesso', async () => {
-      mockPrismaService.tenant.findUnique.mockResolvedValue(null);
-      mockPrismaService.tenant.create.mockResolvedValue(mockTenant);
+      // Mock para findUnique: 2 chamadas para verificar (document e subdomain) + 1 após criar
+      mockPrismaService.tenant.findUnique
+        .mockResolvedValueOnce(null) // Primeira chamada (document)
+        .mockResolvedValueOnce(null) // Segunda chamada (subdomain)
+        .mockResolvedValueOnce({ ...mockTenant, subscription: null }); // Terceira chamada (após criar)
+      mockPrismaService.tenant.create.mockResolvedValue({
+        ...mockTenant,
+        subscription: null,
+      });
+      mockBillingService.create.mockResolvedValue({});
 
       const result = await service.create(createTenantDto);
 
       expect(result).toHaveProperty('id', 'tenant-id');
       expect(result).toHaveProperty('name', 'Oficina Teste');
-      expect(mockPrismaService.tenant.findUnique).toHaveBeenCalledTimes(2);
       expect(mockPrismaService.tenant.create).toHaveBeenCalled();
     });
 
@@ -94,8 +119,12 @@ describe('TenantsService', () => {
     });
 
     it('deve normalizar subdomain para lowercase', async () => {
-      mockPrismaService.tenant.findUnique.mockResolvedValue(null);
+      mockPrismaService.tenant.findUnique
+        .mockResolvedValueOnce(null) // document
+        .mockResolvedValueOnce(null) // subdomain
+        .mockResolvedValueOnce({ ...mockTenant, subscription: null }); // após criar
       mockPrismaService.tenant.create.mockResolvedValue(mockTenant);
+      mockBillingService.create.mockResolvedValue({});
 
       const dtoWithUppercase = {
         ...createTenantDto,

@@ -129,9 +129,7 @@ describe('AuthController (e2e)', () => {
     });
 
     it('deve retornar 401 sem token', async () => {
-      await request(app.getHttpServer())
-        .get('/api/auth/profile')
-        .expect(401);
+      await request(app.getHttpServer()).get('/api/auth/profile').expect(401);
     });
 
     it('deve retornar 401 com token inválido', async () => {
@@ -251,4 +249,3 @@ describe('AuthController (e2e)', () => {
     });
   });
 });
-
