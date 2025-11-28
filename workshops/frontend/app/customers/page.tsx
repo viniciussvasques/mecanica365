@@ -39,6 +39,24 @@ export default function CustomersPage() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Verificar se token e subdomain estão disponíveis
+      const token = localStorage.getItem('token');
+      const subdomain = localStorage.getItem('subdomain');
+      
+      if (!token) {
+        setError('Token de autenticação não encontrado. Faça login novamente.');
+        router.push('/login');
+        return;
+      }
+      
+      if (!subdomain) {
+        setError('Subdomain não encontrado. Faça login novamente.');
+        router.push('/login');
+        return;
+      }
+      
+      console.log('[CustomersPage] Carregando clientes com subdomain:', subdomain);
       const response = await customersApi.findAll(filters);
       setCustomers(response.data);
       setPagination({
@@ -48,6 +66,7 @@ export default function CustomersPage() {
         totalPages: response.totalPages,
       });
     } catch (err: unknown) {
+      console.error('[CustomersPage] Erro ao carregar clientes:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar clientes';
       setError(errorMessage);
       console.error('Erro ao carregar clientes:', err);

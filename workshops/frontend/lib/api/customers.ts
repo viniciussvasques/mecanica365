@@ -20,6 +20,9 @@ api.interceptors.request.use((config) => {
   const subdomain = localStorage.getItem('subdomain');
   if (subdomain) {
     config.headers['X-Tenant-Subdomain'] = subdomain;
+    console.log('[API] Enviando requisição com subdomain:', subdomain, 'para:', config.url);
+  } else {
+    console.warn('[API] Subdomain não encontrado no localStorage');
   }
   
   return config;
