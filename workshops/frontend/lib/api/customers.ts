@@ -20,7 +20,6 @@ api.interceptors.request.use((config) => {
   const subdomain = localStorage.getItem('subdomain');
   if (subdomain) {
     config.headers['X-Tenant-Subdomain'] = subdomain;
-    config.headers.Host = `${subdomain}.localhost:3001`;
   }
   
   return config;
