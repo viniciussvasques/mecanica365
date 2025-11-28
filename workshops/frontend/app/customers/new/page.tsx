@@ -106,21 +106,21 @@ export default function NewCustomerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F1115] text-[#D0D6DE] p-6">
+    <div className="min-h-screen bg-[#0F1115] text-[#D0D6DE] p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <Link href="/customers" className="text-[#00E0B8] hover:text-[#3ABFF8] mb-4 inline-block">
+        <div className="mb-6 sm:mb-8">
+          <Link href="/customers" className="text-[#00E0B8] hover:text-[#3ABFF8] mb-4 inline-block text-sm sm:text-base">
             ← Voltar para clientes
           </Link>
-          <h1 className="text-3xl font-bold text-[#D0D6DE]">Novo Cliente</h1>
-          <p className="text-[#7E8691] mt-2">Cadastre um novo cliente</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#D0D6DE]">Novo Cliente</h1>
+          <p className="text-[#7E8691] mt-2 text-sm sm:text-base">Cadastre um novo cliente</p>
         </div>
 
         {/* Formulário */}
-        <form onSubmit={handleSubmit} className="bg-[#1A1E23] border border-[#2A3038] rounded-lg p-6">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="bg-[#1A1E23] border border-[#2A3038] rounded-lg p-4 sm:p-6">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <Input
                 label="Nome *"
                 placeholder="Nome completo"
@@ -159,7 +159,7 @@ export default function NewCustomerPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <Input
                 label="Email"
                 type="email"
@@ -205,13 +205,13 @@ export default function NewCustomerPage() {
           </div>
 
           {/* Botões */}
-          <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-[#2A3038]">
-            <Link href="/customers">
-              <Button variant="secondary" type="button">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#2A3038]">
+            <Link href="/customers" className="w-full sm:w-auto">
+              <Button variant="secondary" type="button" className="w-full sm:w-auto">
                 Cancelar
               </Button>
             </Link>
-            <Button variant="primary" type="submit" isLoading={loading}>
+            <Button variant="primary" type="submit" isLoading={loading} className="w-full sm:w-auto">
               Criar Cliente
             </Button>
           </div>

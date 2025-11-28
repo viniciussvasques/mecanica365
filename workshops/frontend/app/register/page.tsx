@@ -199,11 +199,11 @@ export default function RegisterPage() {
         />
 
         {/* Form Card */}
-        <div className="bg-[#1A1E23] border border-[#2A3038] rounded-2xl shadow-xl p-8 md:p-10">
+        <div className="bg-[#1A1E23] border border-[#2A3038] rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 lg:p-10">
           {step === 1 ? (
-            <form onSubmit={handleRegister} className="space-y-6">
+            <form onSubmit={handleRegister} className="space-y-4 sm:space-y-6">
               {/* Dados da Oficina */}
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <Input
                   id="name"
                   label="Nome da Oficina"

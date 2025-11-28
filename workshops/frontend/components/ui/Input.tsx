@@ -18,12 +18,12 @@ export const Input: React.FC<InputProps> = ({
       <label htmlFor={props.id} className="block text-sm font-medium text-[#D0D6DE] mb-2">
         {label}
       </label>
-      <div className="relative">
+      <div className="relative w-full">
         <input
           {...props}
           className={`
-            w-full px-4 py-3 border rounded-lg 
-            text-[#F0F4F8] 
+            w-full min-w-0 px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg 
+            text-[#F0F4F8] text-sm sm:text-base
             placeholder:text-[#7E8691] placeholder:opacity-60 placeholder:font-normal
             bg-[#1A1E23] border-[#3A4048]
             focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50 focus:border-[#00E0B8] focus:bg-[#1F2329]
@@ -38,6 +38,7 @@ export const Input: React.FC<InputProps> = ({
             ...(props.style || {}),
             WebkitTextFillColor: error ? '#FF4E3D' : '#F0F4F8',
             color: error ? '#FF4E3D' : '#F0F4F8',
+            boxSizing: 'border-box',
           }}
         />
         {!error && (

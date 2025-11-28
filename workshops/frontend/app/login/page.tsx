@@ -116,25 +116,25 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F1115] carbon-texture flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0F1115] carbon-texture flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className={`
-        max-w-md w-full space-y-8
+        max-w-md w-full space-y-6 sm:space-y-8
         transform transition-all duration-700 ease-out
         ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
       `}>
         <div className="text-center">
           <Link href="/" className="inline-block mb-4">
             <div className="flex items-center justify-center space-x-2 mb-2">
-              <GearIcon className="text-[#00E0B8]" size={40} />
-              <h1 className="text-5xl font-bold neon-turquoise">
+              <GearIcon className="text-[#00E0B8]" size={32} />
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold neon-turquoise">
                 Mecânica365
               </h1>
             </div>
           </Link>
-          <h2 className="mt-6 text-3xl font-extrabold text-[#D0D6DE] animate-fade-in-delay">
+          <h2 className="mt-4 sm:mt-6 text-2xl sm:text-3xl font-extrabold text-[#D0D6DE] animate-fade-in-delay">
             Entre na sua conta
           </h2>
-          <p className="mt-2 text-sm text-[#7E8691] animate-fade-in-delay-2">
+          <p className="mt-2 text-xs sm:text-sm text-[#7E8691] animate-fade-in-delay-2">
             Ou{' '}
             <Link href="/register" className="font-semibold text-[#00E0B8] hover:text-[#3ABFF8] transition-colors underline-offset-2 hover:underline">
               crie uma nova conta
@@ -142,7 +142,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="bg-[#1A1E23] border border-[#2A3038] rounded-2xl p-8 shadow-2xl animate-fade-in-delay-3 relative overflow-hidden">
+        <div className="bg-[#1A1E23] border border-[#2A3038] rounded-2xl p-6 sm:p-8 shadow-2xl animate-fade-in-delay-3 relative overflow-hidden">
           <div className="hud-line"></div>
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
@@ -178,6 +178,7 @@ export default function LoginPage() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="seu@email.com"
                 helperText={findingTenant ? 'Buscando sua conta...' : subdomain ? `Conta: ${subdomain}.mecanica365.app` : undefined}
+                className="w-full"
               />
 
               <Input
@@ -189,6 +190,7 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="••••••••"
+                className="w-full"
               />
             </div>
 
