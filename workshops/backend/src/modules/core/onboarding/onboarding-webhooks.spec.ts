@@ -110,7 +110,7 @@ describe('OnboardingService - Webhook Handlers', () => {
 
     // Mock Stripe
     process.env.STRIPE_SECRET_KEY = 'sk_test_mock';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     (service as any).stripe = {
       checkout: {
         sessions: {
@@ -125,7 +125,7 @@ describe('OnboardingService - Webhook Handlers', () => {
   });
 
   describe('handleChargeFailed', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const mockCharge: Partial<Stripe.Charge> = {
       id: 'ch_test_123',
       customer: 'cus_test_123',
@@ -139,8 +139,9 @@ describe('OnboardingService - Webhook Handlers', () => {
     } as any;
 
     it('deve encontrar tenant via checkout session e enviar email', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
       const mockService = service as any;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       mockService.stripe.checkout.sessions.list.mockResolvedValue({
         data: [
           {
@@ -162,8 +163,9 @@ describe('OnboardingService - Webhook Handlers', () => {
     });
 
     it('deve usar email do billing_details quando disponível', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
       const mockService = service as any;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       mockService.stripe.checkout.sessions.list.mockResolvedValue({
         data: [
           {
@@ -190,7 +192,7 @@ describe('OnboardingService - Webhook Handlers', () => {
   });
 
   describe('handleInvoicePaymentFailed', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const mockInvoice: Partial<Stripe.Invoice> = {
       id: 'in_test_123',
       customer: 'cus_test_123',
@@ -216,7 +218,7 @@ describe('OnboardingService - Webhook Handlers', () => {
   });
 
   describe('handleInvoicePaymentSucceeded', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const mockInvoice: Partial<Stripe.Invoice> = {
       id: 'in_test_123',
       customer: 'cus_test_123',
