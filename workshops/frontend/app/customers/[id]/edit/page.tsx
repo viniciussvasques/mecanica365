@@ -246,13 +246,13 @@ export default function EditCustomerPage() {
           </div>
 
           {/* Botões */}
-          <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-[#2A3038]">
-            <Link href={`/customers/${id}`}>
-              <Button variant="secondary" type="button">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#2A3038]">
+            <Link href={`/customers/${id}`} className="w-full sm:w-auto">
+              <Button variant="secondary" type="button" className="w-full sm:w-auto">
                 Cancelar
               </Button>
             </Link>
-            <Button variant="primary" type="submit" isLoading={loading}>
+            <Button variant="primary" type="submit" isLoading={loading} className="w-full sm:w-auto">
               Salvar Alterações
             </Button>
           </div>
