@@ -207,7 +207,8 @@ describe('OnboardingService', () => {
         billingService,
         usersService,
         emailService,
-        mockConfigService as unknown,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mockConfigService as any as ConfigService,
       );
 
       (prismaService.tenant.findUnique as jest.Mock).mockResolvedValue(

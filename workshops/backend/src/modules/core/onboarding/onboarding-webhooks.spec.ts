@@ -110,7 +110,8 @@ describe('OnboardingService - Webhook Handlers', () => {
 
     // Mock Stripe
     process.env.STRIPE_SECRET_KEY = 'sk_test_mock';
-    (service as unknown).stripe = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (service as any).stripe = {
       checkout: {
         sessions: {
           list: jest.fn(),
@@ -124,6 +125,7 @@ describe('OnboardingService - Webhook Handlers', () => {
   });
 
   describe('handleChargeFailed', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockCharge: Partial<Stripe.Charge> = {
       id: 'ch_test_123',
       customer: 'cus_test_123',
@@ -133,12 +135,12 @@ describe('OnboardingService - Webhook Handlers', () => {
         address: null,
         phone: null,
       },
-    } as unknown;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
 
     it('deve encontrar tenant via checkout session e enviar email', async () => {
-      const mockService = service as {
-        stripe: { checkout: { sessions: { list: jest.Mock } } };
-      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockService = service as any;
       mockService.stripe.checkout.sessions.list.mockResolvedValue({
         data: [
           {
@@ -160,9 +162,8 @@ describe('OnboardingService - Webhook Handlers', () => {
     });
 
     it('deve usar email do billing_details quando disponível', async () => {
-      const mockService = service as {
-        stripe: { checkout: { sessions: { list: jest.Mock } } };
-      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockService = service as any;
       mockService.stripe.checkout.sessions.list.mockResolvedValue({
         data: [
           {
@@ -189,12 +190,14 @@ describe('OnboardingService - Webhook Handlers', () => {
   });
 
   describe('handleInvoicePaymentFailed', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockInvoice: Partial<Stripe.Invoice> = {
       id: 'in_test_123',
       customer: 'cus_test_123',
       amount_due: 9900,
       currency: 'brl',
-    } as unknown;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
 
     it('deve encontrar tenant e enviar email de pagamento falhado', async () => {
       (prismaService.subscription.findFirst as jest.Mock).mockResolvedValue({
@@ -213,13 +216,15 @@ describe('OnboardingService - Webhook Handlers', () => {
   });
 
   describe('handleInvoicePaymentSucceeded', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockInvoice: Partial<Stripe.Invoice> = {
       id: 'in_test_123',
       customer: 'cus_test_123',
       amount_paid: 9900,
       currency: 'brl',
       invoice_pdf: 'https://invoice.pdf',
-    } as unknown;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
 
     it('deve encontrar tenant e enviar email de pagamento bem-sucedido', async () => {
       (prismaService.subscription.findFirst as jest.Mock).mockResolvedValue({

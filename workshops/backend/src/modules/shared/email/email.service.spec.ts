@@ -58,8 +58,8 @@ describe('EmailService', () => {
 
     it('deve logar email se SMTP não estiver configurado', async () => {
       // Limpar transporter para simular não configurado
-
-      (service as unknown).transporter = null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).transporter = null;
       const loggerSpy = jest.spyOn(service['logger'], 'log');
 
       await service.sendWelcomeEmail(emailData);
