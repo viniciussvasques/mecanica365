@@ -512,8 +512,10 @@ export class VehiclesService {
             include: {
               serviceOrders: {
                 where: {
-                  vehicleVin: vehicle?.vin || undefined,
-                  vehiclePlaca: vehicle?.placa || undefined,
+                  OR: [
+                    { vehicleVin: { not: null } },
+                    { vehiclePlaca: { not: null } },
+                  ],
                 },
                 take: 1,
               },
