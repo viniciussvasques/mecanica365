@@ -6,8 +6,6 @@ import { PrismaService } from '../../../../database/prisma.service';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
-  let prismaService: PrismaService;
-  let configService: ConfigService;
 
   const mockPrismaService = {
     user: {
@@ -40,8 +38,6 @@ describe('JwtStrategy', () => {
     }).compile();
 
     strategy = module.get<JwtStrategy>(JwtStrategy);
-    prismaService = module.get<PrismaService>(PrismaService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   afterEach(() => {

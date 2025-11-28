@@ -5,7 +5,10 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { FeatureFlagsService, FeatureName } from '../feature-flags.service';
+import {
+  FeatureFlagsService,
+  type FeatureName,
+} from '../feature-flags.service';
 import { REQUIRE_FEATURE_KEY } from '../decorators/require-feature.decorator';
 import { RequestWithTenant } from '@common/interfaces/request-with-tenant.interface';
 

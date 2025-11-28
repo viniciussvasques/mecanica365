@@ -9,7 +9,6 @@ jest.mock('nodemailer');
 
 describe('EmailService', () => {
   let service: EmailService;
-  let configService: jest.Mocked<ConfigService>;
   let mockTransporter: any;
 
   beforeEach(async () => {
@@ -38,7 +37,6 @@ describe('EmailService', () => {
     }).compile();
 
     service = module.get<EmailService>(EmailService);
-    configService = module.get(ConfigService);
   });
 
   afterEach(() => {

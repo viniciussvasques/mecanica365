@@ -2,7 +2,6 @@ import {
   Injectable,
   BadRequestException,
   Logger,
-  ConflictException,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -15,13 +14,12 @@ import { EmailService } from '../../shared/email/email.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreateOnboardingDto } from './dto/create-onboarding.dto';
 import { generateRandomPassword } from './utils/password-generator.util';
-import * as bcrypt from 'bcrypt';
 import { UserRole } from '../users/dto/create-user.dto';
 import {
   BillingCycle,
   SubscriptionStatus,
 } from '../billing/dto/subscription-response.dto';
-import { TenantStatus, TenantPlan } from '../tenants/dto/create-tenant.dto';
+import { TenantStatus } from '../tenants/dto/create-tenant.dto';
 
 @Injectable()
 export class OnboardingService {
@@ -53,7 +51,8 @@ export class OnboardingService {
    */
   async checkPendingTenant(
     document: string,
-    email: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _email: string, // Parâmetro mantido para compatibilidade, mas não usado diretamente
   ): Promise<{ tenantId: string; subdomain: string; exists: boolean } | null> {
     // Buscar tenant pendente pelo documento (o email será verificado no adminEmail via users depois)
     const tenant = await this.prisma.tenant.findFirst({
@@ -283,9 +282,7 @@ export class OnboardingService {
       // 2. Criar/Atualizar Subscription
       try {
         // Tentar buscar subscription existente
-        const existingSubscription = await this.billingService.findByTenantId(
-          tenant.id,
-        );
+        await this.billingService.findByTenantId(tenant.id);
 
         // Se existe, atualizar
         await this.billingService.update(tenant.id, {
@@ -402,7 +399,7 @@ export class OnboardingService {
     try {
       // Primeiro, tentar buscar por subscription
       if (customerId || subscriptionId) {
-        const subscription = await this.prisma.subscription.findFirst({
+        const dbSubscription = await this.prisma.subscription.findFirst({
           where: {
             OR: [
               customerId ? { stripeCustomerId: customerId } : {},
@@ -421,11 +418,11 @@ export class OnboardingService {
           },
         });
 
-        if (subscription) {
+        if (dbSubscription) {
           return {
-            tenant: subscription.tenant,
-            subscription,
-            adminUser: subscription.tenant.users[0] || null,
+            tenant: dbSubscription.tenant,
+            subscription: dbSubscription,
+            adminUser: dbSubscription.tenant.users[0] || null,
           };
         }
       }
@@ -511,9 +508,10 @@ export class OnboardingService {
         subdomain: tenant.subdomain,
         amount: session.amount_total || 0,
         currency: session.currency || 'brl',
-        invoiceUrl: session.invoice?.toString()
-          ? `https://dashboard.stripe.com/invoices/${session.invoice}`
-          : undefined,
+        invoiceUrl:
+          session.invoice && typeof session.invoice === 'string'
+            ? `https://dashboard.stripe.com/invoices/${session.invoice}`
+            : undefined,
         paymentMethod: 'Cartão de Crédito',
         failureReason:
           'O pagamento não pôde ser processado. Verifique os dados do seu cartão.',
@@ -887,7 +885,7 @@ export class OnboardingService {
         return;
       }
 
-      const { tenant, subscription, adminUser } = result;
+      const { tenant, adminUser } = result;
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const retryUrl = `${frontendUrl}/billing/update-payment?tenantId=${tenant.id}`;
 
@@ -956,7 +954,7 @@ export class OnboardingService {
         return;
       }
 
-      const { tenant, subscription, adminUser } = result;
+      const { tenant, adminUser } = result;
 
       // Atualizar status da subscription para active
       await this.billingService.update(tenant.id, {
@@ -1140,7 +1138,6 @@ export class OnboardingService {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
       // Buscar plano atualizado do Stripe
-      const planId = subscription.items.data[0]?.price?.id;
       const planName =
         subscription.items.data[0]?.price?.nickname || dbSubscription.plan;
       const billingCycle =
