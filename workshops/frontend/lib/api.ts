@@ -15,6 +15,7 @@ const getApiUrl = (): string => {
 };
 
 const api = axios.create({
+  baseURL: getApiUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -22,6 +23,7 @@ const api = axios.create({
 
 // Interceptor para configurar URL dinamicamente
 api.interceptors.request.use((config) => {
+  // Atualizar baseURL dinamicamente
   config.baseURL = getApiUrl();
   
   const token = localStorage.getItem('token');
@@ -86,7 +88,9 @@ export const onboardingApi = {
 export const authApi = {
   findTenantByEmail: async (email: string) => {
     try {
-      const response = await api.post('/auth/find-tenant', { email });
+      // Para find-tenant, usar URL sem subdomain (rota pública)
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await axios.post(`${baseUrl}/api/auth/find-tenant`, { email });
       return response.data;
     } catch (error: any) {
       // Se não encontrar tenant (404) ou erro de rede, retornar null
@@ -100,7 +104,13 @@ export const authApi = {
   },
 
   login: async (subdomain: string, data: { email: string; password: string }) => {
-    const response = await api.post('/auth/login', data, {
+    // Para login, usar URL com subdomain
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl = subdomain && baseUrl.includes('localhost') 
+      ? `http://${subdomain}.localhost:3001/api`
+      : `${baseUrl}/api`;
+    
+    const response = await axios.post(`${apiUrl}/auth/login`, data, {
       headers: {
         'X-Tenant-Subdomain': subdomain,
       },

@@ -9,9 +9,37 @@ async function bootstrap() {
     rawBody: true, // Habilitar rawBody para webhooks do Stripe
   });
 
-  // CORS
+  // CORS - Aceitar localhost e subdomains de localhost
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://localhost:3000',
+    /^http:\/\/.*\.localhost:3000$/, // Aceitar qualquer subdomain.localhost:3000
+  ];
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Permitir requisições sem origin (ex: Postman, mobile apps)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Verificar se a origin está na lista de permitidas
+      const isAllowed = allowedOrigins.some((allowedOrigin) => {
+        if (typeof allowedOrigin === 'string') {
+          return origin === allowedOrigin;
+        }
+        if (allowedOrigin instanceof RegExp) {
+          return allowedOrigin.test(origin);
+        }
+        return false;
+      });
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   });
 
