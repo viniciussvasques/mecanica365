@@ -30,7 +30,7 @@ body {
   background-attachment: fixed;
 }
 
-/* Garantir que inputs tenham texto claro */
+/* Garantir que inputs tenham texto claro e bom contraste */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -38,9 +38,10 @@ input[type="number"],
 input[type="tel"],
 select,
 textarea {
-  color: var(--color-text-light) !important;
-  background-color: var(--color-steel) !important;
-  border-color: var(--color-steel) !important;
+  color: #F0F4F8 !important;
+  background-color: var(--color-carbon) !important;
+  border-color: #3A4048 !important;
+  -webkit-text-fill-color: #F0F4F8 !important;
 }
 
 input[type="text"]::placeholder,
@@ -70,9 +71,19 @@ select option {
   background-color: var(--color-carbon) !important;
 }
 
-/* Remover qualquer estilo que force texto branco */
-input, select, textarea {
-  -webkit-text-fill-color: var(--color-text-light) !important;
+/* Garantir texto claro em todos os inputs */
+input:not([type="submit"]):not([type="button"]), 
+select, 
+textarea {
+  -webkit-text-fill-color: #F0F4F8 !important;
+  color: #F0F4F8 !important;
+}
+
+/* Inputs com valor (não placeholder) devem ter texto ainda mais claro */
+input:not(:placeholder-shown),
+textarea:not(:placeholder-shown) {
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
 }
 
 /* Animações globais */

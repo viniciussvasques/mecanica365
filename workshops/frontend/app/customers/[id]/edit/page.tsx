@@ -236,7 +236,11 @@ export default function EditCustomerPage() {
                 placeholder="Observações sobre o cliente..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-4 py-3 border rounded-lg text-[#D0D6DE] placeholder:text-[#7E8691] bg-[#2A3038] border-[#2A3038] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50 focus:border-[#00E0B8] transition-all duration-200"
+                className="w-full px-4 py-3 border rounded-lg text-[#F0F4F8] placeholder:text-[#7E8691] placeholder:opacity-60 bg-[#1A1E23] border-[#3A4048] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50 focus:border-[#00E0B8] focus:bg-[#1F2329] transition-all duration-200"
+                style={{
+                  WebkitTextFillColor: '#F0F4F8',
+                  color: '#F0F4F8',
+                }}
               />
             </div>
           </div>

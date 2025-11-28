@@ -22,22 +22,23 @@ export const Select: React.FC<SelectProps> = ({
         {...props}
         className={`
           w-full px-4 py-3 border rounded-lg 
-          text-[#D0D6DE] bg-[#2A3038] border-[#2A3038]
-          focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50 focus:border-[#00E0B8]
+          text-[#F0F4F8] bg-[#1A1E23] border-[#3A4048]
+          focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50 focus:border-[#00E0B8] focus:bg-[#1F2329]
           transition-all duration-200
           ${error 
             ? 'border-[#FF4E3D] bg-[#FF4E3D]/10 text-[#FF4E3D]' 
-            : 'hover:border-[#00E0B8]/30 hover:bg-[#2A3038]/80'
+            : 'hover:border-[#00E0B8]/40 hover:bg-[#1F2329]'
           }
           ${className}
         `}
         style={{
           ...(props.style || {}),
-          WebkitTextFillColor: error ? '#FF4E3D' : '#D0D6DE',
+          WebkitTextFillColor: error ? '#FF4E3D' : '#F0F4F8',
+          color: error ? '#FF4E3D' : '#F0F4F8',
         }}
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value} className="bg-[#2A3038] text-[#D0D6DE]">
+          <option key={option.value} value={option.value} className="bg-[#1A1E23] text-[#F0F4F8]">
             {option.label}
           </option>
         ))}
