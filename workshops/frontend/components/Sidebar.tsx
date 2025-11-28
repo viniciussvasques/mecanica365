@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -36,9 +36,23 @@ const menuItems: MenuItem[] = [
   { label: 'Notificações', href: '/notifications', icon: BellIcon },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onToggle?: (collapsed: boolean) => void;
+}
+
+export function Sidebar({ onToggle }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    // Carregar estado do sidebar do localStorage
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState !== null) {
+      const isCollapsed = savedState === 'true';
+      setCollapsed(isCollapsed);
+      onToggle?.(isCollapsed);
+    }
+  }, [onToggle]);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -72,7 +86,12 @@ export function Sidebar() {
           </div>
         )}
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => {
+            const newState = !collapsed;
+            setCollapsed(newState);
+            localStorage.setItem('sidebarCollapsed', String(newState));
+            onToggle?.(newState);
+          }}
           className="p-2 rounded-lg hover:bg-[#2A3038] text-[#7E8691] hover:text-[#D0D6DE] transition-colors"
           aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
         >

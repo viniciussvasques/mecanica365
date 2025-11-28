@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 
@@ -13,6 +14,20 @@ const publicRoutes = ['/login', '/register', '/onboarding', '/'];
 export function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname();
   const isPublicRoute = publicRoutes.includes(pathname);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    // Verificar estado do sidebar no localStorage
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState !== null) {
+      setSidebarCollapsed(savedState === 'true');
+    }
+  }, []);
+
+  const handleSidebarToggle = (collapsed: boolean) => {
+    setSidebarCollapsed(collapsed);
+    localStorage.setItem('sidebarCollapsed', String(collapsed));
+  };
 
   if (isPublicRoute) {
     return <>{children}</>;
@@ -20,8 +35,12 @@ export function ClientLayout({ children }: ClientLayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-[#0F1115]">
-      <Sidebar />
-      <main className="flex-1 ml-64 transition-all duration-300 overflow-x-hidden min-h-screen">
+      <Sidebar onToggle={handleSidebarToggle} />
+      <main
+        className={`flex-1 transition-all duration-300 overflow-x-hidden min-h-screen ${
+          sidebarCollapsed ? 'ml-20' : 'ml-64'
+        }`}
+      >
         {children}
       </main>
     </div>
