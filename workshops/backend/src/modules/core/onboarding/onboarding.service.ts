@@ -314,7 +314,8 @@ export class OnboardingService {
           status: SubscriptionStatus.ACTIVE,
         });
         this.logger.log(`Subscription atualizada para tenant ${tenant.id}`);
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error as StripeError;
         // Se não existe (NotFoundException), criar nova
         if (error instanceof NotFoundException) {
           await this.billingService.create({
@@ -548,10 +549,11 @@ export class OnboardingService {
       this.logger.log(
         `Email de pagamento falhado enviado para: ${adminUser.email}`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as StripeError;
       this.logger.error(
-        `Erro ao processar async_payment_failed: ${error.message}`,
-        error.stack,
+        `Erro ao processar async_payment_failed: ${err.message}`,
+        err.stack,
       );
     }
   }
@@ -868,10 +870,11 @@ export class OnboardingService {
       this.logger.log(
         `Email de payment intent falhado enviado para: ${adminUser.email}`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as StripeError;
       this.logger.error(
-        `Erro ao processar payment_intent.payment_failed: ${error.message}`,
-        error.stack,
+        `Erro ao processar payment_intent.payment_failed: ${err.message}`,
+        err.stack,
       );
     }
   }
@@ -938,10 +941,11 @@ export class OnboardingService {
       this.logger.log(
         `Email de invoice payment failed enviado para: ${adminUser.email}`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as StripeError;
       this.logger.error(
-        `Erro ao processar invoice.payment_failed: ${error.message}`,
-        error.stack,
+        `Erro ao processar invoice.payment_failed: ${err.message}`,
+        err.stack,
       );
     }
   }
@@ -1007,10 +1011,11 @@ export class OnboardingService {
       this.logger.log(
         `Email de invoice payment succeeded enviado para: ${adminUser.email}`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as StripeError;
       this.logger.error(
-        `Erro ao processar invoice.payment_succeeded: ${error.message}`,
-        error.stack,
+        `Erro ao processar invoice.payment_succeeded: ${err.message}`,
+        err.stack,
       );
     }
   }
@@ -1067,10 +1072,11 @@ export class OnboardingService {
       this.logger.log(
         `Email de invoice upcoming enviado para: ${adminUser.email}`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as StripeError;
       this.logger.error(
-        `Erro ao processar invoice.upcoming: ${error.message}`,
-        error.stack,
+        `Erro ao processar invoice.upcoming: ${err.message}`,
+        err.stack,
       );
     }
   }
@@ -1133,10 +1139,11 @@ export class OnboardingService {
       this.logger.log(
         `Email de subscription deleted enviado para: ${adminUser.email}`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as StripeError;
       this.logger.error(
-        `Erro ao processar customer.subscription.deleted: ${error.message}`,
-        error.stack,
+        `Erro ao processar customer.subscription.deleted: ${err.message}`,
+        err.stack,
       );
     }
   }
@@ -1202,10 +1209,11 @@ export class OnboardingService {
       this.logger.log(
         `Email de subscription updated enviado para: ${adminUser.email}`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as StripeError;
       this.logger.error(
-        `Erro ao processar customer.subscription.updated: ${error.message}`,
-        error.stack,
+        `Erro ao processar customer.subscription.updated: ${err.message}`,
+        err.stack,
       );
     }
   }
@@ -1250,10 +1258,11 @@ export class OnboardingService {
       });
 
       this.logger.log(`Email de trial ending enviado para: ${adminUser.email}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as StripeError;
       this.logger.error(
-        `Erro ao processar customer.subscription.trial_will_end: ${error.message}`,
-        error.stack,
+        `Erro ao processar customer.subscription.trial_will_end: ${err.message}`,
+        err.stack,
       );
     }
   }
