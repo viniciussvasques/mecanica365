@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { PrismaService } from '@database/prisma.service';
-import { CreateCustomerDto, UpdateCustomerDto } from './dto';
+import { CreateCustomerDto, UpdateCustomerDto, DocumentType } from './dto';
 
 describe('CustomersService', () => {
   let service: CustomersService;
@@ -18,7 +18,9 @@ describe('CustomersService', () => {
     name: 'João Silva',
     email: 'joao.silva@email.com',
     phone: '(11) 98765-4321',
+    documentType: 'cpf',
     cpf: '11144477735', // CPF válido para testes
+    cnpj: null,
     address: 'Rua das Flores, 123',
     notes: 'Cliente preferencial',
     createdAt: new Date(),
@@ -65,7 +67,10 @@ describe('CustomersService', () => {
     };
 
     it('deve criar um cliente com sucesso', async () => {
-      mockPrismaService.customer.findFirst.mockResolvedValue(null);
+      // Mock das verificações: telefone e CPF não existem
+      mockPrismaService.customer.findFirst
+        .mockResolvedValueOnce(null) // Telefone não existe
+        .mockResolvedValueOnce(null); // CPF não existe
       mockPrismaService.customer.create.mockResolvedValue(mockCustomer);
 
       const result = await service.create(mockTenantId, createCustomerDto);
@@ -73,10 +78,17 @@ describe('CustomersService', () => {
       expect(result).toHaveProperty('id', 'customer-id');
       expect(result).toHaveProperty('name', 'João Silva');
       expect(result).toHaveProperty('email', 'joao.silva@email.com');
-      expect(mockPrismaService.customer.findFirst).toHaveBeenCalledWith({
+      expect(mockPrismaService.customer.findFirst).toHaveBeenCalledTimes(2);
+      expect(mockPrismaService.customer.findFirst).toHaveBeenNthCalledWith(1, {
         where: {
           tenantId: mockTenantId,
           phone: createCustomerDto.phone,
+        },
+      });
+      expect(mockPrismaService.customer.findFirst).toHaveBeenNthCalledWith(2, {
+        where: {
+          tenantId: mockTenantId,
+          cpf: createCustomerDto.cpf,
         },
       });
       expect(mockPrismaService.customer.create).toHaveBeenCalledWith({
@@ -85,24 +97,33 @@ describe('CustomersService', () => {
           name: createCustomerDto.name.trim(),
           email: createCustomerDto.email?.trim() || null,
           phone: createCustomerDto.phone.trim(),
+          documentType: 'cpf',
           cpf: createCustomerDto.cpf?.trim() || null,
+          cnpj: null,
           address: createCustomerDto.address?.trim() || null,
           notes: createCustomerDto.notes?.trim() || null,
         },
       });
     });
 
-    it('deve criar cliente sem CPF', async () => {
+    it('deve criar cliente sem CPF quando documentType não for CPF', async () => {
       const dtoWithoutCpf: CreateCustomerDto = {
         name: 'Maria Santos',
         phone: '(11) 98765-4322',
         email: 'maria@email.com',
+        documentType: DocumentType.CNPJ,
+        cnpj: '11222333000181', // CNPJ válido
       };
 
-      mockPrismaService.customer.findFirst.mockResolvedValue(null);
+      // Mock das verificações: telefone e CNPJ não existem
+      mockPrismaService.customer.findFirst
+        .mockResolvedValueOnce(null) // Telefone não existe
+        .mockResolvedValueOnce(null); // CNPJ não existe
       mockPrismaService.customer.create.mockResolvedValue({
         ...mockCustomer,
         cpf: null,
+        cnpj: '11222333000181',
+        documentType: 'cnpj',
       });
 
       const result = await service.create(mockTenantId, dtoWithoutCpf);
@@ -114,7 +135,9 @@ describe('CustomersService', () => {
           name: dtoWithoutCpf.name.trim(),
           email: dtoWithoutCpf.email?.trim() || null,
           phone: dtoWithoutCpf.phone.trim(),
+          documentType: 'cnpj',
           cpf: null,
+          cnpj: dtoWithoutCpf.cnpj?.trim() || null,
           address: null,
           notes: null,
         },
