@@ -51,15 +51,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export enum DocumentType {
+  CPF = 'cpf',
+  CNPJ = 'cnpj',
+}
+
 export interface Customer {
   id: string;
   tenantId: string;
   name: string;
-  email?: string;
+  email?: string | null;
   phone: string;
-  cpf?: string;
-  address?: string;
-  notes?: string;
+  documentType: string;
+  cpf?: string | null;
+  cnpj?: string | null;
+  address?: string | null;
+  notes?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -68,7 +75,9 @@ export interface CreateCustomerDto {
   name: string;
   email?: string;
   phone: string;
+  documentType?: DocumentType;
   cpf?: string;
+  cnpj?: string;
   address?: string;
   notes?: string;
 }
@@ -77,7 +86,9 @@ export interface UpdateCustomerDto {
   name?: string;
   email?: string;
   phone?: string;
+  documentType?: DocumentType;
   cpf?: string;
+  cnpj?: string;
   address?: string;
   notes?: string;
 }
@@ -86,7 +97,9 @@ export interface CustomerFilters {
   name?: string;
   phone?: string;
   email?: string;
+  documentType?: string;
   cpf?: string;
+  cnpj?: string;
   page?: number;
   limit?: number;
 }

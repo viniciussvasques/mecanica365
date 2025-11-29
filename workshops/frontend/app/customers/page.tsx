@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { customersApi, Customer, CustomerFilters } from '@/lib/api/customers';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 
 export default function CustomersPage() {
   const router = useRouter();
@@ -124,7 +125,7 @@ export default function CustomersPage() {
         {/* Filtros */}
         <div className="bg-[#1A1E23] border border-[#2A3038] rounded-lg p-6 mb-6">
           <h2 className="text-lg font-semibold text-[#D0D6DE] mb-4">Filtros</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <Input
               label="Nome"
               placeholder="Buscar por nome..."
@@ -143,11 +144,27 @@ export default function CustomersPage() {
               value={filters.email || ''}
               onChange={(e) => handleFilterChange('email', e.target.value)}
             />
+            <Select
+              label="Tipo de Documento"
+              value={filters.documentType || ''}
+              onChange={(e) => handleFilterChange('documentType', e.target.value)}
+              options={[
+                { value: '', label: 'Todos' },
+                { value: 'cpf', label: 'CPF' },
+                { value: 'cnpj', label: 'CNPJ' },
+              ]}
+            />
             <Input
               label="CPF"
               placeholder="Buscar por CPF..."
               value={filters.cpf || ''}
               onChange={(e) => handleFilterChange('cpf', e.target.value)}
+            />
+            <Input
+              label="CNPJ"
+              placeholder="Buscar por CNPJ..."
+              value={filters.cnpj || ''}
+              onChange={(e) => handleFilterChange('cnpj', e.target.value)}
             />
           </div>
         </div>
@@ -179,7 +196,8 @@ export default function CustomersPage() {
                       <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Nome</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Telefone</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Email</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">CPF</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Tipo</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Documento</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Ações</th>
                     </tr>
                   </thead>
@@ -189,7 +207,12 @@ export default function CustomersPage() {
                         <td className="px-6 py-4 text-sm text-[#D0D6DE]">{customer.name}</td>
                         <td className="px-6 py-4 text-sm text-[#7E8691]">{customer.phone}</td>
                         <td className="px-6 py-4 text-sm text-[#7E8691]">{customer.email || '-'}</td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">{customer.cpf || '-'}</td>
+                        <td className="px-6 py-4 text-sm text-[#7E8691]">
+                          {customer.documentType === 'cpf' ? 'CPF' : 'CNPJ'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-[#7E8691]">
+                          {customer.documentType === 'cpf' ? (customer.cpf || '-') : (customer.cnpj || '-')}
+                        </td>
                         <td className="px-6 py-4 text-sm">
                           <div className="flex items-center space-x-2">
                             <Link href={`/customers/${customer.id}`}>

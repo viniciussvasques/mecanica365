@@ -131,10 +131,22 @@ export default function CustomerDetailPage() {
                   <p className="text-[#D0D6DE]">{customer.email}</p>
                 </div>
               )}
-              {customer.cpf && (
+              <div>
+                <p className="text-sm text-[#7E8691] mb-1">Tipo de Documento</p>
+                <p className="text-[#D0D6DE]">
+                  {customer.documentType === 'cpf' ? 'CPF (Pessoa Física)' : 'CNPJ (Pessoa Jurídica)'}
+                </p>
+              </div>
+              {customer.documentType === 'cpf' && customer.cpf && (
                 <div>
                   <p className="text-sm text-[#7E8691] mb-1">CPF</p>
                   <p className="text-[#D0D6DE]">{customer.cpf}</p>
+                </div>
+              )}
+              {customer.documentType === 'cnpj' && customer.cnpj && (
+                <div>
+                  <p className="text-sm text-[#7E8691] mb-1">CNPJ</p>
+                  <p className="text-[#D0D6DE]">{customer.cnpj}</p>
                 </div>
               )}
             </div>

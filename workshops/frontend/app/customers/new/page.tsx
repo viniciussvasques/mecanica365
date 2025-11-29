@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 import Link from 'next/link';
-import { customersApi, CreateCustomerDto } from '@/lib/api/customers';
+import { customersApi, CreateCustomerDto, DocumentType } from '@/lib/api/customers';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -17,7 +18,9 @@ export default function NewCustomerPage() {
     name: '',
     email: '',
     phone: '',
+    documentType: DocumentType.CPF,
     cpf: '',
+    cnpj: '',
     address: '',
     notes: '',
   });
@@ -37,8 +40,18 @@ export default function NewCustomerPage() {
       newErrors.email = 'Email inválido';
     }
 
-    if (formData.cpf && formData.cpf.length !== 11) {
-      newErrors.cpf = 'CPF deve ter 11 dígitos';
+    // Validar CPF se documentType for CPF
+    if (formData.documentType === DocumentType.CPF) {
+      if (!formData.cpf || formData.cpf.length !== 11) {
+        newErrors.cpf = 'CPF é obrigatório e deve ter 11 dígitos';
+      }
+    }
+
+    // Validar CNPJ se documentType for CNPJ
+    if (formData.documentType === DocumentType.CNPJ) {
+      if (!formData.cnpj || formData.cnpj.length !== 14) {
+        newErrors.cnpj = 'CNPJ é obrigatório e deve ter 14 dígitos';
+      }
     }
 
     setErrors(newErrors);
@@ -77,7 +90,9 @@ export default function NewCustomerPage() {
         name: formData.name.trim(),
         phone: formatPhone(formData.phone.trim()),
         email: formData.email?.trim() || undefined,
-        cpf: formData.cpf?.trim() || undefined,
+        documentType: formData.documentType,
+        cpf: formData.documentType === DocumentType.CPF ? formData.cpf?.trim() || undefined : undefined,
+        cnpj: formData.documentType === DocumentType.CNPJ ? formData.cnpj?.trim() || undefined : undefined,
         address: formData.address?.trim() || undefined,
         notes: formData.notes?.trim() || undefined,
       };
@@ -168,14 +183,48 @@ export default function NewCustomerPage() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 error={errors.email}
               />
-              <Input
-                label="CPF"
-                placeholder="00000000000"
-                value={formData.cpf}
-                onChange={(e) => setFormData({ ...formData, cpf: e.target.value.replace(/\D/g, '') })}
-                error={errors.cpf}
-                maxLength={11}
+              <Select
+                label="Tipo de Documento *"
+                value={formData.documentType}
+                onChange={(e) => {
+                  const newDocType = e.target.value as DocumentType;
+                  setFormData({
+                    ...formData,
+                    documentType: newDocType,
+                    cpf: newDocType === DocumentType.CPF ? formData.cpf : '',
+                    cnpj: newDocType === DocumentType.CNPJ ? formData.cnpj : '',
+                  });
+                }}
+                options={[
+                  { value: DocumentType.CPF, label: 'CPF (Pessoa Física)' },
+                  { value: DocumentType.CNPJ, label: 'CNPJ (Pessoa Jurídica)' },
+                ]}
+                required
               />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {formData.documentType === DocumentType.CPF ? (
+                <Input
+                  label="CPF *"
+                  placeholder="00000000000"
+                  value={formData.cpf}
+                  onChange={(e) => setFormData({ ...formData, cpf: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                  error={errors.cpf}
+                  maxLength={11}
+                  required
+                />
+              ) : (
+                <Input
+                  label="CNPJ *"
+                  placeholder="00000000000000"
+                  value={formData.cnpj}
+                  onChange={(e) => setFormData({ ...formData, cnpj: e.target.value.replace(/\D/g, '').slice(0, 14) })}
+                  error={errors.cnpj}
+                  maxLength={14}
+                  required
+                />
+              )}
             </div>
 
             <Input
