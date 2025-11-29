@@ -30,7 +30,6 @@ import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@core/auth/guards/roles.guard';
 import { Roles } from '@core/auth/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant.decorator';
-import { UserRole } from '@core/users/dto/create-user.dto';
 
 @ApiTags('Vehicles')
 @ApiBearerAuth()
@@ -41,7 +40,7 @@ export class VehiclesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST)
+  @Roles('admin', 'manager', 'receptionist')
   @ApiOperation({ summary: 'Criar um novo veículo' })
   @ApiResponse({
     status: 201,
@@ -109,7 +108,7 @@ export class VehiclesController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST)
+  @Roles('admin', 'manager', 'receptionist')
   @ApiOperation({ summary: 'Atualizar um veículo' })
   @ApiParam({ name: 'id', description: 'ID do veículo' })
   @ApiResponse({
