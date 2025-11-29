@@ -20,8 +20,8 @@ export class QuotePdfService {
         const chunks: Buffer[] = [];
 
         doc.on('data', (chunk: unknown) => {
-          const bufferChunk = Buffer.isBuffer(chunk) 
-            ? chunk 
+          const bufferChunk = Buffer.isBuffer(chunk)
+            ? chunk
             : Buffer.from(chunk as ArrayLike<number>);
           chunks.push(bufferChunk);
         });

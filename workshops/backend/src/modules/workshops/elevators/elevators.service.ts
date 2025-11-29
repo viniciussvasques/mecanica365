@@ -470,7 +470,7 @@ export class ElevatorsService {
       // Buscar uso ativo
       type ActiveUsageType = { id: string; notes: string | null };
       let activeUsage: ActiveUsageType | null = null;
-      
+
       if (endUsageDto.usageId) {
         const result = await this.prisma.elevatorUsage.findFirst({
           where: {

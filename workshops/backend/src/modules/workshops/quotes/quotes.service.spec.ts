@@ -103,11 +103,11 @@ describe('QuotesService', () => {
     elevator: {
       findFirst: jest.fn(),
     },
-    $transaction: jest.fn((callback) => {
+    $transaction: jest.fn((callback: unknown) => {
       if (Array.isArray(callback)) {
-        return Promise.all(callback.map((promise) => promise));
+        return Promise.all(callback.map((promise: Promise<unknown>) => promise));
       }
-      return callback(mockPrismaService);
+      return (callback as (prisma: typeof mockPrismaService) => unknown)(mockPrismaService);
     }),
   };
 
@@ -129,7 +129,7 @@ describe('QuotesService', () => {
         QuotesService,
         {
           provide: PrismaService,
-          useValue: mockPrismaService,
+          useValue: mockPrismaService as unknown as PrismaService,
         },
         {
           provide: ElevatorsService,
@@ -174,26 +174,30 @@ describe('QuotesService', () => {
     };
 
     it('deve criar um orçamento com sucesso', async () => {
-      mockPrismaService.customer.findFirst.mockResolvedValue({
+      const mockCustomer = {
         id: 'customer-id',
         tenantId: mockTenantId,
-      });
-      mockPrismaService.customerVehicle.findFirst.mockResolvedValue({
+      };
+      const mockVehicle = {
         id: 'vehicle-id',
         customer: { tenantId: mockTenantId },
-      });
-      mockPrismaService.quote.findFirst.mockResolvedValue(null);
-      mockPrismaService.quote.create.mockResolvedValue(createMockQuote());
+      };
+      const mockQuote = createMockQuote();
+      
+      (mockPrismaService.customer.findFirst as jest.Mock).mockResolvedValue(mockCustomer);
+      (mockPrismaService.customerVehicle.findFirst as jest.Mock).mockResolvedValue(mockVehicle);
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockPrismaService.quote.create as jest.Mock).mockResolvedValue(mockQuote);
 
       const result = await service.create(mockTenantId, createQuoteDto);
 
       expect(result).toHaveProperty('id', 'quote-id');
       expect(result).toHaveProperty('number', 'ORC-001');
-      expect(mockPrismaService.quote.create).toHaveBeenCalled();
+      expect(mockPrismaService.quote.create as jest.Mock).toHaveBeenCalled();
     });
 
     it('deve lançar NotFoundException se cliente não existir', async () => {
-      mockPrismaService.customer.findFirst.mockResolvedValue(null);
+      (mockPrismaService.customer.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.create(mockTenantId, createQuoteDto),
@@ -201,11 +205,12 @@ describe('QuotesService', () => {
     });
 
     it('deve lançar NotFoundException se veículo não existir', async () => {
-      mockPrismaService.customer.findFirst.mockResolvedValue({
+      const mockCustomer = {
         id: 'customer-id',
         tenantId: mockTenantId,
-      });
-      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(null);
+      };
+      (mockPrismaService.customer.findFirst as jest.Mock).mockResolvedValue(mockCustomer);
+      (mockPrismaService.customerVehicle.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.create(mockTenantId, createQuoteDto),
@@ -220,14 +225,16 @@ describe('QuotesService', () => {
       };
 
       // Mockar validações anteriores para que o erro de itens seja o primeiro
-      mockPrismaService.customer.findFirst.mockResolvedValue({
+      const mockCustomer = {
         id: 'customer-id',
         tenantId: mockTenantId,
-      });
-      mockPrismaService.customerVehicle.findFirst.mockResolvedValue({
+      };
+      const mockVehicle = {
         id: 'vehicle-id',
         customer: { tenantId: mockTenantId },
-      });
+      };
+      (mockPrismaService.customer.findFirst as jest.Mock).mockResolvedValue(mockCustomer);
+      (mockPrismaService.customerVehicle.findFirst as jest.Mock).mockResolvedValue(mockVehicle);
 
       await expect(
         service.create(mockTenantId, dtoWithoutItems),
@@ -237,7 +244,7 @@ describe('QuotesService', () => {
 
   describe('findAll', () => {
     it('deve retornar lista de orçamentos', async () => {
-      mockPrismaService.$transaction.mockResolvedValue([
+      (mockPrismaService.$transaction as jest.Mock).mockResolvedValue([
         [createMockQuote()],
         1,
       ]);
@@ -256,12 +263,13 @@ describe('QuotesService', () => {
 
   describe('findOne', () => {
     it('deve retornar orçamento encontrado', async () => {
-      mockPrismaService.quote.findFirst.mockResolvedValue(createMockQuote());
+      const mockQuote = createMockQuote();
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(mockQuote);
 
       const result = await service.findOne(mockTenantId, 'quote-id');
 
       expect(result).toHaveProperty('id', 'quote-id');
-      expect(mockPrismaService.quote.findFirst).toHaveBeenCalledWith({
+      expect(mockPrismaService.quote.findFirst as jest.Mock).toHaveBeenCalledWith({
         where: {
           id: 'quote-id',
           tenantId: mockTenantId,
@@ -271,7 +279,7 @@ describe('QuotesService', () => {
     });
 
     it('deve lançar NotFoundException se orçamento não existir', async () => {
-      mockPrismaService.quote.findFirst.mockResolvedValue(null);
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(service.findOne(mockTenantId, 'quote-id')).rejects.toThrow(
         NotFoundException,
@@ -286,10 +294,9 @@ describe('QuotesService', () => {
 
     it('deve atualizar orçamento com sucesso', async () => {
       const mockQuote = createMockQuote({ items: [] });
-      mockPrismaService.quote.findFirst.mockResolvedValue(mockQuote);
-      mockPrismaService.quote.update.mockResolvedValue(
-        createMockQuote({ status: QuoteStatus.SENT }),
-      );
+      const updatedQuote = createMockQuote({ status: QuoteStatus.SENT });
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(mockQuote);
+      (mockPrismaService.quote.update as jest.Mock).mockResolvedValue(updatedQuote);
 
       const result = await service.update(
         mockTenantId,
@@ -298,11 +305,11 @@ describe('QuotesService', () => {
       );
 
       expect(result).toHaveProperty('status', QuoteStatus.SENT);
-      expect(mockPrismaService.quote.update).toHaveBeenCalled();
+      expect(mockPrismaService.quote.update as jest.Mock).toHaveBeenCalled();
     });
 
     it('deve lançar NotFoundException se orçamento não existir', async () => {
-      mockPrismaService.quote.findFirst.mockResolvedValue(null);
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.update(mockTenantId, 'quote-id', updateQuoteDto),
@@ -310,9 +317,8 @@ describe('QuotesService', () => {
     });
 
     it('deve lançar BadRequestException se orçamento já foi convertido', async () => {
-      mockPrismaService.quote.findFirst.mockResolvedValue(
-        createMockQuote({ status: QuoteStatus.CONVERTED, items: [] }),
-      );
+      const convertedQuote = createMockQuote({ status: QuoteStatus.CONVERTED, items: [] });
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(convertedQuote);
 
       await expect(
         service.update(mockTenantId, 'quote-id', updateQuoteDto),
@@ -327,18 +333,18 @@ describe('QuotesService', () => {
 
     it('deve aprovar orçamento e criar Service Order', async () => {
       const mockQuote = createMockQuote();
-      mockPrismaService.quote.findFirst.mockResolvedValue(mockQuote);
-      mockServiceOrdersService.create.mockResolvedValue({
+      const acceptedQuote = createMockQuote({
+        status: QuoteStatus.ACCEPTED,
+        acceptedAt: new Date(),
+        serviceOrderId: 'service-order-id',
+      });
+      const mockServiceOrder = {
         id: 'service-order-id',
         number: 'OS-001',
-      });
-      mockPrismaService.quote.update.mockResolvedValue(
-        createMockQuote({
-          status: QuoteStatus.ACCEPTED,
-          acceptedAt: new Date(),
-          serviceOrderId: 'service-order-id',
-        }),
-      );
+      };
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(mockQuote);
+      (mockServiceOrdersService.create as jest.Mock).mockResolvedValue(mockServiceOrder);
+      (mockPrismaService.quote.update as jest.Mock).mockResolvedValue(acceptedQuote);
 
       const result = await service.approve(
         mockTenantId,
@@ -349,11 +355,11 @@ describe('QuotesService', () => {
       expect(result).toHaveProperty('quote');
       expect(result).toHaveProperty('serviceOrder');
       expect(result.quote.status).toBe(QuoteStatus.ACCEPTED);
-      expect(mockServiceOrdersService.create).toHaveBeenCalled();
+      expect(mockServiceOrdersService.create as jest.Mock).toHaveBeenCalled();
     });
 
     it('deve lançar NotFoundException se orçamento não existir', async () => {
-      mockPrismaService.quote.findFirst.mockResolvedValue(null);
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.approve(mockTenantId, 'quote-id', approveQuoteDto),
@@ -361,9 +367,8 @@ describe('QuotesService', () => {
     });
 
     it('deve lançar BadRequestException se orçamento já foi convertido', async () => {
-      mockPrismaService.quote.findFirst.mockResolvedValue(
-        createMockQuote({ status: QuoteStatus.CONVERTED }),
-      );
+      const convertedQuote = createMockQuote({ status: QuoteStatus.CONVERTED });
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(convertedQuote);
 
       await expect(
         service.approve(mockTenantId, 'quote-id', approveQuoteDto),
@@ -373,18 +378,19 @@ describe('QuotesService', () => {
 
   describe('remove', () => {
     it('deve remover orçamento com sucesso', async () => {
-      mockPrismaService.quote.findFirst.mockResolvedValue(createMockQuote());
-      mockPrismaService.quote.delete.mockResolvedValue(createMockQuote());
+      const mockQuote = createMockQuote();
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(mockQuote);
+      (mockPrismaService.quote.delete as jest.Mock).mockResolvedValue(mockQuote);
 
       await service.remove(mockTenantId, 'quote-id');
 
-      expect(mockPrismaService.quote.delete).toHaveBeenCalledWith({
+      expect(mockPrismaService.quote.delete as jest.Mock).toHaveBeenCalledWith({
         where: { id: 'quote-id' },
       });
     });
 
     it('deve lançar NotFoundException se orçamento não existir', async () => {
-      mockPrismaService.quote.findFirst.mockResolvedValue(null);
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(service.remove(mockTenantId, 'quote-id')).rejects.toThrow(
         NotFoundException,
@@ -404,13 +410,15 @@ describe('QuotesService', () => {
 
   describe('generatePdf', () => {
     it('deve gerar PDF do orçamento', async () => {
-      mockPrismaService.quote.findFirst.mockResolvedValue(createMockQuote());
-      mockQuotePdfService.generatePdf.mockResolvedValue(Buffer.from('pdf'));
+      const mockQuote = createMockQuote();
+      const pdfBuffer = Buffer.from('pdf');
+      (mockPrismaService.quote.findFirst as jest.Mock).mockResolvedValue(mockQuote);
+      (mockQuotePdfService.generatePdf as jest.Mock).mockResolvedValue(pdfBuffer);
 
       const result = await service.generatePdf(mockTenantId, 'quote-id');
 
       expect(result).toBeInstanceOf(Buffer);
-      expect(mockQuotePdfService.generatePdf).toHaveBeenCalled();
+      expect(mockQuotePdfService.generatePdf as jest.Mock).toHaveBeenCalled();
     });
   });
 });

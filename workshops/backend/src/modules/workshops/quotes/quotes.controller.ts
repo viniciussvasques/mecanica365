@@ -157,7 +157,10 @@ export class QuotesController {
     @Param('id') id: string,
     @Res() res: Response,
   ) {
-    const pdfBuffer: Buffer = await this.quotesService.generatePdf(tenantId, id);
+    const pdfBuffer: Buffer = await this.quotesService.generatePdf(
+      tenantId,
+      id,
+    );
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
