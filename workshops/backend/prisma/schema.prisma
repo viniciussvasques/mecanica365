@@ -15,14 +15,16 @@ model Tenant {
   status        String         @default("active")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  documentType String         @default("cnpj") @map("document_type") @db.VarChar(10)
-  document     String         @unique @db.VarChar(20)
+  documentType  String         @default("cnpj") @map("document_type") @db.VarChar(10)
+  document      String         @unique @db.VarChar(20)
   adminEmail    String?        @map("admin_email") @db.VarChar(255)
   appointments  Appointment[]
   customers     Customer[]
+  elevators     Elevator[]
   invoices      Invoice[]
   parts         Part[]
   serviceOrders ServiceOrder[]
+  quotes        Quote[]
   subscription  Subscription?
   users         User[]
 
@@ -84,7 +86,7 @@ model RefreshToken {
 }
 
 model ServiceOrder {
-  id               String                @id @default(uuid())
+  id               String    @id @default(uuid())
   tenantId         String
   number           String
   customerId       String?
@@ -95,31 +97,51 @@ model ServiceOrder {
   vehicleYear      Int?
   vehicleMileage   Int?
   technicianId     String?
-  status           String                @default("scheduled")
+  status           String    @default("scheduled")
   appointmentDate  DateTime?
   checkInDate      DateTime?
   checkInKm        Int?
   checkInFuelLevel String?
-  inspectionNotes  String?
-  inspectionPhotos String[]
-  estimatedHours   Decimal?
-  laborCost        Decimal?
-  partsCost        Decimal?
-  totalCost        Decimal?
-  discount         Decimal?              @default(0)
-  actualHours      Decimal?
-  startedAt        DateTime?
-  completedAt      DateTime?
-  invoiceId        String?
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-  appointments     Appointment[]
-  invoice          Invoice?
-  partsConsumed    ServiceOrderPart[]
-  services         ServiceOrderService[]
-  customer         Customer?             @relation(fields: [customerId], references: [id])
-  technician       User?                 @relation("Technician", fields: [technicianId], references: [id])
-  tenant           Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Problema relatado pelo cliente
+  reportedProblemCategory    String? // Categoria do problema relatado
+  reportedProblemDescription String? // Descrição do problema relatado
+  reportedProblemSymptoms    String[] // Sintomas relatados
+
+  // Problema identificado pelo mecânico
+  identifiedProblemCategory    String? // Categoria do problema identificado
+  identifiedProblemDescription String? // Descrição do problema identificado
+  identifiedProblemId          String? // Referência a CommonProblem
+
+  // Observações e diagnóstico
+  inspectionNotes  String? // Notas de inspeção
+  inspectionPhotos String[] // Fotos da inspeção
+  diagnosticNotes  String? // Observações do mecânico durante diagnóstico
+
+  // Recomendações
+  recommendations String? // Recomendações do mecânico
+
+  estimatedHours    Decimal?
+  laborCost         Decimal?
+  partsCost         Decimal?
+  totalCost         Decimal?
+  discount          Decimal?              @default(0)
+  actualHours       Decimal?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  invoiceId         String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  appointments      Appointment[]
+  invoice           Invoice?
+  partsConsumed     ServiceOrderPart[]
+  services          ServiceOrderService[]
+  customer          Customer?             @relation(fields: [customerId], references: [id])
+  technician        User?                 @relation("Technician", fields: [technicianId], references: [id])
+  tenant            Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  elevatorUsages    ElevatorUsage[]
+  quotes            Quote[]
+  identifiedProblem CommonProblem?        @relation("IdentifiedProblem", fields: [identifiedProblemId], references: [id])
 
   @@unique([tenantId, number])
   @@index([tenantId, status])
@@ -202,6 +224,7 @@ model Customer {
   tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices      Invoice[]
   serviceOrders ServiceOrder[]
+  quotes        Quote[]
 
   @@unique([tenantId, phone])
   @@unique([tenantId, cpf])
@@ -212,20 +235,22 @@ model Customer {
 }
 
 model CustomerVehicle {
-  id         String   @id @default(uuid())
-  customerId String
-  vin        String?
-  renavan    String?  @db.VarChar(11)
-  placa      String?
-  make       String?
-  model      String?
-  year       Int?
-  color      String?
-  mileage    Int?
-  isDefault  Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  id             String          @id @default(uuid())
+  customerId     String
+  vin            String?
+  renavan        String?         @db.VarChar(11)
+  placa          String?
+  make           String?
+  model          String?
+  year           Int?
+  color          String?
+  mileage        Int?
+  isDefault      Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  customer       Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  elevatorUsages ElevatorUsage[] // Histórico de uso em elevadores
+  quotes         Quote[] // Orçamentos relacionados ao veículo
 
   @@index([renavan])
   @@map("customer_vehicles")
@@ -314,16 +339,21 @@ model WorkshopService {
 }
 
 model CommonProblem {
-  id            String   @id @default(uuid())
-  name          String   @unique
+  id            String         @id @default(uuid())
+  name          String         @unique
   category      String
   severity      String
   estimatedCost Decimal?
   description   String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  symptoms      String[] // Sintomas comuns que indicam este problema
+  solutions     String[] // Soluções recomendadas
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  serviceOrders ServiceOrder[] @relation("IdentifiedProblem") // Ordens de serviço que identificaram este problema
 
+  @@index([category])
+  @@index([severity])
   @@map("common_problems")
 }
 
@@ -336,4 +366,155 @@ model PartsCategory {
   updatedAt DateTime @updatedAt
 
   @@map("parts_categories")
+}
+
+model Elevator {
+  id          String                @id @default(uuid())
+  tenantId    String
+  name        String
+  number      String
+  type        String                @default("hydraulic") // hydraulic, pneumatic, scissor
+  capacity    Decimal // Capacidade em toneladas
+  status      String                @default("free") // free, occupied, maintenance, scheduled
+  location    String? // Localização na oficina
+  notes       String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  tenant      Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usages      ElevatorUsage[]
+  maintenance ElevatorMaintenance[]
+  quotes      Quote[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@map("elevators")
+}
+
+model ElevatorUsage {
+  id             String           @id @default(uuid())
+  elevatorId     String
+  serviceOrderId String?
+  vehicleId      String? // Rastrear qual veículo está no elevador
+  startTime      DateTime
+  endTime        DateTime?
+  notes          String?
+  createdAt      DateTime         @default(now())
+  elevator       Elevator         @relation(fields: [elevatorId], references: [id], onDelete: Cascade)
+  serviceOrder   ServiceOrder?    @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  vehicle        CustomerVehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  @@index([elevatorId])
+  @@index([serviceOrderId])
+  @@index([vehicleId])
+  @@map("elevator_usages")
+}
+
+model ElevatorMaintenance {
+  id            String    @id @default(uuid())
+  elevatorId    String
+  scheduledDate DateTime
+  completedDate DateTime?
+  notes         String?
+  technicianId  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  elevator      Elevator  @relation(fields: [elevatorId], references: [id], onDelete: Cascade)
+
+  @@index([elevatorId])
+  @@index([scheduledDate])
+  @@map("elevator_maintenances")
+}
+
+model Quote {
+  id             String  @id @default(uuid())
+  tenantId       String
+  number         String // Sequencial único por tenant (ex: ORC-001)
+  customerId     String?
+  vehicleId      String? // Referência a CustomerVehicle
+  elevatorId     String? // Elevador onde será realizado (se necessário)
+  serviceOrderId String? // ServiceOrder gerada quando aprovado
+  status         String  @default("draft") // draft, sent, viewed, accepted, rejected, expired, converted
+  version        Int     @default(1)
+  parentQuoteId  String? // Para versões/revisões
+
+  // Valores
+  laborCost Decimal?
+  partsCost Decimal?
+  totalCost Decimal  @default(0)
+  discount  Decimal  @default(0)
+  taxAmount Decimal  @default(0)
+
+  // Validade
+  expiresAt  DateTime?
+  validUntil DateTime?
+
+  // Aprovação
+  sentAt            DateTime?
+  viewedAt          DateTime?
+  acceptedAt        DateTime?
+  rejectedAt        DateTime?
+  rejectedReason    String?
+  customerSignature String? // Base64 da assinatura do cliente
+
+  // Conversão
+  convertedAt               DateTime?
+  convertedToServiceOrderId String?
+
+  // Problema relatado pelo cliente
+  reportedProblemCategory    String? // Categoria do problema relatado (motor, suspensão, etc.)
+  reportedProblemDescription String? // Descrição detalhada do problema relatado pelo cliente
+  reportedProblemSymptoms    String[] // Sintomas relatados (ex: "ruído no motor", "ar não gelando")
+
+  // Problema identificado pelo mecânico
+  identifiedProblemCategory    String? // Categoria do problema identificado
+  identifiedProblemDescription String? // Descrição do problema identificado pelo mecânico
+  identifiedProblemId          String? // Referência a CommonProblem (se identificado)
+
+  // Diagnóstico e observações do mecânico
+  diagnosticNotes  String? // Observações do mecânico durante diagnóstico
+  inspectionNotes  String? // Notas de inspeção
+  inspectionPhotos String[] // Fotos da inspeção
+
+  // Recomendações
+  recommendations String? // Recomendações do mecânico (troca de peça, manutenção preventiva, etc.)
+
+  // Relações
+  items        QuoteItem[]
+  customer     Customer?        @relation(fields: [customerId], references: [id])
+  vehicle      CustomerVehicle? @relation(fields: [vehicleId], references: [id])
+  elevator     Elevator?        @relation(fields: [elevatorId], references: [id])
+  serviceOrder ServiceOrder?    @relation(fields: [serviceOrderId], references: [id])
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parentQuote  Quote?           @relation("QuoteVersions", fields: [parentQuoteId], references: [id])
+  childQuotes  Quote[]          @relation("QuoteVersions")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@index([tenantId, customerId])
+  @@index([tenantId, vehicleId])
+  @@index([elevatorId])
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id          String   @id @default(uuid())
+  quoteId     String
+  type        String // "service" | "part"
+  serviceId   String? // Referência a WorkshopService (futuro)
+  partId      String? // Referência a Part
+  name        String
+  description String?
+  quantity    Int      @default(1)
+  unitCost    Decimal
+  totalCost   Decimal
+  hours       Decimal? // Para serviços
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@index([type])
+  @@map("quote_items")
 }

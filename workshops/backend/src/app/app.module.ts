@@ -14,6 +14,10 @@ import { FeatureFlagsModule } from '../modules/core/feature-flags/feature-flags.
 import { EmailModule } from '../modules/shared/email/email.module';
 import { CustomersModule } from '../modules/workshops/customers/customers.module';
 import { VehiclesModule } from '../modules/workshops/vehicles/vehicles.module';
+import { ElevatorsModule } from '../modules/workshops/elevators/elevators.module';
+import { ServiceOrdersModule } from '../modules/workshops/service-orders/service-orders.module';
+import { QuotesModule } from '../modules/workshops/quotes/quotes.module';
+import { SharedModule } from '../modules/workshops/shared/shared.module';
 import { TenantResolverMiddleware } from '../common/middleware/tenant-resolver.middleware';
 import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
 import { ValidationPipe } from '../common/pipes/validation.pipe';
@@ -36,6 +40,10 @@ import appConfig from '../config/app.config';
     EmailModule,
     CustomersModule,
     VehiclesModule,
+    ElevatorsModule,
+    ServiceOrdersModule,
+    QuotesModule,
+    SharedModule,
     // TODO: Adicionar outros módulos aqui
   ],
   controllers: [AppController],

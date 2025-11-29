@@ -31,7 +31,9 @@
     "docker:prod:down": "docker-compose -f docker-compose.prod.yml down",
     "docker:migrate": "docker-compose exec backend npx prisma migrate dev",
     "docker:migrate:deploy": "docker-compose -f docker-compose.prod.yml exec backend npx prisma migrate deploy",
-    "docker:prisma:generate": "docker-compose exec backend npx prisma generate"
+    "docker:prisma:generate": "docker-compose exec backend npx prisma generate",
+    "db:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-database.ps1",
+    "db:seed": "docker-compose exec backend npx ts-node prisma/seeds/index.ts"
   },
   "dependencies": {
     "@nestjs-modules/ioredis": "^2.0.2",
@@ -45,6 +47,7 @@
     "@nestjs/swagger": "^11.2.3",
     "@prisma/client": "^6.19.0",
     "@types/nodemailer": "^7.0.4",
+    "@types/pdfkit": "^0.17.4",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
@@ -54,6 +57,7 @@
     "nodemailer": "^7.0.11",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pdfkit": "^0.17.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "stripe": "^20.0.0",

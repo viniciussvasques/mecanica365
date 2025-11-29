@@ -13,6 +13,12 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
+// Mock do bcrypt
+jest.mock('bcrypt', () => ({
+  compare: jest.fn(),
+  hash: jest.fn(),
+}));
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -92,7 +98,7 @@ describe('AuthService', () => {
 
     it('deve realizar login com sucesso', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       mockJwtService.sign.mockReturnValue('access-token');
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
@@ -149,7 +155,7 @@ describe('AuthService', () => {
 
     it('deve lançar UnauthorizedException quando senha está incorreta', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(service.login(loginDto, 'tenant-id')).rejects.toThrow(
         UnauthorizedException,
@@ -303,10 +309,8 @@ describe('AuthService', () => {
 
     it('deve alterar senha com sucesso', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-      jest
-        .spyOn(bcrypt, 'hash')
-        .mockResolvedValue('hashedNewPassword' as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashedNewPassword');
       mockPrismaService.user.update.mockResolvedValue({});
       mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 1 });
 
@@ -341,7 +345,7 @@ describe('AuthService', () => {
 
     it('deve lançar UnauthorizedException quando senha atual está incorreta', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
         service.changePassword('user-id', changePasswordDto),

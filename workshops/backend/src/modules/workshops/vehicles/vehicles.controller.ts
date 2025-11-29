@@ -115,7 +115,10 @@ export class VehiclesController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Placa inválida ou erro na consulta' })
+  @ApiResponse({
+    status: 400,
+    description: 'Placa inválida ou erro na consulta',
+  })
   async queryByPlaca(@Param('placa') placa: string) {
     return this.vehicleQueryService.queryByPlaca(placa);
   }
@@ -142,7 +145,10 @@ export class VehiclesController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'RENAVAN inválido ou erro na consulta' })
+  @ApiResponse({
+    status: 400,
+    description: 'RENAVAN inválido ou erro na consulta',
+  })
   async queryByRenavan(@Param('renavan') renavan: string) {
     return this.vehicleQueryService.queryByRenavan(renavan);
   }

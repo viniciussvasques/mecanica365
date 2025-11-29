@@ -39,4 +39,14 @@ export default tseslint.config(
       '@typescript-eslint/require-await': 'warn',
     },
   },
+  // Desabilitar regras de unsafe para testes E2E (supertest tem tipagem limitada)
+  {
+    files: ['test/**/*.e2e-spec.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+    },
+  },
 );

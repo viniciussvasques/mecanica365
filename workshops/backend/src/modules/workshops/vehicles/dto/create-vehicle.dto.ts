@@ -28,7 +28,9 @@ export class CreateVehicleDto {
   })
   @IsString({ message: 'VIN deve ser uma string' })
   @IsOptional()
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }): string | undefined =>
+    value === '' ? undefined : value,
+  )
   @Length(17, 17, { message: 'VIN deve ter exatamente 17 caracteres' })
   @Matches(/^[A-HJ-NPR-Z0-9]{17}$/i, {
     message:
@@ -44,7 +46,9 @@ export class CreateVehicleDto {
   })
   @IsString({ message: 'RENAVAN deve ser uma string' })
   @IsOptional()
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }): string | undefined =>
+    value === '' ? undefined : value,
+  )
   @Length(11, 11, { message: 'RENAVAN deve ter exatamente 11 dígitos' })
   @Matches(/^[0-9]{11}$/, {
     message: 'RENAVAN inválido. Deve conter exatamente 11 dígitos numéricos',
@@ -58,7 +62,9 @@ export class CreateVehicleDto {
   })
   @IsString({ message: 'Placa deve ser uma string' })
   @IsOptional()
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }): string | undefined =>
+    value === '' ? undefined : value,
+  )
   @Matches(/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/i, {
     message:
       'Placa inválida. Use o formato ABC1234 (Mercosul) ou ABC1D23 (antigo)',
@@ -72,7 +78,9 @@ export class CreateVehicleDto {
   })
   @IsString({ message: 'Marca deve ser uma string' })
   @IsOptional()
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }): string | undefined =>
+    value === '' ? undefined : value,
+  )
   @MaxLength(100, { message: 'Marca deve ter no máximo 100 caracteres' })
   make?: string;
 
@@ -83,7 +91,9 @@ export class CreateVehicleDto {
   })
   @IsString({ message: 'Modelo deve ser uma string' })
   @IsOptional()
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }): string | undefined =>
+    value === '' ? undefined : value,
+  )
   @MaxLength(100, { message: 'Modelo deve ter no máximo 100 caracteres' })
   model?: string;
 
@@ -107,7 +117,9 @@ export class CreateVehicleDto {
   })
   @IsString({ message: 'Cor deve ser uma string' })
   @IsOptional()
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }): string | undefined =>
+    value === '' ? undefined : value,
+  )
   @MaxLength(50, { message: 'Cor deve ter no máximo 50 caracteres' })
   color?: string;
 

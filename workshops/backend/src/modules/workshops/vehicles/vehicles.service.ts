@@ -355,7 +355,10 @@ export class VehiclesService {
       }
 
       // Se customerId foi fornecido, validar transferência de veículo
-      if (updateVehicleDto.customerId && updateVehicleDto.customerId !== existingVehicle.customerId) {
+      if (
+        updateVehicleDto.customerId &&
+        updateVehicleDto.customerId !== existingVehicle.customerId
+      ) {
         // Verificar se o novo cliente existe e pertence ao tenant
         const newCustomer = await this.prisma.customer.findFirst({
           where: {
@@ -365,7 +368,9 @@ export class VehiclesService {
         });
 
         if (!newCustomer) {
-          throw new NotFoundException('Cliente não encontrado para transferência');
+          throw new NotFoundException(
+            'Cliente não encontrado para transferência',
+          );
         }
       }
 
@@ -493,7 +498,8 @@ export class VehiclesService {
 
       if (updateVehicleDto.renavan !== undefined) {
         if (updateVehicleDto.renavan) {
-          (updateData as { renavan?: string }).renavan = updateVehicleDto.renavan.trim();
+          (updateData as { renavan?: string }).renavan =
+            updateVehicleDto.renavan.trim();
         } else {
           (updateData as { renavan?: string | null }).renavan = null; // Permitir limpar o campo
         }
@@ -532,9 +538,12 @@ export class VehiclesService {
       }
 
       // Se customerId foi fornecido, transferir veículo para novo cliente
-      if (updateVehicleDto.customerId && updateVehicleDto.customerId !== existingVehicle.customerId) {
-        (updateData as any).customerId = updateVehicleDto.customerId;
-        
+      if (
+        updateVehicleDto.customerId &&
+        updateVehicleDto.customerId !== existingVehicle.customerId
+      ) {
+        updateData.customer = { connect: { id: updateVehicleDto.customerId } };
+
         // Se isDefault não foi explicitamente false, marcar como padrão no novo cliente
         if (updateVehicleDto.isDefault !== false) {
           // Desmarcar outros veículos padrão do novo cliente
