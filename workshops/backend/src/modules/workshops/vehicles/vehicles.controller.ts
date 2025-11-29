@@ -17,7 +17,6 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { VehiclesService } from './vehicles.service';
 import {
@@ -133,7 +132,10 @@ export class VehiclesController {
   @ApiOperation({ summary: 'Remover um veículo' })
   @ApiParam({ name: 'id', description: 'ID do veículo' })
   @ApiResponse({ status: 204, description: 'Veículo removido com sucesso' })
-  @ApiResponse({ status: 400, description: 'Veículo possui ordens de serviço associadas' })
+  @ApiResponse({
+    status: 400,
+    description: 'Veículo possui ordens de serviço associadas',
+  })
   @ApiResponse({ status: 404, description: 'Veículo não encontrado' })
   async remove(
     @TenantId() tenantId: string,
@@ -142,4 +144,3 @@ export class VehiclesController {
     return this.vehiclesService.remove(tenantId, id);
   }
 }
-

@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  IsInt,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsString, IsOptional, IsInt, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -88,4 +82,3 @@ export class VehicleFiltersDto {
   @Max(100, { message: 'limit deve ser menor ou igual a 100' })
   limit?: number = 20;
 }
-

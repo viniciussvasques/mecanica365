@@ -6,14 +6,10 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import {
-  CreateVehicleDto,
-  UpdateVehicleDto,
-} from './dto';
+import { CreateVehicleDto, UpdateVehicleDto } from './dto';
 
 describe('VehiclesService', () => {
   let service: VehiclesService;
-  let prismaService: PrismaService;
 
   const mockPrismaService = {
     customer: {
@@ -71,7 +67,6 @@ describe('VehiclesService', () => {
     }).compile();
 
     service = module.get<VehiclesService>(VehiclesService);
-    prismaService = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });
@@ -140,7 +135,9 @@ describe('VehiclesService', () => {
 
     it('deve lançar ConflictException se RENAVAN já existir', async () => {
       mockPrismaService.customer.findFirst.mockResolvedValue(mockCustomer);
-      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(mockVehicle);
+      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(
+        mockVehicle,
+      );
 
       await expect(
         service.create('tenant-1', createVehicleDto),
@@ -158,7 +155,9 @@ describe('VehiclesService', () => {
         .mockResolvedValueOnce(null) // RENAVAN não existe
         .mockResolvedValueOnce(null) // VIN não existe
         .mockResolvedValueOnce(null); // Placa não existe
-      mockPrismaService.customerVehicle.updateMany.mockResolvedValue({ count: 1 });
+      mockPrismaService.customerVehicle.updateMany.mockResolvedValue({
+        count: 1,
+      });
       mockPrismaService.customerVehicle.create.mockResolvedValue({
         ...mockVehicle,
         isDefault: true,
@@ -166,15 +165,17 @@ describe('VehiclesService', () => {
 
       await service.create('tenant-1', dtoWithDefault);
 
-      expect(mockPrismaService.customerVehicle.updateMany).toHaveBeenCalledWith({
-        where: {
-          customerId: createVehicleDto.customerId,
-          isDefault: true,
+      expect(mockPrismaService.customerVehicle.updateMany).toHaveBeenCalledWith(
+        {
+          where: {
+            customerId: createVehicleDto.customerId,
+            isDefault: true,
+          },
+          data: {
+            isDefault: false,
+          },
         },
-        data: {
-          isDefault: false,
-        },
-      });
+      );
     });
   });
 
@@ -185,12 +186,15 @@ describe('VehiclesService', () => {
         limit: 20,
       };
 
-      mockPrismaService.customerVehicle.findMany.mockResolvedValue([mockVehicle]);
+      mockPrismaService.customerVehicle.findMany.mockResolvedValue([
+        mockVehicle,
+      ]);
       mockPrismaService.customerVehicle.count.mockResolvedValue(1);
 
       const result = await service.findAll('tenant-1', filters);
 
       expect(result).toMatchObject({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         data: expect.any(Array),
         total: 1,
         page: 1,
@@ -208,13 +212,16 @@ describe('VehiclesService', () => {
         limit: 20,
       };
 
-      mockPrismaService.customerVehicle.findMany.mockResolvedValue([mockVehicle]);
+      mockPrismaService.customerVehicle.findMany.mockResolvedValue([
+        mockVehicle,
+      ]);
       mockPrismaService.customerVehicle.count.mockResolvedValue(1);
 
       await service.findAll('tenant-1', filters);
 
       expect(mockPrismaService.customerVehicle.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           where: expect.objectContaining({
             customerId: 'customer-1',
           }),
@@ -229,14 +236,18 @@ describe('VehiclesService', () => {
         limit: 20,
       };
 
-      mockPrismaService.customerVehicle.findMany.mockResolvedValue([mockVehicle]);
+      mockPrismaService.customerVehicle.findMany.mockResolvedValue([
+        mockVehicle,
+      ]);
       mockPrismaService.customerVehicle.count.mockResolvedValue(1);
 
       await service.findAll('tenant-1', filters);
 
       expect(mockPrismaService.customerVehicle.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           where: expect.objectContaining({
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             placa: expect.objectContaining({
               contains: 'ABC',
               mode: 'insensitive',
@@ -253,14 +264,18 @@ describe('VehiclesService', () => {
         limit: 20,
       };
 
-      mockPrismaService.customerVehicle.findMany.mockResolvedValue([mockVehicle]);
+      mockPrismaService.customerVehicle.findMany.mockResolvedValue([
+        mockVehicle,
+      ]);
       mockPrismaService.customerVehicle.count.mockResolvedValue(1);
 
       await service.findAll('tenant-1', filters);
 
       expect(mockPrismaService.customerVehicle.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           where: expect.objectContaining({
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             renavan: expect.objectContaining({
               contains: '123456',
             }),
@@ -272,7 +287,9 @@ describe('VehiclesService', () => {
 
   describe('findOne', () => {
     it('deve retornar veículo encontrado', async () => {
-      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(mockVehicle);
+      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(
+        mockVehicle,
+      );
 
       const result = await service.findOne('tenant-1', 'vehicle-1');
 
@@ -280,6 +297,7 @@ describe('VehiclesService', () => {
         id: mockVehicle.id,
         customerId: mockVehicle.customerId,
       });
+
       expect(mockPrismaService.customerVehicle.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'vehicle-1',
@@ -287,6 +305,7 @@ describe('VehiclesService', () => {
             tenantId: 'tenant-1',
           },
         },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         include: expect.any(Object),
       });
     });
@@ -294,9 +313,9 @@ describe('VehiclesService', () => {
     it('deve lançar NotFoundException se veículo não existir', async () => {
       mockPrismaService.customerVehicle.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.findOne('tenant-1', 'vehicle-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('tenant-1', 'vehicle-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -307,13 +326,19 @@ describe('VehiclesService', () => {
     };
 
     it('deve atualizar veículo com sucesso', async () => {
-      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(mockVehicle);
+      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(
+        mockVehicle,
+      );
       mockPrismaService.customerVehicle.update.mockResolvedValue({
         ...mockVehicle,
         ...updateVehicleDto,
       });
 
-      const result = await service.update('tenant-1', 'vehicle-1', updateVehicleDto);
+      const result = await service.update(
+        'tenant-1',
+        'vehicle-1',
+        updateVehicleDto,
+      );
 
       expect(result).toMatchObject({
         id: mockVehicle.id,
@@ -384,8 +409,12 @@ describe('VehiclesService', () => {
         isDefault: true,
       };
 
-      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(mockVehicle);
-      mockPrismaService.customerVehicle.updateMany.mockResolvedValue({ count: 1 });
+      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(
+        mockVehicle,
+      );
+      mockPrismaService.customerVehicle.updateMany.mockResolvedValue({
+        count: 1,
+      });
       mockPrismaService.customerVehicle.update.mockResolvedValue({
         ...mockVehicle,
         isDefault: true,
@@ -393,16 +422,18 @@ describe('VehiclesService', () => {
 
       await service.update('tenant-1', 'vehicle-1', dtoWithDefault);
 
-      expect(mockPrismaService.customerVehicle.updateMany).toHaveBeenCalledWith({
-        where: {
-          customerId: mockVehicle.customerId,
-          id: { not: 'vehicle-1' },
-          isDefault: true,
+      expect(mockPrismaService.customerVehicle.updateMany).toHaveBeenCalledWith(
+        {
+          where: {
+            customerId: mockVehicle.customerId,
+            id: { not: 'vehicle-1' },
+            isDefault: true,
+          },
+          data: {
+            isDefault: false,
+          },
         },
-        data: {
-          isDefault: false,
-        },
-      });
+      );
     });
   });
 
@@ -426,9 +457,9 @@ describe('VehiclesService', () => {
     it('deve lançar NotFoundException se veículo não existir', async () => {
       mockPrismaService.customerVehicle.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.remove('tenant-1', 'vehicle-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.remove('tenant-1', 'vehicle-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('deve lançar BadRequestException se veículo tiver ordens de serviço', async () => {
@@ -439,15 +470,17 @@ describe('VehiclesService', () => {
         },
       });
 
-      await expect(
-        service.remove('tenant-1', 'vehicle-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.remove('tenant-1', 'vehicle-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe('toResponseDto', () => {
     it('deve converter PrismaVehicle para VehicleResponseDto corretamente', async () => {
-      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(mockVehicle);
+      mockPrismaService.customerVehicle.findFirst.mockResolvedValue(
+        mockVehicle,
+      );
 
       const result = await service.findOne('tenant-1', 'vehicle-1');
 
@@ -469,4 +502,3 @@ describe('VehiclesService', () => {
     });
   });
 });
-

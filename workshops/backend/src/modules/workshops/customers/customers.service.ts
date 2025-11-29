@@ -45,7 +45,9 @@ export class CustomersService {
         }
       } else if (documentType === DocumentType.CNPJ) {
         if (!createCustomerDto.cnpj) {
-          throw new BadRequestException('CNPJ é obrigatório para pessoa jurídica');
+          throw new BadRequestException(
+            'CNPJ é obrigatório para pessoa jurídica',
+          );
         }
         if (!this.isValidCNPJ(createCustomerDto.cnpj)) {
           throw new BadRequestException('CNPJ inválido');
@@ -103,8 +105,14 @@ export class CustomersService {
           email: createCustomerDto.email?.trim() || null,
           phone: createCustomerDto.phone.trim(),
           documentType,
-          cpf: documentType === DocumentType.CPF ? createCustomerDto.cpf?.trim() || null : null,
-          cnpj: documentType === DocumentType.CNPJ ? createCustomerDto.cnpj?.trim() || null : null,
+          cpf:
+            documentType === DocumentType.CPF
+              ? createCustomerDto.cpf?.trim() || null
+              : null,
+          cnpj:
+            documentType === DocumentType.CNPJ
+              ? createCustomerDto.cnpj?.trim() || null
+              : null,
           address: createCustomerDto.address?.trim() || null,
           notes: createCustomerDto.notes?.trim() || null,
         } as Prisma.CustomerUncheckedCreateInput,
@@ -174,7 +182,8 @@ export class CustomersService {
       }
 
       if (filters.documentType) {
-        (where as { documentType?: string }).documentType = filters.documentType;
+        (where as { documentType?: string }).documentType =
+          filters.documentType;
       }
 
       if (filters.cpf) {
@@ -321,7 +330,8 @@ export class CustomersService {
 
       if (
         updateCustomerDto.cnpj &&
-        updateCustomerDto.cnpj !== (existingCustomer as { cnpj?: string | null }).cnpj
+        updateCustomerDto.cnpj !==
+          (existingCustomer as { cnpj?: string | null }).cnpj
       ) {
         const customerWithCnpj = await this.prisma.customer.findFirst({
           where: {
@@ -354,7 +364,8 @@ export class CustomersService {
       }
 
       if (updateCustomerDto.documentType !== undefined) {
-        (updateData as { documentType?: string }).documentType = updateCustomerDto.documentType;
+        (updateData as { documentType?: string }).documentType =
+          updateCustomerDto.documentType;
       }
 
       if (updateCustomerDto.cpf !== undefined) {
@@ -366,7 +377,8 @@ export class CustomersService {
       }
 
       if (updateCustomerDto.cnpj !== undefined) {
-        (updateData as { cnpj?: string | null }).cnpj = updateCustomerDto.cnpj?.trim() || null;
+        (updateData as { cnpj?: string | null }).cnpj =
+          updateCustomerDto.cnpj?.trim() || null;
         // Se está atualizando CNPJ, limpar CPF
         if (updateCustomerDto.cnpj) {
           updateData.cpf = null;

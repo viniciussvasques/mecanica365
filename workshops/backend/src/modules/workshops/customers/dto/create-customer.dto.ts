@@ -47,7 +47,8 @@ export class CreateCustomerDto {
   phone: string;
 
   @ApiProperty({
-    description: 'Tipo de documento (CPF para pessoa física ou CNPJ para empresa)',
+    description:
+      'Tipo de documento (CPF para pessoa física ou CNPJ para empresa)',
     example: 'cpf',
     enum: DocumentType,
     default: 'cpf',
@@ -59,7 +60,8 @@ export class CreateCustomerDto {
   documentType?: DocumentType = DocumentType.CPF;
 
   @ApiProperty({
-    description: 'CPF do cliente (apenas números, 11 dígitos) - Obrigatório se documentType for "cpf"',
+    description:
+      'CPF do cliente (apenas números, 11 dígitos) - Obrigatório se documentType for "cpf"',
     example: '12345678901',
     required: false,
   })
@@ -71,7 +73,8 @@ export class CreateCustomerDto {
   cpf?: string;
 
   @ApiProperty({
-    description: 'CNPJ da empresa (apenas números, 14 dígitos) - Obrigatório se documentType for "cnpj"',
+    description:
+      'CNPJ da empresa (apenas números, 14 dígitos) - Obrigatório se documentType for "cnpj"',
     example: '12345678000199',
     required: false,
   })

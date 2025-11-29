@@ -20,7 +20,8 @@ export class CreateVehicleDto {
   customerId: string;
 
   @ApiProperty({
-    description: 'VIN (Vehicle Identification Number) - 17 caracteres. Obrigatório se RENAVAN e Placa não forem informados',
+    description:
+      'VIN (Vehicle Identification Number) - 17 caracteres. Obrigatório se RENAVAN e Placa não forem informados',
     example: '1HGBH41JXMN109186',
     required: false,
   })
@@ -28,12 +29,14 @@ export class CreateVehicleDto {
   @IsOptional()
   @Length(17, 17, { message: 'VIN deve ter exatamente 17 caracteres' })
   @Matches(/^[A-HJ-NPR-Z0-9]{17}$/i, {
-    message: 'VIN inválido. Deve conter apenas letras e números (exceto I, O, Q)',
+    message:
+      'VIN inválido. Deve conter apenas letras e números (exceto I, O, Q)',
   })
   vin?: string;
 
   @ApiProperty({
-    description: 'RENAVAN (Registro Nacional de Veículos Automotores) - 11 dígitos',
+    description:
+      'RENAVAN (Registro Nacional de Veículos Automotores) - 11 dígitos',
     example: '12345678901',
     required: false,
   })
@@ -53,7 +56,8 @@ export class CreateVehicleDto {
   @IsString({ message: 'Placa deve ser uma string' })
   @IsOptional()
   @Matches(/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/i, {
-    message: 'Placa inválida. Use o formato ABC1234 (Mercosul) ou ABC1D23 (antigo)',
+    message:
+      'Placa inválida. Use o formato ABC1234 (Mercosul) ou ABC1D23 (antigo)',
   })
   placa?: string;
 
@@ -120,4 +124,3 @@ export class CreateVehicleDto {
   @IsOptional()
   isDefault?: boolean;
 }
-

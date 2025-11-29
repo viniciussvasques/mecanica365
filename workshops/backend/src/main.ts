@@ -17,10 +17,14 @@ async function bootstrap() {
   ];
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (error: Error | null, allow?: boolean) => void,
+    ) => {
       // Permitir requisições sem origin (ex: Postman, mobile apps)
       if (!origin) {
-        return callback(null, true);
+        callback(null, true);
+        return;
       }
 
       // Verificar se a origin está na lista de permitidas
@@ -37,7 +41,7 @@ async function bootstrap() {
       if (isAllowed) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error('Not allowed by CORS'), false);
       }
     },
     credentials: true,
