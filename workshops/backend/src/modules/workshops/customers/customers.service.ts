@@ -85,7 +85,7 @@ export class CustomersService {
           where: {
             tenantId,
             cnpj: createCustomerDto.cnpj,
-          },
+          } as Prisma.CustomerWhereInput,
         });
 
         if (existingByCnpj) {
@@ -107,7 +107,7 @@ export class CustomersService {
           cnpj: documentType === DocumentType.CNPJ ? createCustomerDto.cnpj?.trim() || null : null,
           address: createCustomerDto.address?.trim() || null,
           notes: createCustomerDto.notes?.trim() || null,
-        },
+        } as Prisma.CustomerUncheckedCreateInput,
       });
 
       this.logger.log(`Cliente criado: ${customer.id} (tenant: ${tenantId})`);
@@ -174,7 +174,7 @@ export class CustomersService {
       }
 
       if (filters.documentType) {
-        where.documentType = filters.documentType;
+        (where as { documentType?: string }).documentType = filters.documentType;
       }
 
       if (filters.cpf) {
@@ -185,7 +185,7 @@ export class CustomersService {
       }
 
       if (filters.cnpj) {
-        where.cnpj = {
+        (where as { cnpj?: { contains: string; mode: 'insensitive' } }).cnpj = {
           contains: filters.cnpj.trim(),
           mode: 'insensitive',
         };
@@ -328,7 +328,7 @@ export class CustomersService {
             tenantId,
             cnpj: updateCustomerDto.cnpj,
             NOT: { id },
-          },
+          } as Prisma.CustomerWhereInput,
         });
 
         if (customerWithCnpj) {
@@ -354,7 +354,7 @@ export class CustomersService {
       }
 
       if (updateCustomerDto.documentType !== undefined) {
-        updateData.documentType = updateCustomerDto.documentType;
+        (updateData as { documentType?: string }).documentType = updateCustomerDto.documentType;
       }
 
       if (updateCustomerDto.cpf !== undefined) {
