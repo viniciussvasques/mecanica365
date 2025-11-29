@@ -33,7 +33,9 @@
     "docker:migrate:deploy": "docker-compose -f docker-compose.prod.yml exec backend npx prisma migrate deploy",
     "docker:prisma:generate": "docker-compose exec backend npx prisma generate",
     "db:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-database.ps1",
-    "db:seed": "docker-compose exec backend npx ts-node prisma/seeds/index.ts"
+    "db:seed": "docker-compose exec backend npx ts-node prisma/seeds/index.ts",
+    "db:fix-migration": "powershell -ExecutionPolicy Bypass -File scripts/fix-failed-migration.ps1",
+    "db:fix-migration:force": "powershell -ExecutionPolicy Bypass -File scripts/fix-failed-migration.ps1 -Force"
   },
   "dependencies": {
     "@nestjs-modules/ioredis": "^2.0.2",
