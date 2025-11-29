@@ -62,7 +62,7 @@ export class VehiclesService {
               tenantId,
             },
             renavan: normalizedRenavan,
-          },
+          } as Prisma.CustomerVehicleWhereInput,
         });
 
         if (existingByRenavan) {
@@ -140,7 +140,7 @@ export class VehiclesService {
           color: createVehicleDto.color?.trim() || null,
           mileage: createVehicleDto.mileage || null,
           isDefault: createVehicleDto.isDefault ?? false,
-        },
+        } as Prisma.CustomerVehicleUncheckedCreateInput,
       });
 
       this.logger.log(`Veículo criado: ${vehicle.id} (cliente: ${createVehicleDto.customerId})`);
@@ -207,7 +207,7 @@ export class VehiclesService {
       }
 
       if (filters.renavan) {
-        where.renavan = {
+        (where as { renavan?: { contains: string } }).renavan = {
           contains: filters.renavan,
         };
       }
@@ -350,8 +350,11 @@ export class VehiclesService {
         }
       }
 
+      // Declarar tipo com renavan uma única vez
+      const existingVehicleWithRenavan = existingVehicle as typeof existingVehicle & { renavan?: string | null };
+      
       // Validar RENAVAN se fornecido e diferente do atual
-      if (updateVehicleDto.renavan && updateVehicleDto.renavan !== existingVehicle.renavan) {
+      if (updateVehicleDto.renavan && updateVehicleDto.renavan !== existingVehicleWithRenavan.renavan) {
         const normalizedRenavan = updateVehicleDto.renavan.trim();
         
         const existingByRenavan = await this.prisma.customerVehicle.findFirst({
@@ -361,7 +364,7 @@ export class VehiclesService {
               tenantId,
             },
             renavan: normalizedRenavan,
-          },
+          } as Prisma.CustomerVehicleWhereInput,
         });
 
         if (existingByRenavan) {
@@ -393,12 +396,13 @@ export class VehiclesService {
       }
 
       // Validar que pelo menos um identificador seja mantido (VIN, RENAVAN ou Placa)
+      // Usar existingVehicleWithRenavan já declarado acima
       const finalVin = updateVehicleDto.vin !== undefined 
         ? (updateVehicleDto.vin?.toUpperCase().trim() || null)
         : existingVehicle.vin;
       const finalRenavan = updateVehicleDto.renavan !== undefined
         ? (updateVehicleDto.renavan?.trim() || null)
-        : existingVehicle.renavan;
+        : (existingVehicleWithRenavan.renavan || null);
       const finalPlaca = updateVehicleDto.placa !== undefined
         ? (updateVehicleDto.placa?.toUpperCase().trim() || null)
         : existingVehicle.placa;
@@ -433,7 +437,7 @@ export class VehiclesService {
       }
 
       if (updateVehicleDto.renavan !== undefined) {
-        updateData.renavan = updateVehicleDto.renavan
+        (updateData as { renavan?: string | null }).renavan = updateVehicleDto.renavan
           ? updateVehicleDto.renavan.trim()
           : null;
       }
@@ -565,11 +569,12 @@ export class VehiclesService {
       include: { customer: true };
     }>,
   ): VehicleResponseDto {
+    const vehicleWithRenavan = vehicle as typeof vehicle & { renavan?: string | null };
     return {
       id: vehicle.id,
       customerId: vehicle.customerId,
       vin: vehicle.vin,
-      renavan: vehicle.renavan,
+      renavan: vehicleWithRenavan.renavan || null,
       placa: vehicle.placa,
       make: vehicle.make,
       model: vehicle.model,

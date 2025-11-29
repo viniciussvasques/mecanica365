@@ -361,12 +361,12 @@ export class CustomersService {
         updateData.cpf = updateCustomerDto.cpf?.trim() || null;
         // Se está atualizando CPF, limpar CNPJ
         if (updateCustomerDto.cpf) {
-          updateData.cnpj = null;
+          (updateData as { cnpj?: string | null }).cnpj = null;
         }
       }
 
       if (updateCustomerDto.cnpj !== undefined) {
-        updateData.cnpj = updateCustomerDto.cnpj?.trim() || null;
+        (updateData as { cnpj?: string | null }).cnpj = updateCustomerDto.cnpj?.trim() || null;
         // Se está atualizando CNPJ, limpar CPF
         if (updateCustomerDto.cnpj) {
           updateData.cpf = null;

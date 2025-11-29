@@ -30,6 +30,7 @@ import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@core/auth/guards/roles.guard';
 import { Roles } from '@core/auth/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant.decorator';
+import { UserRole } from '@core/users/dto/create-user.dto';
 
 @ApiTags('Vehicles')
 @ApiBearerAuth()
