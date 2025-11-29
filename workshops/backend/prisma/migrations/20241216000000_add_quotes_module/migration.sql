@@ -131,57 +131,62 @@ BEGIN
     END IF;
 END $$;
 
--- AddForeignKey
+-- AddForeignKey: Tenant (apenas se tabela tenants existir)
 DO $$
 BEGIN
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') THEN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') 
+       AND EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'tenants') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'quotes_tenantId_fkey') THEN
             ALTER TABLE "quotes" ADD CONSTRAINT "quotes_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
         END IF;
     END IF;
 END $$;
 
--- AddForeignKey
+-- AddForeignKey: Customer (apenas se tabela customers existir)
 DO $$
 BEGIN
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') THEN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') 
+       AND EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'customers') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'quotes_customerId_fkey') THEN
             ALTER TABLE "quotes" ADD CONSTRAINT "quotes_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
         END IF;
     END IF;
 END $$;
 
--- AddForeignKey
+-- AddForeignKey: Vehicle (apenas se tabela customer_vehicles existir)
 DO $$
 BEGIN
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') THEN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') 
+       AND EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'customer_vehicles') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'quotes_vehicleId_fkey') THEN
             ALTER TABLE "quotes" ADD CONSTRAINT "quotes_vehicleId_fkey" FOREIGN KEY ("vehicleId") REFERENCES "customer_vehicles"("id") ON DELETE SET NULL ON UPDATE CASCADE;
         END IF;
     END IF;
 END $$;
 
--- AddForeignKey
+-- AddForeignKey: Elevator (apenas se tabela elevators existir)
 DO $$
 BEGIN
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') THEN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') 
+       AND EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'elevators') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'quotes_elevatorId_fkey') THEN
             ALTER TABLE "quotes" ADD CONSTRAINT "quotes_elevatorId_fkey" FOREIGN KEY ("elevatorId") REFERENCES "elevators"("id") ON DELETE SET NULL ON UPDATE CASCADE;
         END IF;
     END IF;
 END $$;
 
--- AddForeignKey
+-- AddForeignKey: ServiceOrder (apenas se tabela service_orders existir)
 DO $$
 BEGIN
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') THEN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') 
+       AND EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'service_orders') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'quotes_serviceOrderId_fkey') THEN
             ALTER TABLE "quotes" ADD CONSTRAINT "quotes_serviceOrderId_fkey" FOREIGN KEY ("serviceOrderId") REFERENCES "service_orders"("id") ON DELETE SET NULL ON UPDATE CASCADE;
         END IF;
     END IF;
 END $$;
 
--- AddForeignKey
+-- AddForeignKey: Parent Quote (Versioning) - apenas se tabela quotes já existir
 DO $$
 BEGIN
     IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') THEN
@@ -191,20 +196,22 @@ BEGIN
     END IF;
 END $$;
 
--- AddForeignKey
+-- AddForeignKey: Quote Items (apenas se tabela quotes existir)
 DO $$
 BEGIN
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quote_items') THEN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quote_items') 
+       AND EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quotes') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'quote_items_quoteId_fkey') THEN
             ALTER TABLE "quote_items" ADD CONSTRAINT "quote_items_quoteId_fkey" FOREIGN KEY ("quoteId") REFERENCES "quotes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
         END IF;
     END IF;
 END $$;
 
--- AddForeignKey
+-- AddForeignKey: Part (apenas se tabela parts existir)
 DO $$
 BEGIN
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quote_items') THEN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quote_items') 
+       AND EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'parts') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'quote_items_partId_fkey') THEN
             ALTER TABLE "quote_items" ADD CONSTRAINT "quote_items_partId_fkey" FOREIGN KEY ("partId") REFERENCES "parts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
         END IF;
