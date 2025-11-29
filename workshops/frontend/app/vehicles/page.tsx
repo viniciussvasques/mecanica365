@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +19,15 @@ export default function VehiclesPage() {
     page: 1,
     limit: 20,
   });
+  // Estados locais para os inputs (não atualizam URL imediatamente)
+  const [localFilters, setLocalFilters] = useState({
+    placa: '',
+    vin: '',
+    renavan: '',
+    make: '',
+    model: '',
+  });
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
@@ -43,7 +52,7 @@ export default function VehiclesPage() {
     const customerId = searchParams.get('customerId');
 
     if (page || placa || vin || renavan || make || model || customerId) {
-      setFilters({
+      const newFilters = {
         page: page ? parseInt(page, 10) : 1,
         limit: 20,
         placa: placa || undefined,
@@ -52,11 +61,33 @@ export default function VehiclesPage() {
         make: make || undefined,
         model: model || undefined,
         customerId: customerId || undefined,
+      };
+      setFilters(newFilters);
+      // Sincronizar estados locais com URL
+      setLocalFilters({
+        placa: placa || '',
+        vin: vin || '',
+        renavan: renavan || '',
+        make: make || '',
+        model: model || '',
       });
     }
 
     loadVehicles();
+
+    // Cleanup do timer ao desmontar
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
   }, [searchParams, router]);
+
+  // Carregar veículos quando os filtros mudarem (após debounce)
+  useEffect(() => {
+    loadVehicles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   const loadVehicles = async () => {
     try {
@@ -95,21 +126,48 @@ export default function VehiclesPage() {
     }
   };
 
-  const handleFilterChange = (key: keyof VehicleFilters, value: string) => {
-    const newFilters = { ...filters, [key]: value || undefined, page: 1 };
-    setFilters(newFilters);
+  // Atualizar filtro local (não atualiza URL imediatamente)
+  const handleLocalFilterChange = (key: 'placa' | 'vin' | 'renavan' | 'make' | 'model', value: string) => {
+    setLocalFilters((prev) => ({ ...prev, [key]: value }));
     
-    // Atualizar URL
-    const params = new URLSearchParams();
-    if (newFilters.placa) params.set('placa', newFilters.placa);
-    if (newFilters.vin) params.set('vin', newFilters.vin);
-    if (newFilters.renavan) params.set('renavan', newFilters.renavan);
-    if (newFilters.make) params.set('make', newFilters.make);
-    if (newFilters.model) params.set('model', newFilters.model);
-    if (newFilters.customerId) params.set('customerId', newFilters.customerId);
-    if (newFilters.page && newFilters.page > 1) params.set('page', newFilters.page.toString());
+    // Limpar timer anterior
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
     
-    router.push(`/vehicles?${params.toString()}`);
+    // Definir mínimo de caracteres antes de buscar
+    const minLengths: Record<string, number> = {
+      placa: 3, // Mínimo 3 caracteres para placa
+      vin: 3,   // Mínimo 3 caracteres para VIN
+      renavan: 3, // Mínimo 3 dígitos para RENAVAN
+      make: 2,  // Mínimo 2 caracteres para marca
+      model: 2, // Mínimo 2 caracteres para modelo
+    };
+    
+    const minLength = minLengths[key] || 0;
+    
+    // Sempre aplicar debounce, mas só atualizar filtro se:
+    // 1. O campo estiver vazio (para limpar o filtro)
+    // 2. Ou tiver o número mínimo de caracteres
+    if (value.length === 0 || value.length >= minLength) {
+      debounceTimer.current = setTimeout(() => {
+        const newFilters = { ...filters, [key]: value.length >= minLength ? value : undefined, page: 1 };
+        setFilters(newFilters);
+        
+        // Atualizar URL apenas após debounce
+        const params = new URLSearchParams();
+        if (newFilters.placa && newFilters.placa.length >= minLengths.placa) params.set('placa', newFilters.placa);
+        if (newFilters.vin && newFilters.vin.length >= minLengths.vin) params.set('vin', newFilters.vin);
+        if (newFilters.renavan && newFilters.renavan.length >= minLengths.renavan) params.set('renavan', newFilters.renavan);
+        if (newFilters.make && newFilters.make.length >= minLengths.make) params.set('make', newFilters.make);
+        if (newFilters.model && newFilters.model.length >= minLengths.model) params.set('model', newFilters.model);
+        if (newFilters.customerId) params.set('customerId', newFilters.customerId);
+        if (newFilters.page && newFilters.page > 1) params.set('page', newFilters.page.toString());
+        
+        // Usar replace ao invés de push para não adicionar ao histórico e não perder foco
+        router.replace(`/vehicles?${params.toString()}`);
+      }, 500); // Debounce de 500ms
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -171,33 +229,34 @@ export default function VehiclesPage() {
             <Input
               label="Placa"
               placeholder="ABC1234"
-              value={filters.placa || ''}
-              onChange={(e) => handleFilterChange('placa', e.target.value.toUpperCase())}
+              value={localFilters.placa}
+              onChange={(e) => handleLocalFilterChange('placa', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
             />
             <Input
               label="VIN"
               placeholder="1HGBH41JXMN109186"
-              value={filters.vin || ''}
-              onChange={(e) => handleFilterChange('vin', e.target.value.toUpperCase())}
+              value={localFilters.vin}
+              onChange={(e) => handleLocalFilterChange('vin', e.target.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, ''))}
+              maxLength={17}
             />
             <Input
               label="RENAVAN"
               placeholder="12345678901"
-              value={filters.renavan || ''}
-              onChange={(e) => handleFilterChange('renavan', e.target.value.replace(/\D/g, ''))}
+              value={localFilters.renavan}
+              onChange={(e) => handleLocalFilterChange('renavan', e.target.value.replace(/\D/g, ''))}
               maxLength={11}
             />
             <Input
               label="Marca"
               placeholder="Honda"
-              value={filters.make || ''}
-              onChange={(e) => handleFilterChange('make', e.target.value)}
+              value={localFilters.make}
+              onChange={(e) => handleLocalFilterChange('make', e.target.value)}
             />
             <Input
               label="Modelo"
               placeholder="Civic"
-              value={filters.model || ''}
-              onChange={(e) => handleFilterChange('model', e.target.value)}
+              value={localFilters.model}
+              onChange={(e) => handleLocalFilterChange('model', e.target.value)}
             />
           </div>
         </div>

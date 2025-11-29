@@ -131,20 +131,39 @@ export class VehiclesService {
         });
       }
 
-      // Criar veículo
+      // Criar veículo - não enviar campos null, apenas undefined ou omitir
+      const vehicleData: any = {
+        customerId: createVehicleDto.customerId,
+        isDefault: createVehicleDto.isDefault ?? false,
+      };
+
+      if (createVehicleDto.vin) {
+        vehicleData.vin = createVehicleDto.vin.toUpperCase().trim();
+      }
+      if (createVehicleDto.renavan) {
+        vehicleData.renavan = createVehicleDto.renavan.trim();
+      }
+      if (createVehicleDto.placa) {
+        vehicleData.placa = createVehicleDto.placa.toUpperCase().trim();
+      }
+      if (createVehicleDto.make) {
+        vehicleData.make = createVehicleDto.make.trim();
+      }
+      if (createVehicleDto.model) {
+        vehicleData.model = createVehicleDto.model.trim();
+      }
+      if (createVehicleDto.year) {
+        vehicleData.year = createVehicleDto.year;
+      }
+      if (createVehicleDto.color) {
+        vehicleData.color = createVehicleDto.color.trim();
+      }
+      if (createVehicleDto.mileage !== undefined) {
+        vehicleData.mileage = createVehicleDto.mileage;
+      }
+
       const vehicle = await this.prisma.customerVehicle.create({
-        data: {
-          customerId: createVehicleDto.customerId,
-          vin: createVehicleDto.vin?.toUpperCase().trim() || null,
-          renavan: createVehicleDto.renavan?.trim() || null,
-          placa: createVehicleDto.placa?.toUpperCase().trim() || null,
-          make: createVehicleDto.make?.trim() || null,
-          model: createVehicleDto.model?.trim() || null,
-          year: createVehicleDto.year || null,
-          color: createVehicleDto.color?.trim() || null,
-          mileage: createVehicleDto.mileage || null,
-          isDefault: createVehicleDto.isDefault ?? false,
-        } as Prisma.CustomerVehicleUncheckedCreateInput,
+        data: vehicleData,
       });
 
       this.logger.log(
@@ -335,6 +354,21 @@ export class VehiclesService {
         throw new NotFoundException('Veículo não encontrado');
       }
 
+      // Se customerId foi fornecido, validar transferência de veículo
+      if (updateVehicleDto.customerId && updateVehicleDto.customerId !== existingVehicle.customerId) {
+        // Verificar se o novo cliente existe e pertence ao tenant
+        const newCustomer = await this.prisma.customer.findFirst({
+          where: {
+            id: updateVehicleDto.customerId,
+            tenantId,
+          },
+        });
+
+        if (!newCustomer) {
+          throw new NotFoundException('Cliente não encontrado para transferência');
+        }
+      }
+
       // Validar VIN se fornecido e diferente do atual
       if (
         updateVehicleDto.vin &&
@@ -446,24 +480,31 @@ export class VehiclesService {
         });
       }
 
-      // Preparar dados para atualização
+      // Preparar dados para atualização - não enviar null, apenas undefined ou omitir
       const updateData: Prisma.CustomerVehicleUpdateInput = {};
 
       if (updateVehicleDto.vin !== undefined) {
-        updateData.vin = updateVehicleDto.vin
-          ? updateVehicleDto.vin.toUpperCase().trim()
-          : null;
+        if (updateVehicleDto.vin) {
+          updateData.vin = updateVehicleDto.vin.toUpperCase().trim();
+        } else {
+          updateData.vin = null; // Permitir limpar o campo
+        }
       }
 
       if (updateVehicleDto.renavan !== undefined) {
-        (updateData as { renavan?: string | null }).renavan =
-          updateVehicleDto.renavan ? updateVehicleDto.renavan.trim() : null;
+        if (updateVehicleDto.renavan) {
+          (updateData as { renavan?: string }).renavan = updateVehicleDto.renavan.trim();
+        } else {
+          (updateData as { renavan?: string | null }).renavan = null; // Permitir limpar o campo
+        }
       }
 
       if (updateVehicleDto.placa !== undefined) {
-        updateData.placa = updateVehicleDto.placa
-          ? updateVehicleDto.placa.toUpperCase().trim()
-          : null;
+        if (updateVehicleDto.placa) {
+          updateData.placa = updateVehicleDto.placa.toUpperCase().trim();
+        } else {
+          updateData.placa = null; // Permitir limpar o campo
+        }
       }
 
       if (updateVehicleDto.make !== undefined) {
@@ -483,11 +524,32 @@ export class VehiclesService {
       }
 
       if (updateVehicleDto.mileage !== undefined) {
-        updateData.mileage = updateVehicleDto.mileage || null;
+        updateData.mileage = updateVehicleDto.mileage ?? null;
       }
 
       if (updateVehicleDto.isDefault !== undefined) {
         updateData.isDefault = updateVehicleDto.isDefault;
+      }
+
+      // Se customerId foi fornecido, transferir veículo para novo cliente
+      if (updateVehicleDto.customerId && updateVehicleDto.customerId !== existingVehicle.customerId) {
+        (updateData as any).customerId = updateVehicleDto.customerId;
+        
+        // Se isDefault não foi explicitamente false, marcar como padrão no novo cliente
+        if (updateVehicleDto.isDefault !== false) {
+          // Desmarcar outros veículos padrão do novo cliente
+          await this.prisma.customerVehicle.updateMany({
+            where: {
+              customerId: updateVehicleDto.customerId,
+              id: { not: id },
+              isDefault: true,
+            },
+            data: {
+              isDefault: false,
+            },
+          });
+          updateData.isDefault = true;
+        }
       }
 
       // Atualizar veículo

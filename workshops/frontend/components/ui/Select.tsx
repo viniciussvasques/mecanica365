@@ -37,8 +37,8 @@ export const Select: React.FC<SelectProps> = ({
           color: error ? '#FF4E3D' : '#F0F4F8',
         }}
       >
-        {options.map((option) => (
-          <option key={option.value} value={option.value} className="bg-[#1A1E23] text-[#F0F4F8]">
+        {options.map((option, index) => (
+          <option key={`${props.id || 'select'}-${index}-${option.value}`} value={option.value} className="bg-[#1A1E23] text-[#F0F4F8]">
             {option.label}
           </option>
         ))}

@@ -44,6 +44,57 @@ textarea {
   -webkit-text-fill-color: #F0F4F8 !important;
 }
 
+/* Estilos para autofill do navegador (Chrome/Edge/Safari) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-carbon) inset !important;
+  -webkit-text-fill-color: #F0F4F8 !important;
+  background-color: var(--color-carbon) !important;
+  color: #F0F4F8 !important;
+  caret-color: #F0F4F8 !important;
+  border-color: #3A4048 !important;
+}
+
+/* Autofill do Firefox */
+input:-moz-autofill {
+  background-color: var(--color-carbon) !important;
+  color: #F0F4F8 !important;
+  box-shadow: 0 0 0 1000px var(--color-carbon) inset !important;
+  border-color: #3A4048 !important;
+}
+
+/* Dropdown de autofill do navegador */
+input:-webkit-autofill::first-line {
+  color: #F0F4F8 !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+}
+
+/* Forçar estilos em todos os tipos de input com autofill */
+input[type="text"]:-webkit-autofill,
+input[type="email"]:-webkit-autofill,
+input[type="password"]:-webkit-autofill,
+input[type="number"]:-webkit-autofill,
+input[type="tel"]:-webkit-autofill,
+input[type="search"]:-webkit-autofill {
+  -webkit-text-fill-color: #F0F4F8 !important;
+  color: #F0F4F8 !important;
+  background-color: var(--color-carbon) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--color-carbon) inset !important;
+  box-shadow: 0 0 0 1000px var(--color-carbon) inset !important;
+  border-color: #3A4048 !important;
+}
+
+/* Quando o input com autofill está em foco */
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-carbon) inset, 0 0 0 2px var(--color-turquoise) !important;
+  box-shadow: 0 0 0 1000px var(--color-carbon) inset, 0 0 0 2px var(--color-turquoise) !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+}
+
 input[type="text"]::placeholder,
 input[type="email"]::placeholder,
 input[type="password"]::placeholder,

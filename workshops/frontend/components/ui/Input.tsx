@@ -39,6 +39,18 @@ export const Input: React.FC<InputProps> = ({
             WebkitTextFillColor: error ? '#FF4E3D' : '#F0F4F8',
             color: error ? '#FF4E3D' : '#F0F4F8',
             boxSizing: 'border-box',
+            // Forçar estilos para autofill
+            WebkitBoxShadow: '0 0 0 1000px #1A1E23 inset',
+            boxShadow: '0 0 0 1000px #1A1E23 inset',
+          }}
+          onAnimationStart={(e) => {
+            // Forçar estilos quando autofill é aplicado
+            const target = e.currentTarget;
+            if (target.matches(':-webkit-autofill')) {
+              target.style.WebkitTextFillColor = error ? '#FF4E3D' : '#F0F4F8';
+              target.style.color = error ? '#FF4E3D' : '#F0F4F8';
+              target.style.backgroundColor = '#1A1E23';
+            }
           }}
         />
         {!error && (

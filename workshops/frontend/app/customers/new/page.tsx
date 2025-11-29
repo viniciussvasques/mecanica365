@@ -6,14 +6,17 @@ import { useRouter } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { customersApi, CreateCustomerDto, DocumentType } from '@/lib/api/customers';
+import { vehiclesApi, CreateVehicleDto } from '@/lib/api/vehicles';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { VEHICLE_BRANDS, VEHICLE_COLORS } from '@/lib/constants/vehicles';
 
 export default function NewCustomerPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showVehicleForm, setShowVehicleForm] = useState(false);
   const [formData, setFormData] = useState<CreateCustomerDto>({
     name: '',
     email: '',
@@ -24,6 +27,18 @@ export default function NewCustomerPage() {
     address: '',
     notes: '',
   });
+  const [vehicleData, setVehicleData] = useState<Partial<CreateVehicleDto>>({
+    placa: '',
+    make: '',
+    model: '',
+    year: undefined,
+    color: '',
+    vin: '',
+    renavan: '',
+  });
+  const [customMake, setCustomMake] = useState('');
+  const [customModel, setCustomModel] = useState('');
+  const [customColor, setCustomColor] = useState('');
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -98,7 +113,38 @@ export default function NewCustomerPage() {
       };
 
       console.log('[NewCustomer] Enviando dados:', data);
-      await customersApi.create(data);
+      const customer = await customersApi.create(data);
+      
+      // Se houver dados de veículo preenchidos, criar o veículo também
+      if (showVehicleForm && (vehicleData.placa || vehicleData.vin || vehicleData.renavan)) {
+        try {
+          const vehiclePayload: CreateVehicleDto = {
+            customerId: customer.id,
+            ...(vehicleData.placa?.trim() && { placa: vehicleData.placa.trim().toUpperCase() }),
+            ...(vehicleData.vin?.trim() && { vin: vehicleData.vin.trim().toUpperCase() }),
+            ...(vehicleData.renavan?.trim() && { renavan: vehicleData.renavan.trim() }),
+            ...(vehicleData.make === 'Outro' 
+              ? (customMake.trim() && { make: customMake.trim() })
+              : (vehicleData.make?.trim() && { make: vehicleData.make.trim() })),
+            ...(vehicleData.model === 'Outro'
+              ? (customModel.trim() && { model: customModel.trim() })
+              : (vehicleData.model?.trim() && { model: vehicleData.model.trim() })),
+            ...(vehicleData.year && { year: vehicleData.year }),
+            ...(vehicleData.color === 'Outro'
+              ? (customColor.trim() && { color: customColor.trim() })
+              : (vehicleData.color?.trim() && { color: vehicleData.color.trim() })),
+            isDefault: true, // Primeiro veículo é padrão
+          };
+          
+          console.log('[NewCustomer] Criando veículo:', vehiclePayload);
+          await vehiclesApi.create(vehiclePayload);
+        } catch (vehicleError) {
+          console.error('Erro ao criar veículo:', vehicleError);
+          // Não bloquear o fluxo se o veículo falhar - cliente já foi criado
+          alert('Cliente criado com sucesso, mas houve um erro ao adicionar o veículo. Você pode adicioná-lo depois.');
+        }
+      }
+      
       router.push('/customers');
     } catch (err: unknown) {
       console.error('Erro ao criar cliente:', err);
@@ -250,6 +296,153 @@ export default function NewCustomerPage() {
                   color: '#F0F4F8',
                 }}
               />
+            </div>
+
+            {/* Seção de Veículo (Opcional) */}
+            <div className="border-t border-[#2A3038] pt-4 sm:pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-[#D0D6DE]">Veículo (Opcional)</h3>
+                  <p className="text-sm text-[#7E8691] mt-1">Adicione um veículo para este cliente</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowVehicleForm(!showVehicleForm)}
+                  className="text-[#00E0B8] hover:text-[#3ABFF8] text-sm font-medium transition-colors"
+                >
+                  {showVehicleForm ? 'Ocultar' : 'Adicionar Veículo'}
+                </button>
+              </div>
+
+              {showVehicleForm && (
+                <div className="space-y-4 sm:space-y-6 bg-[#0F1115] p-4 rounded-lg border border-[#2A3038]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <Input
+                      label="Placa"
+                      placeholder="ABC1234"
+                      value={vehicleData.placa || ''}
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                        if (value.length > 7) value = value.slice(0, 7);
+                        setVehicleData({ ...vehicleData, placa: value });
+                      }}
+                      maxLength={7}
+                    />
+                    <Input
+                      label="VIN (Chassi)"
+                      placeholder="17 caracteres"
+                      value={vehicleData.vin || ''}
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/[^A-HJ-NPR-Z0-9]/gi, '').toUpperCase();
+                        if (value.length > 17) value = value.slice(0, 17);
+                        setVehicleData({ ...vehicleData, vin: value });
+                      }}
+                      maxLength={17}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <Input
+                      label="RENAVAN"
+                      placeholder="11 dígitos"
+                      value={vehicleData.renavan || ''}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 11);
+                        setVehicleData({ ...vehicleData, renavan: value });
+                      }}
+                      maxLength={11}
+                    />
+                    <Select
+                      label="Marca"
+                      id="vehicle-make"
+                      value={vehicleData.make || ''}
+                      onChange={(e) => setVehicleData({ ...vehicleData, make: e.target.value, model: '' })}
+                      options={[
+                        { value: '', label: 'Selecione...' },
+                        ...VEHICLE_BRANDS.map(brand => ({ value: brand, label: brand })),
+                        { value: 'Outro', label: 'Outro' },
+                      ]}
+                    />
+                  </div>
+
+                  {vehicleData.make && vehicleData.make !== 'Outro' && (
+                    <Input
+                      label="Modelo"
+                      placeholder="Digite o modelo"
+                      value={vehicleData.model === 'Outro' ? '' : (vehicleData.model || '')}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === 'Outro' || !VEHICLE_BRANDS.some(b => b === value)) {
+                          setVehicleData({ ...vehicleData, model: value });
+                        } else {
+                          setVehicleData({ ...vehicleData, model: value });
+                        }
+                      }}
+                    />
+                  )}
+                  {vehicleData.make === 'Outro' && (
+                    <Input
+                      label="Marca (Personalizada) *"
+                      placeholder="Digite a marca"
+                      value={customMake}
+                      onChange={(e) => setCustomMake(e.target.value)}
+                      required
+                    />
+                  )}
+                  {vehicleData.model === 'Outro' && vehicleData.make !== 'Outro' && (
+                    <Input
+                      label="Modelo (Personalizado) *"
+                      placeholder="Digite o modelo"
+                      value={customModel}
+                      onChange={(e) => setCustomModel(e.target.value)}
+                      required
+                    />
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <Input
+                      label="Ano"
+                      type="text"
+                      placeholder="2020"
+                      value={vehicleData.year || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Permitir apenas números
+                        const numbersOnly = value.replace(/\D/g, '');
+                        if (numbersOnly === '') {
+                          setVehicleData({ ...vehicleData, year: undefined });
+                        } else {
+                          const year = parseInt(numbersOnly);
+                          if (!isNaN(year)) {
+                            setVehicleData({ ...vehicleData, year });
+                          }
+                        }
+                      }}
+                    />
+                    <Select
+                      label="Cor"
+                      id="vehicle-color"
+                      value={vehicleData.color || ''}
+                      onChange={(e) => setVehicleData({ ...vehicleData, color: e.target.value })}
+                      options={[
+                        { value: '', label: 'Selecione...' },
+                        ...VEHICLE_COLORS.map(color => ({ value: color, label: color })),
+                        { value: 'Outro', label: 'Outro' },
+                      ]}
+                    />
+                  </div>
+
+                  {vehicleData.color === 'Outro' && (
+                    <Input
+                      label="Cor (Personalizada) *"
+                      placeholder="Digite a cor"
+                      value={customColor}
+                      onChange={(e) => setCustomColor(e.target.value)}
+                      required
+                    />
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

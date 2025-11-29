@@ -79,6 +79,7 @@ export interface CreateVehicleDto {
 }
 
 export interface UpdateVehicleDto {
+  customerId?: string; // Para transferência de veículo
   vin?: string;
   renavan?: string;
   placa?: string;
@@ -149,6 +150,42 @@ export const vehiclesApi = {
    */
   remove: async (id: string): Promise<void> => {
     await api.delete(`/vehicles/${id}`);
+  },
+
+  /**
+   * Consulta dados do veículo por placa
+   */
+  queryByPlaca: async (placa: string): Promise<{
+    make?: string;
+    model?: string;
+    year?: number;
+    color?: string;
+    vin?: string;
+    renavan?: string;
+    fuelType?: string;
+    engine?: string;
+    chassis?: string;
+  }> => {
+    const response = await api.get(`/vehicles/query/placa/${placa}`);
+    return response.data;
+  },
+
+  /**
+   * Consulta dados do veículo por RENAVAN
+   */
+  queryByRenavan: async (renavan: string): Promise<{
+    make?: string;
+    model?: string;
+    year?: number;
+    color?: string;
+    vin?: string;
+    placa?: string;
+    fuelType?: string;
+    engine?: string;
+    chassis?: string;
+  }> => {
+    const response = await api.get(`/vehicles/query/renavan/${renavan}`);
+    return response.data;
   },
 };
 

@@ -19,6 +19,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { VehiclesService } from './vehicles.service';
+import { VehicleQueryService } from './vehicle-query.service';
 import {
   CreateVehicleDto,
   UpdateVehicleDto,
@@ -35,7 +36,10 @@ import { TenantId } from '@common/decorators/tenant.decorator';
 @Controller('vehicles')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class VehiclesController {
-  constructor(private readonly vehiclesService: VehiclesService) {}
+  constructor(
+    private readonly vehiclesService: VehiclesService,
+    private readonly vehicleQueryService: VehicleQueryService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -87,6 +91,60 @@ export class VehiclesController {
     totalPages: number;
   }> {
     return this.vehiclesService.findAll(tenantId, filters);
+  }
+
+  @Get('query/placa/:placa')
+  @Roles('admin', 'manager', 'receptionist')
+  @ApiOperation({ summary: 'Consultar dados do veículo por placa' })
+  @ApiParam({ name: 'placa', description: 'Placa do veículo' })
+  @ApiResponse({
+    status: 200,
+    description: 'Dados do veículo encontrados',
+    schema: {
+      type: 'object',
+      properties: {
+        make: { type: 'string' },
+        model: { type: 'string' },
+        year: { type: 'number' },
+        color: { type: 'string' },
+        vin: { type: 'string' },
+        renavan: { type: 'string' },
+        fuelType: { type: 'string' },
+        engine: { type: 'string' },
+        chassis: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Placa inválida ou erro na consulta' })
+  async queryByPlaca(@Param('placa') placa: string) {
+    return this.vehicleQueryService.queryByPlaca(placa);
+  }
+
+  @Get('query/renavan/:renavan')
+  @Roles('admin', 'manager', 'receptionist')
+  @ApiOperation({ summary: 'Consultar dados do veículo por RENAVAN' })
+  @ApiParam({ name: 'renavan', description: 'RENAVAN do veículo' })
+  @ApiResponse({
+    status: 200,
+    description: 'Dados do veículo encontrados',
+    schema: {
+      type: 'object',
+      properties: {
+        make: { type: 'string' },
+        model: { type: 'string' },
+        year: { type: 'number' },
+        color: { type: 'string' },
+        vin: { type: 'string' },
+        placa: { type: 'string' },
+        fuelType: { type: 'string' },
+        engine: { type: 'string' },
+        chassis: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'RENAVAN inválido ou erro na consulta' })
+  async queryByRenavan(@Param('renavan') renavan: string) {
+    return this.vehicleQueryService.queryByRenavan(renavan);
   }
 
   @Get(':id')
