@@ -13,6 +13,7 @@ import {
   ApproveQuoteDto,
   QuoteStatus,
   QuoteItemDto,
+  QuoteItemType,
 } from './dto';
 import { Prisma } from '@prisma/client';
 import { getErrorMessage } from '@common/utils/error.utils';
@@ -899,7 +900,7 @@ export class QuotesService {
       recommendations: quote.recommendations || undefined,
       items: quote.items.map((item) => ({
         id: item.id,
-        type: item.type as unknown,
+        type: item.type as QuoteItemType,
         serviceId: item.serviceId || undefined,
         partId: item.partId || undefined,
         name: item.name,

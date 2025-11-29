@@ -132,8 +132,10 @@ export class VehiclesService {
       }
 
       // Criar veículo - não enviar campos null, apenas undefined ou omitir
-      const vehicleData: unknown = {
-        customerId: createVehicleDto.customerId,
+      const vehicleData: Prisma.CustomerVehicleCreateInput = {
+        customer: {
+          connect: { id: createVehicleDto.customerId },
+        },
         isDefault: createVehicleDto.isDefault ?? false,
       };
 

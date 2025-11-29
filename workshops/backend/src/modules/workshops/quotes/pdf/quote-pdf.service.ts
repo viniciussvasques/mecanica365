@@ -56,7 +56,10 @@ export class QuotePdfService {
     });
   }
 
-  private addHeader(doc: unknown, quote: QuoteResponseDto): void {
+  private addHeader(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
     // Logo e título (você pode adicionar logo depois)
     doc
       .fontSize(20)
@@ -82,7 +85,10 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
-  private addCustomerInfo(doc: unknown, quote: QuoteResponseDto): void {
+  private addCustomerInfo(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
     doc.fontSize(12).font('Helvetica-Bold').text('DADOS DO CLIENTE', {
       underline: true,
     });
@@ -138,7 +144,10 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
-  private addItems(doc: unknown, quote: QuoteResponseDto): void {
+  private addItems(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
     doc.fontSize(12).font('Helvetica-Bold').text('ITENS DO ORÇAMENTO', {
       underline: true,
     });
@@ -184,7 +193,10 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
-  private addTotals(doc: unknown, quote: QuoteResponseDto): void {
+  private addTotals(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
     const totalsY = doc.y;
     const rightAlign = 480;
 
@@ -246,7 +258,10 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
-  private addNotes(doc: unknown, quote: QuoteResponseDto): void {
+  private addNotes(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
     if (quote.diagnosticNotes || quote.inspectionNotes) {
       doc.fontSize(12).font('Helvetica-Bold').text('OBSERVAÇÕES', {
         underline: true,
@@ -281,7 +296,10 @@ export class QuotePdfService {
     }
   }
 
-  private addSignature(doc: unknown, quote: QuoteResponseDto): void {
+  private addSignature(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
     if (!quote.customerSignature) return;
 
     doc.moveDown(2);
@@ -298,7 +316,10 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
-  private addFooter(doc: unknown, quote: QuoteResponseDto): void {
+  private addFooter(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
     const pageHeight = doc.page.height;
     const footerY = pageHeight - 100;
 
