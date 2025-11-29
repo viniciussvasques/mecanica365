@@ -1,0 +1,154 @@
+import axios from 'axios';
+
+// Função para obter a URL base da API com subdomain (apenas no cliente)
+const getApiUrl = (): string => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  
+  // Verificar se estamos no cliente (localStorage só existe no browser)
+  if (typeof window === 'undefined') {
+    return `${baseUrl}/api`;
+  }
+  
+  const subdomain = localStorage.getItem('subdomain');
+  
+  // Se houver subdomain, usar no host (ex: oficinartee.localhost:3001)
+  if (subdomain && baseUrl.includes('localhost')) {
+    return `http://${subdomain}.localhost:3001/api`;
+  }
+  
+  // Caso contrário, usar URL padrão
+  return `${baseUrl}/api`;
+};
+
+const api = axios.create({
+  baseURL: typeof window !== 'undefined' ? getApiUrl() : 'http://localhost:3001/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor para adicionar token de autenticação e configurar URL
+api.interceptors.request.use((config) => {
+  // Configurar baseURL dinamicamente com subdomain (apenas no cliente)
+  if (typeof window !== 'undefined') {
+    config.baseURL = getApiUrl();
+    
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Adicionar subdomain no header também (fallback)
+    const subdomain = localStorage.getItem('subdomain');
+    if (subdomain) {
+      config.headers['X-Tenant-Subdomain'] = subdomain;
+    }
+  }
+  
+  return config;
+});
+
+// Interfaces
+export interface Vehicle {
+  id: string;
+  customerId: string;
+  vin: string | null;
+  renavan: string | null;
+  placa: string | null;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  color: string | null;
+  mileage: number | null;
+  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateVehicleDto {
+  customerId: string;
+  vin?: string;
+  renavan?: string;
+  placa?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  color?: string;
+  mileage?: number;
+  isDefault?: boolean;
+}
+
+export interface UpdateVehicleDto {
+  vin?: string;
+  renavan?: string;
+  placa?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  color?: string;
+  mileage?: number;
+  isDefault?: boolean;
+}
+
+export interface VehicleFilters {
+  customerId?: string;
+  placa?: string;
+  vin?: string;
+  renavan?: string;
+  make?: string;
+  model?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface VehiclesResponse {
+  data: Vehicle[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export const vehiclesApi = {
+  /**
+   * Lista veículos com filtros e paginação
+   */
+  findAll: async (filters?: VehicleFilters): Promise<VehiclesResponse> => {
+    const response = await api.get<VehiclesResponse>('/vehicles', {
+      params: filters,
+    });
+    return response.data;
+  },
+
+  /**
+   * Busca um veículo por ID
+   */
+  findOne: async (id: string): Promise<Vehicle> => {
+    const response = await api.get<Vehicle>(`/vehicles/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Cria um novo veículo
+   */
+  create: async (data: CreateVehicleDto): Promise<Vehicle> => {
+    const response = await api.post<Vehicle>('/vehicles', data);
+    return response.data;
+  },
+
+  /**
+   * Atualiza um veículo
+   */
+  update: async (id: string, data: UpdateVehicleDto): Promise<Vehicle> => {
+    const response = await api.patch<Vehicle>(`/vehicles/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * Remove um veículo
+   */
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/vehicles/${id}`);
+  },
+};
+
