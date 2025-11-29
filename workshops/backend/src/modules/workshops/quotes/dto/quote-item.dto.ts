@@ -31,7 +31,7 @@ export class QuoteItemDto {
   })
   @IsString({ message: 'ID do serviço deve ser uma string' })
   @IsOptional()
-  @ValidateIf((o) => o.type === QuoteItemType.SERVICE)
+  @ValidateIf((o) => (o as QuoteItemDto).type === QuoteItemType.SERVICE)
   serviceId?: string;
 
   @ApiProperty({
@@ -41,7 +41,7 @@ export class QuoteItemDto {
   })
   @IsString({ message: 'ID da peça deve ser uma string' })
   @IsOptional()
-  @ValidateIf((o) => o.type === QuoteItemType.PART)
+  @ValidateIf((o) => (o as QuoteItemDto).type === QuoteItemType.PART)
   partId?: string;
 
   @ApiProperty({
@@ -88,6 +88,6 @@ export class QuoteItemDto {
   @IsNumber({}, { message: 'Horas deve ser um número' })
   @IsOptional()
   @Min(0, { message: 'Horas deve ser maior ou igual a 0' })
-  @ValidateIf((o) => o.type === QuoteItemType.SERVICE)
+  @ValidateIf((o) => (o as QuoteItemDto).type === QuoteItemType.SERVICE)
   hours?: number;
 }

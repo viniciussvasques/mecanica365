@@ -12,6 +12,7 @@ import {
   HttpStatus,
   Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -154,7 +155,7 @@ export class QuotesController {
   async generatePdf(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Res() res: unknown,
+    @Res() res: Response,
   ) {
     const pdfBuffer = await this.quotesService.generatePdf(tenantId, id);
     res.setHeader('Content-Type', 'application/pdf');
@@ -162,7 +163,7 @@ export class QuotesController {
       'Content-Disposition',
       `attachment; filename="orcamento-${id}.pdf"`,
     );
-    res.send(pdfBuffer);
+    res.send(pdfBuffer as Buffer);
   }
 
   @Delete(':id')

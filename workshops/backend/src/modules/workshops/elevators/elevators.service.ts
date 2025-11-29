@@ -468,7 +468,7 @@ export class ElevatorsService {
       }
 
       // Buscar uso ativo
-      let activeUsage;
+      let activeUsage: { id: string; notes: string | null } | null;
       if (endUsageDto.usageId) {
         activeUsage = await this.prisma.elevatorUsage.findFirst({
           where: {
@@ -476,12 +476,20 @@ export class ElevatorsService {
             elevatorId,
             endTime: null,
           },
+          select: {
+            id: true,
+            notes: true,
+          },
         });
       } else {
         activeUsage = await this.prisma.elevatorUsage.findFirst({
           where: {
             elevatorId,
             endTime: null,
+          },
+          select: {
+            id: true,
+            notes: true,
           },
         });
       }
@@ -494,13 +502,14 @@ export class ElevatorsService {
 
       // Finalizar uso
       const endTime = new Date();
+      const notesValue = endUsageDto.notes
+        ? `${activeUsage.notes || ''}\n${endUsageDto.notes}`.trim()
+        : activeUsage.notes;
       const updatedUsage = await this.prisma.elevatorUsage.update({
         where: { id: activeUsage.id },
         data: {
           endTime,
-          notes: endUsageDto.notes
-            ? `${activeUsage.notes || ''}\n${endUsageDto.notes}`.trim()
-            : activeUsage.notes,
+          notes: notesValue,
         },
         include: {
           elevator: true,
