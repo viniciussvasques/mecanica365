@@ -24,4 +24,3 @@ export class EndUsageDto {
   )
   notes?: string;
 }
-

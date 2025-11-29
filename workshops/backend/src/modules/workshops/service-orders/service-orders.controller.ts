@@ -47,7 +47,10 @@ export class ServiceOrdersController {
     type: ServiceOrderResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 404, description: 'Cliente ou mecânico não encontrado' })
+  @ApiResponse({
+    status: 404,
+    description: 'Cliente ou mecânico não encontrado',
+  })
   async create(
     @TenantId() tenantId: string,
     @Body() createServiceOrderDto: CreateServiceOrderDto,
@@ -101,7 +104,11 @@ export class ServiceOrdersController {
     @Param('id') id: string,
     @Body() updateServiceOrderDto: UpdateServiceOrderDto,
   ): Promise<ServiceOrderResponseDto> {
-    return this.serviceOrdersService.update(tenantId, id, updateServiceOrderDto);
+    return this.serviceOrdersService.update(
+      tenantId,
+      id,
+      updateServiceOrderDto,
+    );
   }
 
   @Post(':id/start')
@@ -163,7 +170,10 @@ export class ServiceOrdersController {
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Remover ordem de serviço' })
   @ApiParam({ name: 'id', description: 'ID da ordem de serviço' })
-  @ApiResponse({ status: 204, description: 'Ordem de serviço removida com sucesso' })
+  @ApiResponse({
+    status: 204,
+    description: 'Ordem de serviço removida com sucesso',
+  })
   @ApiResponse({ status: 404, description: 'Ordem de serviço não encontrada' })
   @ApiResponse({
     status: 400,
@@ -176,4 +186,3 @@ export class ServiceOrdersController {
     return this.serviceOrdersService.remove(tenantId, id);
   }
 }
-

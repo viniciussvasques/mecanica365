@@ -8,7 +8,6 @@ import {
   IsNumber,
   Min,
   Max,
-  ValidateIf,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
@@ -231,7 +230,9 @@ export class CreateServiceOrderDto {
     example: 'Pastilhas de freio desgastadas, necessária troca',
     required: false,
   })
-  @IsString({ message: 'Descrição do problema identificado deve ser uma string' })
+  @IsString({
+    message: 'Descrição do problema identificado deve ser uma string',
+  })
   @IsOptional()
   @Transform(({ value }): string | undefined =>
     value === '' ? undefined : value,
@@ -239,7 +240,8 @@ export class CreateServiceOrderDto {
   identifiedProblemDescription?: string;
 
   @ApiProperty({
-    description: 'ID do problema comum identificado (referência a CommonProblem)',
+    description:
+      'ID do problema comum identificado (referência a CommonProblem)',
     example: '123e4567-e89b-12d3-a456-426614174000',
     required: false,
   })
@@ -260,8 +262,10 @@ export class CreateServiceOrderDto {
   diagnosticNotes?: string;
 
   @ApiProperty({
-    description: 'Recomendações do mecânico (troca de peça, manutenção preventiva, etc.)',
-    example: 'Recomendada troca de pastilhas e verificação do sistema de freios completo',
+    description:
+      'Recomendações do mecânico (troca de peça, manutenção preventiva, etc.)',
+    example:
+      'Recomendada troca de pastilhas e verificação do sistema de freios completo',
     required: false,
   })
   @IsString({ message: 'Recomendações devem ser uma string' })
@@ -271,4 +275,3 @@ export class CreateServiceOrderDto {
   )
   recommendations?: string;
 }
-

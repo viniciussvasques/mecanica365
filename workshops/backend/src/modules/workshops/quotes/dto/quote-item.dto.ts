@@ -91,4 +91,3 @@ export class QuoteItemDto {
   @ValidateIf((o) => o.type === QuoteItemType.SERVICE)
   hours?: number;
 }
-

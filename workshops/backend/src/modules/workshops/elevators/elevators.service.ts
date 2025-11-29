@@ -487,7 +487,9 @@ export class ElevatorsService {
       }
 
       if (!activeUsage) {
-        throw new NotFoundException('Nenhum uso ativo encontrado para este elevador');
+        throw new NotFoundException(
+          'Nenhum uso ativo encontrado para este elevador',
+        );
       }
 
       // Finalizar uso
@@ -675,9 +677,7 @@ export class ElevatorsService {
       ) {
         throw error;
       }
-      this.logger.error(
-        `Erro ao reservar elevador: ${getErrorMessage(error)}`,
-      );
+      this.logger.error(`Erro ao reservar elevador: ${getErrorMessage(error)}`);
       throw new BadRequestException('Erro ao reservar elevador');
     }
   }

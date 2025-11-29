@@ -21,7 +21,9 @@ export class QuotePdfService {
 
         doc.on('data', (chunk) => chunks.push(chunk));
         doc.on('end', () => resolve(Buffer.concat(chunks)));
-        doc.on('error', (error) => reject(error));
+        doc.on('error', (error) =>
+          reject(error instanceof Error ? error : new Error(String(error))),
+        );
 
         // Cabeçalho
         this.addHeader(doc, quote);
@@ -49,12 +51,12 @@ export class QuotePdfService {
         doc.end();
       } catch (error) {
         this.logger.error(`Erro ao gerar PDF: ${error}`);
-        reject(error);
+        reject(error instanceof Error ? error : new Error(String(error)));
       }
     });
   }
 
-  private addHeader(doc: any, quote: QuoteResponseDto): void {
+  private addHeader(doc: unknown, quote: QuoteResponseDto): void {
     // Logo e título (você pode adicionar logo depois)
     doc
       .fontSize(20)
@@ -80,10 +82,7 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
-  private addCustomerInfo(
-    doc: any,
-    quote: QuoteResponseDto,
-  ): void {
+  private addCustomerInfo(doc: unknown, quote: QuoteResponseDto): void {
     doc.fontSize(12).font('Helvetica-Bold').text('DADOS DO CLIENTE', {
       underline: true,
     });
@@ -139,7 +138,7 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
-  private addItems(doc: any, quote: QuoteResponseDto): void {
+  private addItems(doc: unknown, quote: QuoteResponseDto): void {
     doc.fontSize(12).font('Helvetica-Bold').text('ITENS DO ORÇAMENTO', {
       underline: true,
     });
@@ -185,7 +184,7 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
-  private addTotals(doc: any, quote: QuoteResponseDto): void {
+  private addTotals(doc: unknown, quote: QuoteResponseDto): void {
     const totalsY = doc.y;
     const rightAlign = 480;
 
@@ -247,7 +246,7 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
-  private addNotes(doc: any, quote: QuoteResponseDto): void {
+  private addNotes(doc: unknown, quote: QuoteResponseDto): void {
     if (quote.diagnosticNotes || quote.inspectionNotes) {
       doc.fontSize(12).font('Helvetica-Bold').text('OBSERVAÇÕES', {
         underline: true,
@@ -282,7 +281,7 @@ export class QuotePdfService {
     }
   }
 
-  private addSignature(doc: any, quote: QuoteResponseDto): void {
+  private addSignature(doc: unknown, quote: QuoteResponseDto): void {
     if (!quote.customerSignature) return;
 
     doc.moveDown(2);
@@ -299,16 +298,18 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
-  private addFooter(doc: any, quote: QuoteResponseDto): void {
+  private addFooter(doc: unknown, quote: QuoteResponseDto): void {
     const pageHeight = doc.page.height;
     const footerY = pageHeight - 100;
 
-    doc.fontSize(8).font('Helvetica').text(
-      `Orçamento ${quote.number} - Gerado em ${new Date().toLocaleString('pt-BR')}`,
-      50,
-      footerY,
-      { align: 'center' },
-    );
+    doc
+      .fontSize(8)
+      .font('Helvetica')
+      .text(
+        `Orçamento ${quote.number} - Gerado em ${new Date().toLocaleString('pt-BR')}`,
+        50,
+        footerY,
+        { align: 'center' },
+      );
   }
 }
-

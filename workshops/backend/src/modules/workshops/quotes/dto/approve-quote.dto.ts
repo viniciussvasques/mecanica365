@@ -12,7 +12,8 @@ export class ApproveQuoteDto {
   customerSignature?: string;
 
   @ApiProperty({
-    description: 'ID do elevador para reservar (se não foi especificado na criação)',
+    description:
+      'ID do elevador para reservar (se não foi especificado na criação)',
     example: '123e4567-e89b-12d3-a456-426614174000',
     required: false,
   })
@@ -20,4 +21,3 @@ export class ApproveQuoteDto {
   @IsOptional()
   elevatorId?: string;
 }
-

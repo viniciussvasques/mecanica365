@@ -178,4 +178,3 @@ export class QuoteResponseDto {
   @ApiProperty()
   updatedAt: Date;
 }
-

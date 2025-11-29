@@ -1,24 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { QuotesService } from './quotes.service';
 import { PrismaService } from '@database/prisma.service';
 import { ElevatorsService } from '../elevators/elevators.service';
 import { ServiceOrdersService } from '../service-orders/service-orders.service';
 import { QuotePdfService } from './pdf/quote-pdf.service';
-import {
-  CreateQuoteDto,
-  QuoteStatus,
-  QuoteItemType,
-} from './dto';
+import { CreateQuoteDto, QuoteStatus, QuoteItemType } from './dto';
 
 describe('QuotesService', () => {
   let service: QuotesService;
 
   const mockTenantId = 'tenant-id';
-  
+
   const createMockQuote = (overrides = {}) => ({
     id: 'quote-id',
     tenantId: mockTenantId,
@@ -30,11 +23,11 @@ describe('QuotesService', () => {
     status: 'draft',
     version: 1,
     parentQuoteId: null,
-    laborCost: { toNumber: () => 200 } as any,
-    partsCost: { toNumber: () => 300 } as any,
-    totalCost: { toNumber: () => 500 } as any,
-    discount: { toNumber: () => 0 } as any,
-    taxAmount: { toNumber: () => 0 } as any,
+    laborCost: { toNumber: () => 200 } as unknown,
+    partsCost: { toNumber: () => 300 } as unknown,
+    totalCost: { toNumber: () => 500 } as unknown,
+    discount: { toNumber: () => 0 } as unknown,
+    taxAmount: { toNumber: () => 0 } as unknown,
     expiresAt: null,
     validUntil: null,
     sentAt: null,
@@ -81,9 +74,9 @@ describe('QuotesService', () => {
         name: 'Troca de óleo',
         description: 'Troca de óleo do motor',
         quantity: 1,
-        unitCost: { toNumber: () => 150 } as any,
-        totalCost: { toNumber: () => 150 } as any,
-        hours: { toNumber: () => 1.5 } as any,
+        unitCost: { toNumber: () => 150 } as unknown,
+        totalCost: { toNumber: () => 150 } as unknown,
+        hours: { toNumber: () => 1.5 } as unknown,
       },
     ],
     ...overrides,
@@ -249,7 +242,10 @@ describe('QuotesService', () => {
         1,
       ]);
 
-      const result = await service.findAll(mockTenantId, { page: 1, limit: 20 });
+      const result = await service.findAll(mockTenantId, {
+        page: 1,
+        limit: 20,
+      });
 
       expect(result).toHaveProperty('data');
       expect(result).toHaveProperty('total', 1);
@@ -277,9 +273,9 @@ describe('QuotesService', () => {
     it('deve lançar NotFoundException se orçamento não existir', async () => {
       mockPrismaService.quote.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.findOne(mockTenantId, 'quote-id'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(mockTenantId, 'quote-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -390,9 +386,9 @@ describe('QuotesService', () => {
     it('deve lançar NotFoundException se orçamento não existir', async () => {
       mockPrismaService.quote.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.remove(mockTenantId, 'quote-id'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.remove(mockTenantId, 'quote-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('deve lançar BadRequestException se orçamento foi convertido', async () => {
@@ -400,9 +396,9 @@ describe('QuotesService', () => {
         createMockQuote({ status: QuoteStatus.CONVERTED }),
       );
 
-      await expect(
-        service.remove(mockTenantId, 'quote-id'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.remove(mockTenantId, 'quote-id')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -418,4 +414,3 @@ describe('QuotesService', () => {
     });
   });
 });
-

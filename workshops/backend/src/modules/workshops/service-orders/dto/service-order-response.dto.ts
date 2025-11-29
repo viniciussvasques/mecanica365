@@ -279,4 +279,3 @@ export class ServiceOrderResponseDto {
   })
   updatedAt: Date;
 }
-

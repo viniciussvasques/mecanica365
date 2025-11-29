@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsInt, IsEnum, IsDateString, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsInt,
+  IsEnum,
+  IsDateString,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { QuoteStatus } from './quote-status.enum';
@@ -87,4 +95,3 @@ export class QuoteFiltersDto {
   @IsOptional()
   limit?: number = 20;
 }
-

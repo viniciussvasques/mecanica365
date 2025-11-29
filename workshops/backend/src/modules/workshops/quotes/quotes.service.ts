@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
@@ -127,14 +126,7 @@ export class QuotesService {
         throw new BadRequestException('Orçamento deve ter pelo menos um item');
       }
 
-      // Calcular custos
-      const itemsTotal = createQuoteDto.items.reduce(
-        (sum, item) => {
-          const itemTotal = item.unitCost * item.quantity;
-          return sum + itemTotal;
-        },
-        0,
-      );
+      // Calcular custos (itemsTotal calculado inline abaixo)
 
       const laborCost = createQuoteDto.laborCost || 0;
       const partsCost = createQuoteDto.partsCost || 0;
@@ -170,12 +162,16 @@ export class QuotesService {
             ? new Date(createQuoteDto.validUntil)
             : null,
           // Problema relatado pelo cliente
-          reportedProblemCategory: createQuoteDto.reportedProblemCategory || null,
-          reportedProblemDescription: createQuoteDto.reportedProblemDescription || null,
+          reportedProblemCategory:
+            createQuoteDto.reportedProblemCategory || null,
+          reportedProblemDescription:
+            createQuoteDto.reportedProblemDescription || null,
           reportedProblemSymptoms: createQuoteDto.reportedProblemSymptoms || [],
           // Problema identificado pelo mecânico
-          identifiedProblemCategory: createQuoteDto.identifiedProblemCategory || null,
-          identifiedProblemDescription: createQuoteDto.identifiedProblemDescription || null,
+          identifiedProblemCategory:
+            createQuoteDto.identifiedProblemCategory || null,
+          identifiedProblemDescription:
+            createQuoteDto.identifiedProblemDescription || null,
           identifiedProblemId: createQuoteDto.identifiedProblemId || null,
           // Diagnóstico e observações
           diagnosticNotes: createQuoteDto.diagnosticNotes || null,
@@ -347,10 +343,7 @@ export class QuotesService {
   /**
    * Busca um orçamento por ID
    */
-  async findOne(
-    tenantId: string,
-    id: string,
-  ): Promise<QuoteResponseDto> {
+  async findOne(tenantId: string, id: string): Promise<QuoteResponseDto> {
     const quote = await this.prisma.quote.findFirst({
       where: {
         id,
@@ -415,7 +408,7 @@ export class QuotesService {
       }
 
       // Não permitir atualizar orçamento já convertido
-      if (existingQuote.status === QuoteStatus.CONVERTED) {
+      if (existingQuote.status === (QuoteStatus.CONVERTED as string)) {
         throw new BadRequestException(
           'Não é possível atualizar um orçamento já convertido em OS',
         );
@@ -476,32 +469,40 @@ export class QuotesService {
 
       // Problema relatado pelo cliente
       if (updateQuoteDto.reportedProblemCategory !== undefined) {
-        updateData.reportedProblemCategory = updateQuoteDto.reportedProblemCategory || null;
+        updateData.reportedProblemCategory =
+          updateQuoteDto.reportedProblemCategory || null;
       }
       if (updateQuoteDto.reportedProblemDescription !== undefined) {
-        updateData.reportedProblemDescription = updateQuoteDto.reportedProblemDescription?.trim() || null;
+        updateData.reportedProblemDescription =
+          updateQuoteDto.reportedProblemDescription?.trim() || null;
       }
       if (updateQuoteDto.reportedProblemSymptoms !== undefined) {
-        updateData.reportedProblemSymptoms = updateQuoteDto.reportedProblemSymptoms || [];
+        updateData.reportedProblemSymptoms =
+          updateQuoteDto.reportedProblemSymptoms || [];
       }
 
       // Problema identificado pelo mecânico
       if (updateQuoteDto.identifiedProblemCategory !== undefined) {
-        updateData.identifiedProblemCategory = updateQuoteDto.identifiedProblemCategory || null;
+        updateData.identifiedProblemCategory =
+          updateQuoteDto.identifiedProblemCategory || null;
       }
       if (updateQuoteDto.identifiedProblemDescription !== undefined) {
-        updateData.identifiedProblemDescription = updateQuoteDto.identifiedProblemDescription?.trim() || null;
+        updateData.identifiedProblemDescription =
+          updateQuoteDto.identifiedProblemDescription?.trim() || null;
       }
       if (updateQuoteDto.identifiedProblemId !== undefined) {
-        updateData.identifiedProblemId = updateQuoteDto.identifiedProblemId || null;
+        updateData.identifiedProblemId =
+          updateQuoteDto.identifiedProblemId || null;
       }
 
       // Diagnóstico e observações
       if (updateQuoteDto.diagnosticNotes !== undefined) {
-        updateData.diagnosticNotes = updateQuoteDto.diagnosticNotes?.trim() || null;
+        updateData.diagnosticNotes =
+          updateQuoteDto.diagnosticNotes?.trim() || null;
       }
       if (updateQuoteDto.inspectionNotes !== undefined) {
-        updateData.inspectionNotes = updateQuoteDto.inspectionNotes?.trim() || null;
+        updateData.inspectionNotes =
+          updateQuoteDto.inspectionNotes?.trim() || null;
       }
       if (updateQuoteDto.inspectionPhotos !== undefined) {
         updateData.inspectionPhotos = updateQuoteDto.inspectionPhotos || [];
@@ -509,7 +510,8 @@ export class QuotesService {
 
       // Recomendações
       if (updateQuoteDto.recommendations !== undefined) {
-        updateData.recommendations = updateQuoteDto.recommendations?.trim() || null;
+        updateData.recommendations =
+          updateQuoteDto.recommendations?.trim() || null;
       }
 
       if (updateQuoteDto.inspectionPhotos !== undefined) {
@@ -543,19 +545,27 @@ export class QuotesService {
           (sum, item) => sum + item.unitCost * item.quantity,
           0,
         );
-        const laborCost = updateQuoteDto.laborCost ?? existingQuote.laborCost?.toNumber() ?? 0;
-        const partsCost = updateQuoteDto.partsCost ?? existingQuote.partsCost?.toNumber() ?? 0;
-        const discount = updateQuoteDto.discount ?? existingQuote.discount?.toNumber() ?? 0;
-        const taxAmount = updateQuoteDto.taxAmount ?? existingQuote.taxAmount?.toNumber() ?? 0;
+        const laborCost =
+          updateQuoteDto.laborCost ?? existingQuote.laborCost?.toNumber() ?? 0;
+        const partsCost =
+          updateQuoteDto.partsCost ?? existingQuote.partsCost?.toNumber() ?? 0;
+        const discount =
+          updateQuoteDto.discount ?? existingQuote.discount?.toNumber() ?? 0;
+        const taxAmount =
+          updateQuoteDto.taxAmount ?? existingQuote.taxAmount?.toNumber() ?? 0;
 
         updateData.totalCost =
           itemsTotal + laborCost + partsCost - discount + taxAmount;
       } else {
         // Recalcular total apenas se custos mudaram
-        const laborCost = updateQuoteDto.laborCost ?? existingQuote.laborCost?.toNumber() ?? 0;
-        const partsCost = updateQuoteDto.partsCost ?? existingQuote.partsCost?.toNumber() ?? 0;
-        const discount = updateQuoteDto.discount ?? existingQuote.discount?.toNumber() ?? 0;
-        const taxAmount = updateQuoteDto.taxAmount ?? existingQuote.taxAmount?.toNumber() ?? 0;
+        const laborCost =
+          updateQuoteDto.laborCost ?? existingQuote.laborCost?.toNumber() ?? 0;
+        const partsCost =
+          updateQuoteDto.partsCost ?? existingQuote.partsCost?.toNumber() ?? 0;
+        const discount =
+          updateQuoteDto.discount ?? existingQuote.discount?.toNumber() ?? 0;
+        const taxAmount =
+          updateQuoteDto.taxAmount ?? existingQuote.taxAmount?.toNumber() ?? 0;
         const itemsTotal = existingQuote.items.reduce(
           (sum, item) => sum + item.totalCost.toNumber(),
           0,
@@ -623,7 +633,7 @@ export class QuotesService {
     tenantId: string,
     id: string,
     approveQuoteDto: ApproveQuoteDto,
-  ): Promise<{ quote: QuoteResponseDto; serviceOrder: any }> {
+  ): Promise<{ quote: QuoteResponseDto; serviceOrder: unknown }> {
     const quote = await this.prisma.quote.findFirst({
       where: {
         id,
@@ -640,16 +650,20 @@ export class QuotesService {
       throw new NotFoundException('Orçamento não encontrado');
     }
 
-    if (quote.status === QuoteStatus.CONVERTED) {
+    if (quote.status === (QuoteStatus.CONVERTED as string)) {
       throw new BadRequestException('Orçamento já foi convertido em OS');
     }
 
-    if (quote.status === QuoteStatus.REJECTED) {
-      throw new BadRequestException('Não é possível aprovar um orçamento rejeitado');
+    if (quote.status === (QuoteStatus.REJECTED as string)) {
+      throw new BadRequestException(
+        'Não é possível aprovar um orçamento rejeitado',
+      );
     }
 
-    if (quote.status === QuoteStatus.EXPIRED) {
-      throw new BadRequestException('Não é possível aprovar um orçamento expirado');
+    if (quote.status === (QuoteStatus.EXPIRED as string)) {
+      throw new BadRequestException(
+        'Não é possível aprovar um orçamento expirado',
+      );
     }
 
     // Usar elevador do approveDto ou do quote
@@ -663,12 +677,16 @@ export class QuotesService {
       vehicleMake: quote.vehicle?.make ? quote.vehicle.make : undefined,
       vehicleModel: quote.vehicle?.model ? quote.vehicle.model : undefined,
       vehicleYear: quote.vehicle?.year ? quote.vehicle.year : undefined,
-      vehicleMileage: quote.vehicle?.mileage ? quote.vehicle.mileage : undefined,
+      vehicleMileage: quote.vehicle?.mileage
+        ? quote.vehicle.mileage
+        : undefined,
       status: ServiceOrderStatus.SCHEDULED,
       elevatorId: elevatorId || undefined,
-      estimatedHours: quote.items
-        .filter((item) => item.hours)
-        .reduce((sum, item) => sum + (item.hours?.toNumber() || 0), 0) || undefined,
+      estimatedHours:
+        quote.items
+          .filter((item) => item.hours)
+          .reduce((sum, item) => sum + (item.hours?.toNumber() || 0), 0) ||
+        undefined,
       laborCost: quote.laborCost?.toNumber() || undefined,
       partsCost: quote.partsCost?.toNumber() || undefined,
       discount: quote.discount?.toNumber() || undefined,
@@ -757,7 +775,7 @@ export class QuotesService {
     }
 
     // Não permitir remover orçamento convertido
-    if (quote.status === QuoteStatus.CONVERTED) {
+    if (quote.status === (QuoteStatus.CONVERTED as string)) {
       throw new BadRequestException(
         'Não é possível remover um orçamento já convertido em OS',
       );
@@ -773,10 +791,7 @@ export class QuotesService {
   /**
    * Gera PDF do orçamento
    */
-  async generatePdf(
-    tenantId: string,
-    id: string,
-  ): Promise<Buffer> {
+  async generatePdf(tenantId: string, id: string): Promise<Buffer> {
     const quote = await this.findOne(tenantId, id);
     return this.quotePdfService.generatePdf(quote);
   }
@@ -873,7 +888,8 @@ export class QuotesService {
       reportedProblemSymptoms: quote.reportedProblemSymptoms || [],
       // Problema identificado pelo mecânico
       identifiedProblemCategory: quote.identifiedProblemCategory || undefined,
-      identifiedProblemDescription: quote.identifiedProblemDescription || undefined,
+      identifiedProblemDescription:
+        quote.identifiedProblemDescription || undefined,
       identifiedProblemId: quote.identifiedProblemId || undefined,
       // Diagnóstico e observações
       diagnosticNotes: quote.diagnosticNotes || undefined,
@@ -883,7 +899,7 @@ export class QuotesService {
       recommendations: quote.recommendations || undefined,
       items: quote.items.map((item) => ({
         id: item.id,
-        type: item.type as any,
+        type: item.type as unknown,
         serviceId: item.serviceId || undefined,
         partId: item.partId || undefined,
         name: item.name,
@@ -898,4 +914,3 @@ export class QuotesService {
     };
   }
 }
-

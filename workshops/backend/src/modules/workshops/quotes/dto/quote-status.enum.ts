@@ -7,4 +7,3 @@ export enum QuoteStatus {
   EXPIRED = 'expired',
   CONVERTED = 'converted',
 }
-

@@ -13,4 +13,3 @@ import { QuotePdfService } from './pdf/quote-pdf.service';
   exports: [QuotesService],
 })
 export class QuotesModule {}
-

@@ -132,7 +132,9 @@ export class ElevatorsController {
 
   @Post(':id/end-usage')
   @Roles('admin', 'manager', 'mechanic', 'receptionist')
-  @ApiOperation({ summary: 'Finalizar uso do elevador (quando OS é finalizada)' })
+  @ApiOperation({
+    summary: 'Finalizar uso do elevador (quando OS é finalizada)',
+  })
   @ApiParam({ name: 'id', description: 'ID do elevador' })
   @ApiResponse({
     status: 200,
@@ -212,7 +214,9 @@ export class ElevatorsController {
 
   @Get('status/overview')
   @Roles('admin', 'manager', 'mechanic', 'receptionist')
-  @ApiOperation({ summary: 'Dashboard: Status de todos os elevadores em tempo real' })
+  @ApiOperation({
+    summary: 'Dashboard: Status de todos os elevadores em tempo real',
+  })
   @ApiResponse({
     status: 200,
     description: 'Status dos elevadores',

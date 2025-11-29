@@ -49,7 +49,10 @@ export class QuotesController {
     type: QuoteResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 404, description: 'Cliente, veículo ou elevador não encontrado' })
+  @ApiResponse({
+    status: 404,
+    description: 'Cliente, veículo ou elevador não encontrado',
+  })
   async create(
     @TenantId() tenantId: string,
     @Body() createQuoteDto: CreateQuoteDto,
@@ -151,7 +154,7 @@ export class QuotesController {
   async generatePdf(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Res() res: any,
+    @Res() res: unknown,
   ) {
     const pdfBuffer = await this.quotesService.generatePdf(tenantId, id);
     res.setHeader('Content-Type', 'application/pdf');
@@ -180,4 +183,3 @@ export class QuotesController {
     return this.quotesService.remove(tenantId, id);
   }
 }
-

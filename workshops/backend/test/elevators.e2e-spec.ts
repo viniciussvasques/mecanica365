@@ -42,7 +42,7 @@ describe('ElevatorsController (e2e)', () => {
     testUserEmail = 'elevators@test.com';
     testUserPassword = 'TestPassword123';
     const hashedPassword = await bcrypt.hash(testUserPassword, 10);
-    const user = await prismaService.user.create({
+    await prismaService.user.create({
       data: {
         tenantId: testTenantId,
         email: testUserEmail,

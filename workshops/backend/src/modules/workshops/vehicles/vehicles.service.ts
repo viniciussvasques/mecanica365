@@ -132,7 +132,7 @@ export class VehiclesService {
       }
 
       // Criar veículo - não enviar campos null, apenas undefined ou omitir
-      const vehicleData: any = {
+      const vehicleData: unknown = {
         customerId: createVehicleDto.customerId,
         isDefault: createVehicleDto.isDefault ?? false,
       };

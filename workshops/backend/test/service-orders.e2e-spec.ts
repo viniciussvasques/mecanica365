@@ -33,12 +33,13 @@ describe('ServiceOrdersController (e2e)', () => {
     });
     tenantId = tenant.id;
 
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         tenantId,
         email: 'test-service-orders@test.com',
         name: 'Test User',
-        password: '$2b$10$rQZ8vJZ8vJZ8vJZ8vJZ8vOeZ8vJZ8vJZ8vJZ8vJZ8vJZ8vJZ8vJZ8v',
+        password:
+          '$2b$10$rQZ8vJZ8vJZ8vJZ8vJZ8vOeZ8vJZ8vJZ8vJZ8vJZ8vJZ8vJZ8vJZ8v',
         role: 'admin',
       },
     });
@@ -164,4 +165,3 @@ describe('ServiceOrdersController (e2e)', () => {
     });
   });
 });
-

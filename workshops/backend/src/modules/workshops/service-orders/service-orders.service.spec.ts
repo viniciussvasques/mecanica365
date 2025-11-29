@@ -1,21 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { ServiceOrdersService } from './service-orders.service';
 import { PrismaService } from '@database/prisma.service';
 import { ElevatorsService } from '../elevators/elevators.service';
-import {
-  CreateServiceOrderDto,
-  ServiceOrderStatus,
-} from './dto';
+import { CreateServiceOrderDto, ServiceOrderStatus } from './dto';
 
 describe('ServiceOrdersService', () => {
   let service: ServiceOrdersService;
 
   const mockTenantId = 'tenant-id';
-  
+
   const createMockServiceOrder = (overrides = {}) => ({
     id: 'service-order-id',
     tenantId: mockTenantId,
@@ -47,7 +41,7 @@ describe('ServiceOrdersService', () => {
     laborCost: null,
     partsCost: null,
     totalCost: null,
-    discount: { toNumber: () => 0 } as any,
+    discount: { toNumber: () => 0 } as unknown,
     actualHours: null,
     startedAt: null,
     completedAt: null,
@@ -160,12 +154,12 @@ describe('ServiceOrdersService', () => {
   describe('findAll', () => {
     it('deve retornar lista de ordens de serviço', async () => {
       const mockServiceOrder = createMockServiceOrder();
-      mockPrismaService.$transaction.mockResolvedValue([
-        [mockServiceOrder],
-        1,
-      ]);
+      mockPrismaService.$transaction.mockResolvedValue([[mockServiceOrder], 1]);
 
-      const result = await service.findAll(mockTenantId, { page: 1, limit: 20 });
+      const result = await service.findAll(mockTenantId, {
+        page: 1,
+        limit: 20,
+      });
 
       expect(result).toHaveProperty('data');
       expect(result).toHaveProperty('total', 1);
@@ -177,7 +171,9 @@ describe('ServiceOrdersService', () => {
   describe('findOne', () => {
     it('deve retornar ordem de serviço encontrada', async () => {
       const mockServiceOrder = createMockServiceOrder();
-      mockPrismaService.serviceOrder.findFirst.mockResolvedValue(mockServiceOrder);
+      mockPrismaService.serviceOrder.findFirst.mockResolvedValue(
+        mockServiceOrder,
+      );
 
       const result = await service.findOne(mockTenantId, 'service-order-id');
 
@@ -203,7 +199,9 @@ describe('ServiceOrdersService', () => {
   describe('start', () => {
     it('deve iniciar ordem de serviço', async () => {
       const mockServiceOrder = createMockServiceOrder();
-      mockPrismaService.serviceOrder.findFirst.mockResolvedValue(mockServiceOrder);
+      mockPrismaService.serviceOrder.findFirst.mockResolvedValue(
+        mockServiceOrder,
+      );
       mockPrismaService.elevatorUsage.findFirst.mockResolvedValue(null);
       mockPrismaService.serviceOrder.update.mockResolvedValue(
         createMockServiceOrder({
@@ -230,7 +228,9 @@ describe('ServiceOrdersService', () => {
   describe('complete', () => {
     it('deve finalizar ordem de serviço', async () => {
       const mockServiceOrder = createMockServiceOrder();
-      mockPrismaService.serviceOrder.findFirst.mockResolvedValue(mockServiceOrder);
+      mockPrismaService.serviceOrder.findFirst.mockResolvedValue(
+        mockServiceOrder,
+      );
       mockPrismaService.elevatorUsage.findFirst.mockResolvedValue(null);
       mockPrismaService.serviceOrder.update.mockResolvedValue(
         createMockServiceOrder({
@@ -249,7 +249,9 @@ describe('ServiceOrdersService', () => {
   describe('cancel', () => {
     it('deve cancelar ordem de serviço', async () => {
       const mockServiceOrder = createMockServiceOrder();
-      mockPrismaService.serviceOrder.findFirst.mockResolvedValue(mockServiceOrder);
+      mockPrismaService.serviceOrder.findFirst.mockResolvedValue(
+        mockServiceOrder,
+      );
       mockPrismaService.elevatorUsage.findFirst.mockResolvedValue(null);
       mockPrismaService.serviceOrder.update.mockResolvedValue(
         createMockServiceOrder({
@@ -266,7 +268,9 @@ describe('ServiceOrdersService', () => {
   describe('remove', () => {
     it('deve remover ordem de serviço', async () => {
       const mockServiceOrder = createMockServiceOrder();
-      mockPrismaService.serviceOrder.findFirst.mockResolvedValue(mockServiceOrder);
+      mockPrismaService.serviceOrder.findFirst.mockResolvedValue(
+        mockServiceOrder,
+      );
       mockPrismaService.serviceOrder.delete.mockResolvedValue(mockServiceOrder);
 
       await service.remove(mockTenantId, 'service-order-id');

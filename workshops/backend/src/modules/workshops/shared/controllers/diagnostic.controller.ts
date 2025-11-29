@@ -8,11 +8,19 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
 import { TenantGuard } from '@auth/guards/tenant.guard';
 import { CurrentTenant } from '@auth/decorators/current-tenant.decorator';
-import { DiagnosticService, DiagnosticSuggestion } from '../services/diagnostic.service';
+import {
+  DiagnosticService,
+  DiagnosticSuggestion,
+} from '../services/diagnostic.service';
 import { ProblemCategory } from '../enums/problem-category.enum';
 import { IsArray, IsString, IsOptional, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
@@ -60,16 +68,14 @@ export class DiagnosticController {
     @CurrentTenant() tenantId: string,
     @Body() dto: SuggestProblemsDto,
   ): Promise<DiagnosticSuggestion[]> {
-    return this.diagnosticService.suggestProblems(
-      dto.symptoms,
-      dto.category,
-    );
+    return this.diagnosticService.suggestProblems(dto.symptoms, dto.category);
   }
 
   @Get('problems')
   @ApiOperation({
     summary: 'Listar problemas por categoria',
-    description: 'Retorna todos os problemas ativos de uma categoria específica',
+    description:
+      'Retorna todos os problemas ativos de uma categoria específica',
   })
   @ApiResponse({
     status: 200,
@@ -83,4 +89,3 @@ export class DiagnosticController {
     return this.diagnosticService.getProblemsByCategory(category);
   }
 }
-

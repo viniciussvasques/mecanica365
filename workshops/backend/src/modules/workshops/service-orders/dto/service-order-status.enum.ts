@@ -5,4 +5,3 @@ export enum ServiceOrderStatus {
   CANCELLED = 'cancelled',
   ON_HOLD = 'on_hold',
 }
-

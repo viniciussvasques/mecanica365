@@ -15,4 +15,3 @@ export enum ProblemCategory {
   DIRECAO = 'direcao',
   OUTROS = 'outros',
 }
-

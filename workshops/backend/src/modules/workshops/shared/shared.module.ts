@@ -10,4 +10,3 @@ import { DiagnosticController } from './controllers/diagnostic.controller';
   exports: [DiagnosticService],
 })
 export class SharedModule {}
-

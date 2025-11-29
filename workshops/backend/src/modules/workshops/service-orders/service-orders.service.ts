@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
@@ -16,8 +15,6 @@ import {
 import { Prisma } from '@prisma/client';
 import { getErrorMessage } from '@common/utils/error.utils';
 import { ElevatorsService } from '../elevators/elevators.service';
-
-type PrismaServiceOrder = Prisma.ServiceOrderGetPayload<Record<string, never>>;
 
 @Injectable()
 export class ServiceOrdersService {
@@ -99,7 +96,9 @@ export class ServiceOrdersService {
           number,
           customerId: createServiceOrderDto.customerId,
           vehicleVin: createServiceOrderDto.vehicleVin?.toUpperCase().trim(),
-          vehiclePlaca: createServiceOrderDto.vehiclePlaca?.toUpperCase().trim(),
+          vehiclePlaca: createServiceOrderDto.vehiclePlaca
+            ?.toUpperCase()
+            .trim(),
           vehicleMake: createServiceOrderDto.vehicleMake?.trim(),
           vehicleModel: createServiceOrderDto.vehicleModel?.trim(),
           vehicleYear: createServiceOrderDto.vehicleYear,
@@ -117,13 +116,19 @@ export class ServiceOrdersService {
           totalCost: totalCost > 0 ? totalCost : null,
           discount: createServiceOrderDto.discount || 0,
           // Problema relatado pelo cliente
-          reportedProblemCategory: createServiceOrderDto.reportedProblemCategory || null,
-          reportedProblemDescription: createServiceOrderDto.reportedProblemDescription || null,
-          reportedProblemSymptoms: createServiceOrderDto.reportedProblemSymptoms || [],
+          reportedProblemCategory:
+            createServiceOrderDto.reportedProblemCategory || null,
+          reportedProblemDescription:
+            createServiceOrderDto.reportedProblemDescription || null,
+          reportedProblemSymptoms:
+            createServiceOrderDto.reportedProblemSymptoms || [],
           // Problema identificado pelo mecânico
-          identifiedProblemCategory: createServiceOrderDto.identifiedProblemCategory || null,
-          identifiedProblemDescription: createServiceOrderDto.identifiedProblemDescription || null,
-          identifiedProblemId: createServiceOrderDto.identifiedProblemId || null,
+          identifiedProblemCategory:
+            createServiceOrderDto.identifiedProblemCategory || null,
+          identifiedProblemDescription:
+            createServiceOrderDto.identifiedProblemDescription || null,
+          identifiedProblemId:
+            createServiceOrderDto.identifiedProblemId || null,
           // Observações e diagnóstico
           inspectionNotes: createServiceOrderDto.notes || null,
           diagnosticNotes: createServiceOrderDto.diagnosticNotes || null,
@@ -154,12 +159,17 @@ export class ServiceOrdersService {
         try {
           // Buscar veículo pela placa ou VIN se fornecido
           let vehicleId: string | undefined;
-          if (createServiceOrderDto.vehiclePlaca || createServiceOrderDto.vehicleVin) {
+          if (
+            createServiceOrderDto.vehiclePlaca ||
+            createServiceOrderDto.vehicleVin
+          ) {
             const vehicle = await this.prisma.customerVehicle.findFirst({
               where: {
                 customer: { tenantId },
                 ...(createServiceOrderDto.vehiclePlaca && {
-                  placa: createServiceOrderDto.vehiclePlaca.toUpperCase().trim(),
+                  placa: createServiceOrderDto.vehiclePlaca
+                    .toUpperCase()
+                    .trim(),
                 }),
                 ...(createServiceOrderDto.vehicleVin && {
                   vin: createServiceOrderDto.vehicleVin.toUpperCase().trim(),
@@ -169,12 +179,16 @@ export class ServiceOrdersService {
             vehicleId = vehicle?.id;
           }
 
-          await this.elevatorsService.reserve(tenantId, createServiceOrderDto.elevatorId, {
-            serviceOrderId: serviceOrder.id,
-            vehicleId,
-            scheduledStartTime: createServiceOrderDto.appointmentDate,
-            notes: `Reservado para ${number}`,
-          });
+          await this.elevatorsService.reserve(
+            tenantId,
+            createServiceOrderDto.elevatorId,
+            {
+              serviceOrderId: serviceOrder.id,
+              vehicleId,
+              scheduledStartTime: createServiceOrderDto.appointmentDate,
+              notes: `Reservado para ${number}`,
+            },
+          );
         } catch (error) {
           this.logger.warn(
             `Não foi possível reservar elevador: ${getErrorMessage(error)}`,
@@ -235,7 +249,10 @@ export class ServiceOrdersService {
       ...(customerId && { customerId }),
       ...(technicianId && { technicianId }),
       ...(vehiclePlaca && {
-        vehiclePlaca: { contains: vehiclePlaca.toUpperCase(), mode: 'insensitive' },
+        vehiclePlaca: {
+          contains: vehiclePlaca.toUpperCase(),
+          mode: 'insensitive',
+        },
       }),
       ...(vehicleVin && {
         vehicleVin: { contains: vehicleVin.toUpperCase(), mode: 'insensitive' },
@@ -405,7 +422,9 @@ export class ServiceOrdersService {
 
       if (updateServiceOrderDto.customerId !== undefined) {
         if (updateServiceOrderDto.customerId) {
-          updateData.customer = { connect: { id: updateServiceOrderDto.customerId } };
+          updateData.customer = {
+            connect: { id: updateServiceOrderDto.customerId },
+          };
         } else {
           updateData.customer = { disconnect: true };
         }
@@ -424,11 +443,13 @@ export class ServiceOrdersService {
       }
 
       if (updateServiceOrderDto.vehicleMake !== undefined) {
-        updateData.vehicleMake = updateServiceOrderDto.vehicleMake?.trim() || null;
+        updateData.vehicleMake =
+          updateServiceOrderDto.vehicleMake?.trim() || null;
       }
 
       if (updateServiceOrderDto.vehicleModel !== undefined) {
-        updateData.vehicleModel = updateServiceOrderDto.vehicleModel?.trim() || null;
+        updateData.vehicleModel =
+          updateServiceOrderDto.vehicleModel?.trim() || null;
       }
 
       if (updateServiceOrderDto.vehicleYear !== undefined) {
@@ -436,12 +457,15 @@ export class ServiceOrdersService {
       }
 
       if (updateServiceOrderDto.vehicleMileage !== undefined) {
-        updateData.vehicleMileage = updateServiceOrderDto.vehicleMileage || null;
+        updateData.vehicleMileage =
+          updateServiceOrderDto.vehicleMileage || null;
       }
 
       if (updateServiceOrderDto.technicianId !== undefined) {
         if (updateServiceOrderDto.technicianId) {
-          updateData.technician = { connect: { id: updateServiceOrderDto.technicianId } };
+          updateData.technician = {
+            connect: { id: updateServiceOrderDto.technicianId },
+          };
         } else {
           updateData.technician = { disconnect: true };
         }
@@ -458,7 +482,8 @@ export class ServiceOrdersService {
       }
 
       if (updateServiceOrderDto.estimatedHours !== undefined) {
-        updateData.estimatedHours = updateServiceOrderDto.estimatedHours || null;
+        updateData.estimatedHours =
+          updateServiceOrderDto.estimatedHours || null;
       }
 
       if (updateServiceOrderDto.laborCost !== undefined) {
@@ -479,21 +504,26 @@ export class ServiceOrdersService {
 
       // Problema relatado pelo cliente
       if (updateServiceOrderDto.reportedProblemCategory !== undefined) {
-        updateData.reportedProblemCategory = updateServiceOrderDto.reportedProblemCategory || null;
+        updateData.reportedProblemCategory =
+          updateServiceOrderDto.reportedProblemCategory || null;
       }
       if (updateServiceOrderDto.reportedProblemDescription !== undefined) {
-        updateData.reportedProblemDescription = updateServiceOrderDto.reportedProblemDescription?.trim() || null;
+        updateData.reportedProblemDescription =
+          updateServiceOrderDto.reportedProblemDescription?.trim() || null;
       }
       if (updateServiceOrderDto.reportedProblemSymptoms !== undefined) {
-        updateData.reportedProblemSymptoms = updateServiceOrderDto.reportedProblemSymptoms || [];
+        updateData.reportedProblemSymptoms =
+          updateServiceOrderDto.reportedProblemSymptoms || [];
       }
 
       // Problema identificado pelo mecânico
       if (updateServiceOrderDto.identifiedProblemCategory !== undefined) {
-        updateData.identifiedProblemCategory = updateServiceOrderDto.identifiedProblemCategory || null;
+        updateData.identifiedProblemCategory =
+          updateServiceOrderDto.identifiedProblemCategory || null;
       }
       if (updateServiceOrderDto.identifiedProblemDescription !== undefined) {
-        updateData.identifiedProblemDescription = updateServiceOrderDto.identifiedProblemDescription?.trim() || null;
+        updateData.identifiedProblemDescription =
+          updateServiceOrderDto.identifiedProblemDescription?.trim() || null;
       }
       if (updateServiceOrderDto.identifiedProblemId !== undefined) {
         updateData.identifiedProblem = updateServiceOrderDto.identifiedProblemId
@@ -503,15 +533,18 @@ export class ServiceOrdersService {
 
       // Observações e diagnóstico
       if (updateServiceOrderDto.notes !== undefined) {
-        updateData.inspectionNotes = updateServiceOrderDto.notes?.trim() || null;
+        updateData.inspectionNotes =
+          updateServiceOrderDto.notes?.trim() || null;
       }
       if (updateServiceOrderDto.diagnosticNotes !== undefined) {
-        updateData.diagnosticNotes = updateServiceOrderDto.diagnosticNotes?.trim() || null;
+        updateData.diagnosticNotes =
+          updateServiceOrderDto.diagnosticNotes?.trim() || null;
       }
 
       // Recomendações
       if (updateServiceOrderDto.recommendations !== undefined) {
-        updateData.recommendations = updateServiceOrderDto.recommendations?.trim() || null;
+        updateData.recommendations =
+          updateServiceOrderDto.recommendations?.trim() || null;
       }
 
       // Atualizar OS
@@ -569,11 +602,13 @@ export class ServiceOrdersService {
       throw new NotFoundException('Ordem de serviço não encontrada');
     }
 
-    if (serviceOrder.status === ServiceOrderStatus.COMPLETED) {
-      throw new BadRequestException('Não é possível iniciar uma OS já finalizada');
+    if (serviceOrder.status === (ServiceOrderStatus.COMPLETED as string)) {
+      throw new BadRequestException(
+        'Não é possível iniciar uma OS já finalizada',
+      );
     }
 
-    if (serviceOrder.status === ServiceOrderStatus.CANCELLED) {
+    if (serviceOrder.status === (ServiceOrderStatus.CANCELLED as string)) {
       throw new BadRequestException('Não é possível iniciar uma OS cancelada');
     }
 
@@ -604,11 +639,15 @@ export class ServiceOrdersService {
           vehicleId = vehicle?.id;
         }
 
-        await this.elevatorsService.startUsage(tenantId, reservation.elevatorId, {
-          serviceOrderId: id,
-          vehicleId,
-          notes: `OS ${serviceOrder.number} iniciada`,
-        });
+        await this.elevatorsService.startUsage(
+          tenantId,
+          reservation.elevatorId,
+          {
+            serviceOrderId: id,
+            vehicleId,
+            notes: `OS ${serviceOrder.number} iniciada`,
+          },
+        );
       } catch (error) {
         this.logger.warn(
           `Não foi possível iniciar uso do elevador: ${getErrorMessage(error)}`,
@@ -667,12 +706,14 @@ export class ServiceOrdersService {
       throw new NotFoundException('Ordem de serviço não encontrada');
     }
 
-    if (serviceOrder.status === ServiceOrderStatus.COMPLETED) {
+    if (serviceOrder.status === (ServiceOrderStatus.COMPLETED as string)) {
       throw new BadRequestException('OS já está finalizada');
     }
 
-    if (serviceOrder.status === ServiceOrderStatus.CANCELLED) {
-      throw new BadRequestException('Não é possível finalizar uma OS cancelada');
+    if (serviceOrder.status === (ServiceOrderStatus.CANCELLED as string)) {
+      throw new BadRequestException(
+        'Não é possível finalizar uma OS cancelada',
+      );
     }
 
     // Finalizar uso do elevador se houver
@@ -743,11 +784,13 @@ export class ServiceOrdersService {
       throw new NotFoundException('Ordem de serviço não encontrada');
     }
 
-    if (serviceOrder.status === ServiceOrderStatus.COMPLETED) {
-      throw new BadRequestException('Não é possível cancelar uma OS já finalizada');
+    if (serviceOrder.status === (ServiceOrderStatus.COMPLETED as string)) {
+      throw new BadRequestException(
+        'Não é possível cancelar uma OS já finalizada',
+      );
     }
 
-    if (serviceOrder.status === ServiceOrderStatus.CANCELLED) {
+    if (serviceOrder.status === (ServiceOrderStatus.CANCELLED as string)) {
       throw new BadRequestException('OS já está cancelada');
     }
 
@@ -888,12 +931,16 @@ export class ServiceOrdersService {
       checkInKm: serviceOrder.checkInKm || undefined,
       checkInFuelLevel: serviceOrder.checkInFuelLevel || undefined,
       // Problema relatado pelo cliente
-      reportedProblemCategory: serviceOrder.reportedProblemCategory || undefined,
-      reportedProblemDescription: serviceOrder.reportedProblemDescription || undefined,
+      reportedProblemCategory:
+        serviceOrder.reportedProblemCategory || undefined,
+      reportedProblemDescription:
+        serviceOrder.reportedProblemDescription || undefined,
       reportedProblemSymptoms: serviceOrder.reportedProblemSymptoms || [],
       // Problema identificado pelo mecânico
-      identifiedProblemCategory: serviceOrder.identifiedProblemCategory || undefined,
-      identifiedProblemDescription: serviceOrder.identifiedProblemDescription || undefined,
+      identifiedProblemCategory:
+        serviceOrder.identifiedProblemCategory || undefined,
+      identifiedProblemDescription:
+        serviceOrder.identifiedProblemDescription || undefined,
       identifiedProblemId: serviceOrder.identifiedProblemId || undefined,
       // Observações e diagnóstico
       inspectionNotes: serviceOrder.inspectionNotes || undefined,
@@ -915,4 +962,3 @@ export class ServiceOrdersService {
     };
   }
 }
-

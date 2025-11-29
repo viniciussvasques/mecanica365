@@ -13,4 +13,3 @@ export class UpdateServiceOrderDto extends PartialType(CreateServiceOrderDto) {
   @IsOptional()
   elevatorId?: string;
 }
-
