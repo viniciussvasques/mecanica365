@@ -77,6 +77,7 @@ export class PaymentsService {
           installments: createPaymentDto.installments || 1,
           notes: createPaymentDto.notes || null,
           paidAt:
+            createPaymentDto.status &&
             String(createPaymentDto.status) === PaymentStatus.COMPLETED
               ? new Date()
               : null,
