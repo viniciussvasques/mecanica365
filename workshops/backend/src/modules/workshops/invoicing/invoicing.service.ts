@@ -12,6 +12,7 @@ import {
   InvoiceFiltersDto,
   InvoiceStatus,
   PaymentStatus,
+  InvoiceType,
 } from './dto';
 import { Prisma } from '@prisma/client';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
@@ -377,8 +378,8 @@ export class InvoicingService {
 
       // Não permitir atualizar fatura emitida ou paga
       if (
-        invoice.status === InvoiceStatus.ISSUED ||
-        invoice.status === InvoiceStatus.PAID
+        String(invoice.status) === InvoiceStatus.ISSUED ||
+        String(invoice.status) === InvoiceStatus.PAID
       ) {
         throw new BadRequestException(
           'Não é possível atualizar uma fatura emitida ou paga',
@@ -463,7 +464,7 @@ export class InvoicingService {
 
       if (updateInvoiceDto.status) {
         updateData.status = updateInvoiceDto.status;
-        if (updateInvoiceDto.status === InvoiceStatus.ISSUED) {
+        if (String(updateInvoiceDto.status) === InvoiceStatus.ISSUED) {
           updateData.issuedAt = new Date();
         }
       }
@@ -552,8 +553,8 @@ export class InvoicingService {
 
       // Não permitir remover fatura emitida ou paga
       if (
-        invoice.status === InvoiceStatus.ISSUED ||
-        invoice.status === InvoiceStatus.PAID
+        String(invoice.status) === InvoiceStatus.ISSUED ||
+        String(invoice.status) === InvoiceStatus.PAID
       ) {
         throw new BadRequestException(
           'Não é possível remover uma fatura emitida ou paga',
@@ -598,11 +599,11 @@ export class InvoicingService {
         throw new NotFoundException('Fatura não encontrada');
       }
 
-      if (invoice.status === InvoiceStatus.ISSUED) {
+      if (String(invoice.status) === InvoiceStatus.ISSUED) {
         throw new BadRequestException('Fatura já foi emitida');
       }
 
-      if (invoice.status === InvoiceStatus.CANCELLED) {
+      if (String(invoice.status) === InvoiceStatus.CANCELLED) {
         throw new BadRequestException(
           'Não é possível emitir uma fatura cancelada',
         );
@@ -670,7 +671,7 @@ export class InvoicingService {
         throw new NotFoundException('Fatura não encontrada');
       }
 
-      if (invoice.status === InvoiceStatus.CANCELLED) {
+      if (String(invoice.status) === InvoiceStatus.CANCELLED) {
         throw new BadRequestException('Fatura já está cancelada');
       }
 
@@ -792,7 +793,7 @@ export class InvoicingService {
             status: invoice.serviceOrder.status,
           }
         : undefined,
-      type: invoice.type as unknown,
+      type: invoice.type as InvoiceType,
       total:
         typeof invoice.total === 'object' && 'toNumber' in invoice.total
           ? invoice.total.toNumber()

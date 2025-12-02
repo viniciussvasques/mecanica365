@@ -8,6 +8,7 @@ import {
   InvoiceStatus,
   PaymentStatus,
   InvoiceType,
+  InvoiceItemType,
 } from './dto';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -111,7 +112,7 @@ describe('InvoicingService', () => {
       type: InvoiceType.SERVICE,
       items: [
         {
-          type: 'service' as unknown,
+          type: InvoiceItemType.SERVICE,
           name: 'Serviço Teste',
           description: 'Descrição do serviço',
           quantity: 1,

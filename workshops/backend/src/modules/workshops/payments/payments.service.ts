@@ -11,6 +11,7 @@ import {
   PaymentResponseDto,
   PaymentFiltersDto,
   PaymentStatus,
+  PaymentMethod,
 } from './dto';
 import { Prisma } from '@prisma/client';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
@@ -76,7 +77,7 @@ export class PaymentsService {
           installments: createPaymentDto.installments || 1,
           notes: createPaymentDto.notes || null,
           paidAt:
-            createPaymentDto.status === PaymentStatus.COMPLETED
+            String(createPaymentDto.status) === PaymentStatus.COMPLETED
               ? new Date()
               : null,
         },
@@ -93,7 +94,10 @@ export class PaymentsService {
       });
 
       // Se o pagamento foi completado e há fatura, atualizar status da fatura
-      if (payment.invoiceId && payment.status === PaymentStatus.COMPLETED) {
+      if (
+        payment.invoiceId &&
+        String(payment.status) === PaymentStatus.COMPLETED
+      ) {
         await this.updateInvoicePaymentStatus(tenantId, payment.invoiceId);
       }
 
@@ -314,7 +318,7 @@ export class PaymentsService {
       }
 
       // Não permitir atualizar pagamento reembolsado
-      if (payment.status === PaymentStatus.REFUNDED) {
+      if (String(payment.status) === PaymentStatus.REFUNDED) {
         throw new BadRequestException(
           'Não é possível atualizar um pagamento reembolsado',
         );
@@ -333,7 +337,7 @@ export class PaymentsService {
 
       if (updatePaymentDto.status) {
         updateData.status = updatePaymentDto.status;
-        if (updatePaymentDto.status === PaymentStatus.COMPLETED) {
+        if (String(updatePaymentDto.status) === PaymentStatus.COMPLETED) {
           updateData.paidAt = new Date();
         } else {
           updateData.paidAt = null;
@@ -371,7 +375,7 @@ export class PaymentsService {
       // Se o pagamento foi completado e há fatura, atualizar status da fatura
       if (
         updatedPayment.invoiceId &&
-        updatedPayment.status === PaymentStatus.COMPLETED
+        String(updatedPayment.status) === PaymentStatus.COMPLETED
       ) {
         await this.updateInvoicePaymentStatus(
           tenantId,
@@ -417,8 +421,8 @@ export class PaymentsService {
 
       // Não permitir remover pagamento completo ou reembolsado
       if (
-        payment.status === PaymentStatus.COMPLETED ||
-        payment.status === PaymentStatus.REFUNDED
+        String(payment.status) === PaymentStatus.COMPLETED ||
+        String(payment.status) === PaymentStatus.REFUNDED
       ) {
         throw new BadRequestException(
           'Não é possível remover um pagamento completo ou reembolsado',
@@ -495,7 +499,7 @@ export class PaymentsService {
         typeof payment.amount === 'object' && 'toNumber' in payment.amount
           ? payment.amount.toNumber()
           : Number(payment.amount),
-      method: payment.method as unknown,
+      method: payment.method as PaymentMethod,
       status: payment.status as PaymentStatus,
       paidAt: payment.paidAt || undefined,
       transactionId: payment.transactionId || undefined,

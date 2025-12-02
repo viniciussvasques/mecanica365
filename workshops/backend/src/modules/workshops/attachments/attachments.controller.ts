@@ -120,8 +120,7 @@ export class AttachmentsController {
       quoteId: (req.body as { quoteId?: string }).quoteId || undefined,
       serviceOrderId:
         (req.body as { serviceOrderId?: string }).serviceOrderId || undefined,
-      customerId:
-        (req.body as { customerId?: string }).customerId || undefined,
+      customerId: (req.body as { customerId?: string }).customerId || undefined,
       vehicleId: (req.body as { vehicleId?: string }).vehicleId || undefined,
       description:
         (req.body as { description?: string }).description || undefined,

@@ -93,7 +93,6 @@ describe('ChecklistsService', () => {
     }).compile();
 
     service = module.get<ChecklistsService>(ChecklistsService);
-    prismaService = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });
