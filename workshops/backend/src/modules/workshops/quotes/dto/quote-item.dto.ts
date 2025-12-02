@@ -33,7 +33,7 @@ export class QuoteItemDto {
   @IsOptional()
   @ValidateIf((o: unknown) => {
     const dto = o as QuoteItemDto;
-    return String(dto?.type) === QuoteItemType.SERVICE;
+    return dto?.type === QuoteItemType.SERVICE;
   })
   serviceId?: string;
 

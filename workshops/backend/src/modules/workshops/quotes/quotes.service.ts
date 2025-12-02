@@ -2099,9 +2099,10 @@ export class QuotesService {
     }
 
     // Validar status
+    const quoteStatus = quote.status as QuoteStatus;
     if (
-      String(quote.status) !== QuoteStatus.SENT &&
-      String(quote.status) !== QuoteStatus.VIEWED
+      quoteStatus !== QuoteStatus.SENT &&
+      quoteStatus !== QuoteStatus.VIEWED
     ) {
       throw new BadRequestException(
         'Apenas orçamentos enviados podem ser aprovados manualmente',
