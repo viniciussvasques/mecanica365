@@ -110,7 +110,7 @@ describe('AttachmentsService', () => {
 
     it('deve lançar BadRequestException se tipo de arquivo for inválido para foto', async () => {
       const invalidFile = {
-        ...mockFile,
+        ...(mockFile as Record<string, unknown>),
         mimetype: 'application/pdf',
       };
 
@@ -125,7 +125,7 @@ describe('AttachmentsService', () => {
         quoteId: mockQuoteId,
       };
       const invalidFile = {
-        ...mockFile,
+        ...(mockFile as Record<string, unknown>),
         mimetype: 'image/jpeg',
       };
 

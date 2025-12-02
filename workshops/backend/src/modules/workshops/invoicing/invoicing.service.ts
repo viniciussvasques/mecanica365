@@ -53,6 +53,172 @@ export class InvoicingService {
   }
 
   /**
+   * Valida se a fatura pode ser atualizada
+   */
+  private validateInvoiceCanBeUpdated(invoice: {
+    status: string;
+  }): void {
+    const invoiceStatus = invoice.status as InvoiceStatus;
+    if (
+      invoiceStatus === InvoiceStatus.ISSUED ||
+      invoiceStatus === InvoiceStatus.PAID
+    ) {
+      throw new BadRequestException(
+        'Não é possível atualizar uma fatura emitida ou paga',
+      );
+    }
+  }
+
+  /**
+   * Valida cliente se fornecido
+   */
+  private async validateCustomerIfProvided(
+    tenantId: string,
+    customerId?: string,
+  ): Promise<void> {
+    if (!customerId) {
+      return;
+    }
+
+    const customer = await this.prisma.customer.findFirst({
+      where: {
+        id: customerId,
+        tenantId,
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Cliente não encontrado');
+    }
+  }
+
+  /**
+   * Prepara dados de atualização de itens da fatura
+   */
+  private async prepareInvoiceItemsUpdate(
+    invoiceId: string,
+    items?: UpdateInvoiceDto['items'],
+  ): Promise<Prisma.InvoiceUpdateInput['items'] | undefined> {
+    if (!items) {
+      return undefined;
+    }
+
+    // Deletar itens antigos e criar novos
+    await this.prisma.invoiceItem.deleteMany({
+      where: { invoiceId },
+    });
+
+    return {
+      create: items.map((item) => ({
+        type: item.type,
+        name: item.name,
+        description: item.description || null,
+        quantity: item.quantity,
+        unitPrice: new Decimal(item.unitPrice),
+        totalPrice: new Decimal(item.totalPrice),
+      })),
+    };
+  }
+
+  /**
+   * Prepara dados de atualização da fatura
+   */
+  private async prepareInvoiceUpdateData(
+    invoiceId: string,
+    updateInvoiceDto: UpdateInvoiceDto,
+  ): Promise<Prisma.InvoiceUpdateInput> {
+    const updateData: Prisma.InvoiceUpdateInput = {};
+
+    // Cliente
+    if (updateInvoiceDto.customerId !== undefined) {
+      if (updateInvoiceDto.customerId) {
+        updateData.customer = {
+          connect: { id: updateInvoiceDto.customerId },
+        };
+      } else {
+        updateData.customer = { disconnect: true };
+      }
+    }
+
+    // Tipo
+    if (updateInvoiceDto.type) {
+      updateData.type = updateInvoiceDto.type;
+    }
+
+    // Itens
+    if (updateInvoiceDto.items) {
+      const itemsUpdate = await this.prepareInvoiceItemsUpdate(
+        invoiceId,
+        updateInvoiceDto.items,
+      );
+      if (itemsUpdate) {
+        updateData.items = itemsUpdate;
+        const calculatedTotal = this.calculateTotal(updateInvoiceDto.items);
+        updateData.total = new Decimal(calculatedTotal);
+      }
+    }
+
+    // Total
+    if (updateInvoiceDto.total !== undefined) {
+      updateData.total = new Decimal(updateInvoiceDto.total);
+    }
+
+    // Desconto
+    if (updateInvoiceDto.discount !== undefined) {
+      updateData.discount = new Decimal(updateInvoiceDto.discount);
+    }
+
+    // Imposto
+    if (updateInvoiceDto.taxAmount !== undefined) {
+      updateData.taxAmount = new Decimal(updateInvoiceDto.taxAmount);
+    }
+
+    // Método de pagamento
+    if (updateInvoiceDto.paymentMethod !== undefined) {
+      updateData.paymentMethod = updateInvoiceDto.paymentMethod || null;
+    }
+
+    // Status de pagamento
+    if (updateInvoiceDto.paymentStatus) {
+      updateData.paymentStatus = updateInvoiceDto.paymentStatus;
+      if (updateInvoiceDto.paymentStatus === PaymentStatus.PAID) {
+        updateData.paidAt = new Date();
+      }
+    }
+
+    // Status da fatura
+    if (updateInvoiceDto.status) {
+      updateData.status = updateInvoiceDto.status;
+      if (updateInvoiceDto.status === InvoiceStatus.ISSUED) {
+        updateData.issuedAt = new Date();
+      }
+    }
+
+    // Data de vencimento
+    if (updateInvoiceDto.dueDate !== undefined) {
+      updateData.dueDate = updateInvoiceDto.dueDate
+        ? new Date(updateInvoiceDto.dueDate)
+        : null;
+    }
+
+    // NFE
+    if (updateInvoiceDto.nfeKey !== undefined) {
+      updateData.nfeKey = updateInvoiceDto.nfeKey || null;
+    }
+    if (updateInvoiceDto.nfeXmlUrl !== undefined) {
+      updateData.nfeXmlUrl = updateInvoiceDto.nfeXmlUrl || null;
+    }
+    if (updateInvoiceDto.nfePdfUrl !== undefined) {
+      updateData.nfePdfUrl = updateInvoiceDto.nfePdfUrl || null;
+    }
+    if (updateInvoiceDto.nfeStatus !== undefined) {
+      updateData.nfeStatus = updateInvoiceDto.nfeStatus || null;
+    }
+
+    return updateData;
+  }
+
+  /**
    * Cria uma nova fatura
    */
   async create(
@@ -376,121 +542,17 @@ export class InvoicingService {
         throw new NotFoundException('Fatura não encontrada');
       }
 
-      // Não permitir atualizar fatura emitida ou paga
-      const invoiceStatus = invoice.status as InvoiceStatus;
-      if (
-        invoiceStatus === InvoiceStatus.ISSUED ||
-        invoiceStatus === InvoiceStatus.PAID
-      ) {
-        throw new BadRequestException(
-          'Não é possível atualizar uma fatura emitida ou paga',
-        );
-      }
+      // Validar se pode ser atualizada
+      this.validateInvoiceCanBeUpdated(invoice);
 
       // Validar cliente se fornecido
-      if (updateInvoiceDto.customerId) {
-        const customer = await this.prisma.customer.findFirst({
-          where: {
-            id: updateInvoiceDto.customerId,
-            tenantId,
-          },
-        });
-
-        if (!customer) {
-          throw new NotFoundException('Cliente não encontrado');
-        }
-      }
+      await this.validateCustomerIfProvided(
+        tenantId,
+        updateInvoiceDto.customerId,
+      );
 
       // Preparar dados de atualização
-      const updateData: Prisma.InvoiceUpdateInput = {};
-
-      if (updateInvoiceDto.customerId !== undefined) {
-        if (updateInvoiceDto.customerId) {
-          updateData.customer = {
-            connect: { id: updateInvoiceDto.customerId },
-          };
-        } else {
-          updateData.customer = { disconnect: true };
-        }
-      }
-
-      if (updateInvoiceDto.type) {
-        updateData.type = updateInvoiceDto.type;
-      }
-
-      if (updateInvoiceDto.items) {
-        // Deletar itens antigos e criar novos
-        await this.prisma.invoiceItem.deleteMany({
-          where: { invoiceId: id },
-        });
-
-        updateData.items = {
-          create: updateInvoiceDto.items.map((item) => ({
-            type: item.type,
-            name: item.name,
-            description: item.description || null,
-            quantity: item.quantity,
-            unitPrice: new Decimal(item.unitPrice),
-            totalPrice: new Decimal(item.totalPrice),
-          })),
-        };
-
-        // Recalcular total
-        const calculatedTotal = this.calculateTotal(updateInvoiceDto.items);
-        updateData.total = new Decimal(calculatedTotal);
-      }
-
-      if (updateInvoiceDto.total !== undefined) {
-        updateData.total = new Decimal(updateInvoiceDto.total);
-      }
-
-      if (updateInvoiceDto.discount !== undefined) {
-        updateData.discount = new Decimal(updateInvoiceDto.discount);
-      }
-
-      if (updateInvoiceDto.taxAmount !== undefined) {
-        updateData.taxAmount = new Decimal(updateInvoiceDto.taxAmount);
-      }
-
-      if (updateInvoiceDto.paymentMethod !== undefined) {
-        updateData.paymentMethod = updateInvoiceDto.paymentMethod || null;
-      }
-
-      if (updateInvoiceDto.paymentStatus) {
-        updateData.paymentStatus = updateInvoiceDto.paymentStatus;
-        if (updateInvoiceDto.paymentStatus === PaymentStatus.PAID) {
-          updateData.paidAt = new Date();
-        }
-      }
-
-      if (updateInvoiceDto.status) {
-        updateData.status = updateInvoiceDto.status;
-        if (updateInvoiceDto.status === InvoiceStatus.ISSUED) {
-          updateData.issuedAt = new Date();
-        }
-      }
-
-      if (updateInvoiceDto.dueDate !== undefined) {
-        updateData.dueDate = updateInvoiceDto.dueDate
-          ? new Date(updateInvoiceDto.dueDate)
-          : null;
-      }
-
-      if (updateInvoiceDto.nfeKey !== undefined) {
-        updateData.nfeKey = updateInvoiceDto.nfeKey || null;
-      }
-
-      if (updateInvoiceDto.nfeXmlUrl !== undefined) {
-        updateData.nfeXmlUrl = updateInvoiceDto.nfeXmlUrl || null;
-      }
-
-      if (updateInvoiceDto.nfePdfUrl !== undefined) {
-        updateData.nfePdfUrl = updateInvoiceDto.nfePdfUrl || null;
-      }
-
-      if (updateInvoiceDto.nfeStatus !== undefined) {
-        updateData.nfeStatus = updateInvoiceDto.nfeStatus || null;
-      }
+      const updateData = await this.prepareInvoiceUpdateData(id, updateInvoiceDto);
 
       // Atualizar fatura
       const updatedInvoice = await this.prisma.invoice.update({
