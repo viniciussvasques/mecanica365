@@ -197,7 +197,8 @@ export class ChecklistsService {
       }
 
       // Não permitir atualizar checklist completo
-      if (String(existingChecklist.status) === ChecklistStatus.COMPLETED) {
+      const checklistStatus = existingChecklist.status as ChecklistStatus;
+      if (checklistStatus === ChecklistStatus.COMPLETED) {
         throw new BadRequestException(
           'Não é possível atualizar um checklist já completo',
         );
@@ -298,7 +299,8 @@ export class ChecklistsService {
         throw new NotFoundException('Checklist não encontrado');
       }
 
-      if (String(checklist.status) === ChecklistStatus.COMPLETED) {
+      const checklistStatus = checklist.status as ChecklistStatus;
+      if (checklistStatus === ChecklistStatus.COMPLETED) {
         throw new BadRequestException('Checklist já está completo');
       }
 

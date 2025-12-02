@@ -46,7 +46,7 @@ export class QuoteItemDto {
   @IsOptional()
   @ValidateIf((o: unknown) => {
     const dto = o as QuoteItemDto;
-    return String(dto?.type) === QuoteItemType.PART;
+    return dto?.type === QuoteItemType.PART;
   })
   partId?: string;
 
@@ -96,7 +96,7 @@ export class QuoteItemDto {
   @Min(0, { message: 'Horas deve ser maior ou igual a 0' })
   @ValidateIf((o: unknown) => {
     const dto = o as QuoteItemDto;
-    return String(dto?.type) === QuoteItemType.SERVICE;
+    return dto?.type === QuoteItemType.SERVICE;
   })
   hours?: number;
 }

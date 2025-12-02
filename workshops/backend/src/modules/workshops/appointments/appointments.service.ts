@@ -480,9 +480,10 @@ export class AppointmentsService {
       }
 
       // Não permitir remover agendamentos em progresso ou completos
+      const appointmentStatus = appointment.status as AppointmentStatus;
       if (
-        String(appointment.status) === AppointmentStatus.IN_PROGRESS ||
-        String(appointment.status) === AppointmentStatus.COMPLETED
+        appointmentStatus === AppointmentStatus.IN_PROGRESS ||
+        appointmentStatus === AppointmentStatus.COMPLETED
       ) {
         throw new BadRequestException(
           'Não é possível remover agendamentos em progresso ou completos',
@@ -526,7 +527,8 @@ export class AppointmentsService {
       }
 
       // Não permitir cancelar agendamentos já completos
-      if (String(appointment.status) === AppointmentStatus.COMPLETED) {
+      const appointmentStatus = appointment.status as AppointmentStatus;
+      if (appointmentStatus === AppointmentStatus.COMPLETED) {
         throw new BadRequestException(
           'Não é possível cancelar agendamentos já completos',
         );
@@ -613,7 +615,8 @@ export class AppointmentsService {
       }
 
       // Validar que o status permite atribuição
-      if (String(appointment.status) !== AppointmentStatus.SCHEDULED) {
+      const appointmentStatus = appointment.status as AppointmentStatus;
+      if (appointmentStatus !== AppointmentStatus.SCHEDULED) {
         throw new BadRequestException(
           'Apenas agendamentos com status "scheduled" podem ser pegos',
         );

@@ -377,9 +377,10 @@ export class InvoicingService {
       }
 
       // Não permitir atualizar fatura emitida ou paga
+      const invoiceStatus = invoice.status as InvoiceStatus;
       if (
-        String(invoice.status) === InvoiceStatus.ISSUED ||
-        String(invoice.status) === InvoiceStatus.PAID
+        invoiceStatus === InvoiceStatus.ISSUED ||
+        invoiceStatus === InvoiceStatus.PAID
       ) {
         throw new BadRequestException(
           'Não é possível atualizar uma fatura emitida ou paga',
@@ -464,7 +465,7 @@ export class InvoicingService {
 
       if (updateInvoiceDto.status) {
         updateData.status = updateInvoiceDto.status;
-        if (String(updateInvoiceDto.status) === InvoiceStatus.ISSUED) {
+        if (updateInvoiceDto.status === InvoiceStatus.ISSUED) {
           updateData.issuedAt = new Date();
         }
       }
@@ -552,9 +553,10 @@ export class InvoicingService {
       }
 
       // Não permitir remover fatura emitida ou paga
+      const invoiceStatus = invoice.status as InvoiceStatus;
       if (
-        String(invoice.status) === InvoiceStatus.ISSUED ||
-        String(invoice.status) === InvoiceStatus.PAID
+        invoiceStatus === InvoiceStatus.ISSUED ||
+        invoiceStatus === InvoiceStatus.PAID
       ) {
         throw new BadRequestException(
           'Não é possível remover uma fatura emitida ou paga',
@@ -599,11 +601,12 @@ export class InvoicingService {
         throw new NotFoundException('Fatura não encontrada');
       }
 
-      if (String(invoice.status) === InvoiceStatus.ISSUED) {
+      const invoiceStatus = invoice.status as InvoiceStatus;
+      if (invoiceStatus === InvoiceStatus.ISSUED) {
         throw new BadRequestException('Fatura já foi emitida');
       }
 
-      if (String(invoice.status) === InvoiceStatus.CANCELLED) {
+      if (invoiceStatus === InvoiceStatus.CANCELLED) {
         throw new BadRequestException(
           'Não é possível emitir uma fatura cancelada',
         );
@@ -671,7 +674,8 @@ export class InvoicingService {
         throw new NotFoundException('Fatura não encontrada');
       }
 
-      if (String(invoice.status) === InvoiceStatus.CANCELLED) {
+      const invoiceStatus = invoice.status as InvoiceStatus;
+      if (invoiceStatus === InvoiceStatus.CANCELLED) {
         throw new BadRequestException('Fatura já está cancelada');
       }
 

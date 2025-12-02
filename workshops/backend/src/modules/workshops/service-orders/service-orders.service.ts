@@ -813,13 +813,14 @@ export class ServiceOrdersService {
       throw new NotFoundException('Ordem de serviço não encontrada');
     }
 
-    if (String(serviceOrder.status) === ServiceOrderStatus.COMPLETED) {
+    const serviceOrderStatus = serviceOrder.status as ServiceOrderStatus;
+    if (serviceOrderStatus === ServiceOrderStatus.COMPLETED) {
       throw new BadRequestException(
         'Não é possível iniciar uma OS já finalizada',
       );
     }
 
-    if (String(serviceOrder.status) === ServiceOrderStatus.CANCELLED) {
+    if (serviceOrderStatus === ServiceOrderStatus.CANCELLED) {
       throw new BadRequestException('Não é possível iniciar uma OS cancelada');
     }
 
@@ -944,11 +945,12 @@ export class ServiceOrdersService {
       throw new NotFoundException('Ordem de serviço não encontrada');
     }
 
-    if (String(serviceOrder.status) === ServiceOrderStatus.COMPLETED) {
+    const serviceOrderStatus = serviceOrder.status as ServiceOrderStatus;
+    if (serviceOrderStatus === ServiceOrderStatus.COMPLETED) {
       throw new BadRequestException('OS já está finalizada');
     }
 
-    if (String(serviceOrder.status) === ServiceOrderStatus.CANCELLED) {
+    if (serviceOrderStatus === ServiceOrderStatus.CANCELLED) {
       throw new BadRequestException(
         'Não é possível finalizar uma OS cancelada',
       );
@@ -1185,13 +1187,14 @@ export class ServiceOrdersService {
       throw new NotFoundException('Ordem de serviço não encontrada');
     }
 
-    if (String(serviceOrder.status) === ServiceOrderStatus.COMPLETED) {
+    const serviceOrderStatus = serviceOrder.status as ServiceOrderStatus;
+    if (serviceOrderStatus === ServiceOrderStatus.COMPLETED) {
       throw new BadRequestException(
         'Não é possível cancelar uma OS já finalizada',
       );
     }
 
-    if (String(serviceOrder.status) === ServiceOrderStatus.CANCELLED) {
+    if (serviceOrderStatus === ServiceOrderStatus.CANCELLED) {
       throw new BadRequestException('OS já está cancelada');
     }
 

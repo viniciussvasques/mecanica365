@@ -78,7 +78,7 @@ export class PaymentsService {
           notes: createPaymentDto.notes || null,
           paidAt:
             createPaymentDto.status &&
-            String(createPaymentDto.status) === PaymentStatus.COMPLETED
+            createPaymentDto.status === PaymentStatus.COMPLETED
               ? new Date()
               : null,
         },
@@ -95,10 +95,8 @@ export class PaymentsService {
       });
 
       // Se o pagamento foi completado e há fatura, atualizar status da fatura
-      if (
-        payment.invoiceId &&
-        String(payment.status) === PaymentStatus.COMPLETED
-      ) {
+      const paymentStatus = payment.status as PaymentStatus;
+      if (payment.invoiceId && paymentStatus === PaymentStatus.COMPLETED) {
         await this.updateInvoicePaymentStatus(tenantId, payment.invoiceId);
       }
 
@@ -319,7 +317,8 @@ export class PaymentsService {
       }
 
       // Não permitir atualizar pagamento reembolsado
-      if (String(payment.status) === PaymentStatus.REFUNDED) {
+      const paymentStatus = payment.status as PaymentStatus;
+      if (paymentStatus === PaymentStatus.REFUNDED) {
         throw new BadRequestException(
           'Não é possível atualizar um pagamento reembolsado',
         );
@@ -338,7 +337,7 @@ export class PaymentsService {
 
       if (updatePaymentDto.status) {
         updateData.status = updatePaymentDto.status;
-        if (String(updatePaymentDto.status) === PaymentStatus.COMPLETED) {
+        if (updatePaymentDto.status === PaymentStatus.COMPLETED) {
           updateData.paidAt = new Date();
         } else {
           updateData.paidAt = null;
@@ -376,7 +375,7 @@ export class PaymentsService {
       // Se o pagamento foi completado e há fatura, atualizar status da fatura
       if (
         updatedPayment.invoiceId &&
-        String(updatedPayment.status) === PaymentStatus.COMPLETED
+        (updatedPayment.status as PaymentStatus) === PaymentStatus.COMPLETED
       ) {
         await this.updateInvoicePaymentStatus(
           tenantId,
@@ -421,9 +420,10 @@ export class PaymentsService {
       }
 
       // Não permitir remover pagamento completo ou reembolsado
+      const paymentStatus = payment.status as PaymentStatus;
       if (
-        String(payment.status) === PaymentStatus.COMPLETED ||
-        String(payment.status) === PaymentStatus.REFUNDED
+        paymentStatus === PaymentStatus.COMPLETED ||
+        paymentStatus === PaymentStatus.REFUNDED
       ) {
         throw new BadRequestException(
           'Não é possível remover um pagamento completo ou reembolsado',
