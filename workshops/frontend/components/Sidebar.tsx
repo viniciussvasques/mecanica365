@@ -14,6 +14,7 @@ import {
   ElevatorIcon,
   ScannerIcon,
   BellIcon,
+  ClockIcon,
 } from './icons/MechanicIcons';
 
 interface MenuItem {
@@ -21,19 +22,25 @@ interface MenuItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: number;
+  roles?: string[]; // Roles que podem ver este item (undefined = todos)
 }
 
-const menuItems: MenuItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: GearIcon },
-  { label: 'Clientes', href: '/customers', icon: CarIcon },
-  { label: 'Ordens de Serviço', href: '/service-orders', icon: WrenchIcon },
-  { label: 'Orçamentos', href: '/quotes', icon: BrakePadIcon },
-  { label: 'Estoque', href: '/inventory', icon: OilIcon },
-  { label: 'Peças', href: '/parts', icon: FilterIcon },
-  { label: 'Veículos', href: '/vehicles', icon: EngineIcon },
-  { label: 'Elevadores', href: '/elevators', icon: ElevatorIcon },
-  { label: 'Diagnóstico', href: '/diagnostics', icon: ScannerIcon },
-  { label: 'Notificações', href: '/notifications', icon: BellIcon },
+const allMenuItems: MenuItem[] = [
+  { label: 'Dashboard', href: '/dashboard', icon: GearIcon, roles: ['admin', 'manager', 'receptionist', 'accountant'] },
+  { label: 'Meu Dashboard', href: '/mechanic/dashboard', icon: GearIcon, roles: ['mechanic'] },
+  { label: 'Clientes', href: '/customers', icon: CarIcon, roles: ['admin', 'manager', 'receptionist'] },
+  { label: 'Ordens de Serviço', href: '/service-orders', icon: WrenchIcon, roles: ['admin', 'manager', 'receptionist', 'mechanic'] },
+  { label: 'Orçamentos', href: '/quotes', icon: BrakePadIcon, roles: ['admin', 'manager', 'receptionist'] },
+  { label: 'Meus Orçamentos', href: '/mechanic/quotes', icon: BrakePadIcon, roles: ['mechanic'] },
+  { label: 'Agendamentos', href: '/appointments', icon: ClockIcon, roles: ['admin', 'manager', 'receptionist', 'mechanic'] },
+  { label: 'Usuários', href: '/users', icon: GearIcon, roles: ['admin', 'manager'] },
+  { label: 'Estoque', href: '/inventory', icon: OilIcon, roles: ['admin', 'manager'] },
+  { label: 'Peças', href: '/parts', icon: FilterIcon, roles: ['admin', 'manager'] },
+  { label: 'Veículos', href: '/vehicles', icon: EngineIcon, roles: ['admin', 'manager', 'receptionist'] },
+  { label: 'Elevadores', href: '/elevators', icon: ElevatorIcon, roles: ['admin', 'manager', 'receptionist', 'mechanic'] },
+  { label: 'Diagnóstico', href: '/diagnostics', icon: ScannerIcon, roles: ['admin', 'manager'] },
+  { label: 'Notificações', href: '/mechanic/notifications', icon: BellIcon, roles: ['mechanic'] },
+  { label: 'Configurações', href: '/settings', icon: GearIcon, roles: ['admin', 'manager'] },
 ];
 
 interface SidebarProps {
@@ -43,23 +50,151 @@ interface SidebarProps {
 export function Sidebar({ onToggle }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
-    // Carregar estado do sidebar do localStorage
-    const savedState = localStorage.getItem('sidebarCollapsed');
-    if (savedState !== null) {
-      const isCollapsed = savedState === 'true';
-      setCollapsed(isCollapsed);
-      onToggle?.(isCollapsed);
+    
+    // Função para decodificar JWT e extrair role
+    const decodeJWT = (token: string): { role?: string } | null => {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join(''),
+        );
+        return JSON.parse(jsonPayload);
+      } catch {
+        return null;
+      }
+    };
+
+    // Função para carregar role
+    const loadUserRole = () => {
+      if (typeof window !== 'undefined') {
+        // Primeiro, tentar do localStorage
+        let role = localStorage.getItem('userRole');
+        console.log('[Sidebar] Role carregado do localStorage:', role);
+        
+        // Se não encontrar, tentar decodificar do token JWT
+        if (!role) {
+          const token = localStorage.getItem('token');
+          if (token) {
+            const payload = decodeJWT(token);
+            if (payload?.role) {
+              role = payload.role;
+              // Salvar no localStorage para próxima vez
+              localStorage.setItem('userRole', role);
+              console.log('[Sidebar] Role extraído do token JWT:', role);
+            }
+          }
+        }
+        
+        if (role) {
+          setUserRole(role);
+        } else {
+          // Tentar novamente após um pequeno delay (pode estar sendo salvo ainda)
+          setTimeout(() => {
+            const retryRole = localStorage.getItem('userRole');
+            console.log('[Sidebar] Retry - Role carregado:', retryRole);
+            if (retryRole) {
+              setUserRole(retryRole);
+            } else {
+              // Tentar decodificar do token novamente
+              const token = localStorage.getItem('token');
+              if (token) {
+                const payload = decodeJWT(token);
+                if (payload?.role) {
+                  const extractedRole = payload.role;
+                  localStorage.setItem('userRole', extractedRole);
+                  setUserRole(extractedRole);
+                  console.log('[Sidebar] Role extraído do token JWT no retry:', extractedRole);
+                  return;
+                }
+              }
+              console.warn('[Sidebar] Role não encontrado no localStorage após retry');
+            }
+          }, 500);
+        }
+      }
+    };
+    
+    // Carregar role inicial
+    loadUserRole();
+    
+    // Listener para mudanças no localStorage (caso o role seja atualizado em outra aba)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'userRole') {
+        console.log('[Sidebar] Role mudou no localStorage:', e.newValue);
+        setUserRole(e.newValue);
+      }
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorageChange);
     }
+    
+    // Carregar estado do sidebar do localStorage
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem('sidebarCollapsed');
+      if (savedState !== null) {
+        const isCollapsed = savedState === 'true';
+        setCollapsed(isCollapsed);
+        onToggle?.(isCollapsed);
+      }
+    }
+    
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   }, [onToggle]);
+  
+  // Verificar role periodicamente (para mudanças na mesma aba)
+  useEffect(() => {
+    if (!userRole && typeof window !== 'undefined') {
+      const interval = setInterval(() => {
+        const currentRole = localStorage.getItem('userRole');
+        if (currentRole && currentRole !== userRole) {
+          console.log('[Sidebar] Role atualizado via polling:', currentRole);
+          setUserRole(currentRole);
+        }
+      }, 500);
+      
+      return () => clearInterval(interval);
+    }
+  }, [userRole]);
+
+  // Filtrar itens do menu baseado no role
+  const menuItems = allMenuItems.filter((item) => {
+    // Se não tem roles definidos, todos podem ver
+    if (!item.roles) return true;
+    
+    // Se não tem role, tentar carregar novamente
+    if (!userRole) {
+      const roleFromStorage = localStorage.getItem('userRole');
+      if (roleFromStorage) {
+        setUserRole(roleFromStorage);
+        return item.roles.includes(roleFromStorage);
+      }
+      // Se ainda não tem role, mostrar itens padrão (admin/manager) como fallback
+      // para evitar sidebar vazia durante carregamento
+      return item.roles.includes('admin') || item.roles.includes('manager');
+    }
+    
+    // Garantir que apenas itens do role atual sejam mostrados
+    return item.roles.includes(userRole);
+  });
 
   const isActive = (href: string) => {
     if (!mounted || !pathname) return false;
-    if (href === '/dashboard') {
-      return pathname === '/dashboard';
+    if (href === '/dashboard' || href === '/mechanic/dashboard') {
+      return pathname === '/dashboard' || pathname === '/mechanic/dashboard';
     }
     return pathname.startsWith(href);
   };

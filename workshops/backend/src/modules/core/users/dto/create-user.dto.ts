@@ -11,7 +11,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export enum UserRole {
   ADMIN = 'admin',
   MANAGER = 'manager',
-  TECHNICIAN = 'technician',
+  MECHANIC = 'mechanic',
   RECEPTIONIST = 'receptionist',
   ACCOUNTANT = 'accountant',
 }
@@ -44,7 +44,7 @@ export class CreateUserDto {
   @ApiProperty({
     description: 'Role do usuário',
     enum: UserRole,
-    example: UserRole.TECHNICIAN,
+    example: UserRole.MECHANIC,
   })
   @IsEnum(UserRole, { message: 'Role inválida' })
   role: UserRole;

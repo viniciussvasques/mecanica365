@@ -21,6 +21,27 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Verificar se há subdomínio na URL
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      
+      // Se houver subdomínio (ex: oficinartee.localhost:3000), redirecionar para login
+      // Ignorar se for localhost puro, www, ou se já estiver na rota de login/register
+      const parts = hostname.split('.');
+      
+      // Verificar se há subdomínio válido (não é localhost puro, não é www)
+      // Exemplos válidos: oficinartee.localhost, empresa.mecanica365.app
+      // Exemplos inválidos: localhost, www.mecanica365.app
+      if (parts.length > 2 || (parts.length === 2 && parts[0] !== 'localhost' && parts[0] !== 'www')) {
+        // Há um subdomínio, redirecionar para login
+        const currentPath = window.location.pathname;
+        if (currentPath === '/' || currentPath === '') {
+          window.location.href = '/login';
+          return;
+        }
+      }
+    }
   }, []);
 
   useEffect(() => {

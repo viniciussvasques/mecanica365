@@ -130,6 +130,15 @@ export class QuoteResponseDto {
   customerSignature?: string;
 
   @ApiProperty({ nullable: true })
+  approvalMethod?: string;
+
+  @ApiProperty({ nullable: true })
+  publicToken?: string;
+
+  @ApiProperty({ nullable: true })
+  publicTokenExpiresAt?: Date;
+
+  @ApiProperty({ nullable: true })
   convertedAt?: Date;
 
   @ApiProperty({ nullable: true })
@@ -169,8 +178,47 @@ export class QuoteResponseDto {
   @ApiProperty({ nullable: true })
   recommendations?: string;
 
+  // Tempo estimado de serviço
+  @ApiProperty({
+    nullable: true,
+    description:
+      'Tempo estimado de serviço em horas (preenchido no diagnóstico)',
+  })
+  estimatedHours?: number;
+
+  // Atribuição de mecânico
+  @ApiProperty({ nullable: true })
+  assignedMechanicId?: string;
+
+  @ApiProperty({ nullable: true })
+  assignedAt?: Date;
+
+  @ApiProperty({ nullable: true })
+  assignedMechanic?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+
   @ApiProperty({ type: [QuoteItemResponseDto] })
   items: QuoteItemResponseDto[];
+
+  // Integrações com novos módulos
+  @ApiProperty({ type: [Object], required: false })
+  attachments?: Array<{
+    id: string;
+    type: string;
+    url: string;
+    originalName: string;
+  }>;
+
+  @ApiProperty({ type: [Object], required: false })
+  checklists?: Array<{
+    id: string;
+    checklistType: string;
+    name: string;
+    status: string;
+  }>;
 
   @ApiProperty()
   createdAt: Date;

@@ -27,10 +27,13 @@ import {
   QuoteResponseDto,
   QuoteFiltersDto,
   ApproveQuoteDto,
+  CompleteDiagnosisDto,
+  AssignMechanicDto,
 } from './dto';
 import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@core/auth/guards/roles.guard';
 import { Roles } from '@core/auth/decorators/roles.decorator';
+import { CurrentUser } from '@core/auth/decorators/current-user.decorator';
 import { TenantId } from '@common/decorators/tenant.decorator';
 
 @ApiTags('Quotes')
@@ -114,6 +117,130 @@ export class QuotesController {
     return this.quotesService.update(tenantId, id, updateQuoteDto);
   }
 
+  @Post(':id/send-for-diagnosis')
+  @Roles('admin', 'manager', 'receptionist')
+  @ApiOperation({ summary: 'Enviar orçamento para diagnóstico do mecânico' })
+  @ApiParam({ name: 'id', description: 'ID do orçamento' })
+  @ApiResponse({
+    status: 200,
+    description: 'Orçamento enviado para diagnóstico com sucesso',
+    type: QuoteResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Orçamento não encontrado' })
+  @ApiResponse({
+    status: 400,
+    description: 'Orçamento não está em rascunho ou faltam dados obrigatórios',
+  })
+  async sendForDiagnosis(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<QuoteResponseDto> {
+    return this.quotesService.sendForDiagnosis(tenantId, id);
+  }
+
+  @Post(':id/assign-mechanic')
+  @Roles('admin', 'manager', 'receptionist')
+  @ApiOperation({ summary: 'Atribuir mecânico ao orçamento' })
+  @ApiParam({ name: 'id', description: 'ID do orçamento' })
+  @ApiResponse({
+    status: 200,
+    description: 'Mecânico atribuído com sucesso',
+    type: QuoteResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Orçamento ou mecânico não encontrado',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Orçamento já convertido ou mecânico inválido',
+  })
+  async assignMechanic(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() assignMechanicDto: AssignMechanicDto,
+    @CurrentUser('id') currentUserId: string,
+    @CurrentUser('role') currentUserRole: string,
+  ): Promise<QuoteResponseDto> {
+    return this.quotesService.assignMechanic(
+      tenantId,
+      id,
+      assignMechanicDto,
+      currentUserId,
+      currentUserRole,
+    );
+  }
+
+  @Post(':id/claim')
+  @Roles('mechanic')
+  @ApiOperation({ summary: 'Mecânico pegar orçamento disponível' })
+  @ApiParam({ name: 'id', description: 'ID do orçamento' })
+  @ApiResponse({
+    status: 200,
+    description: 'Orçamento atribuído ao mecânico com sucesso',
+    type: QuoteResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Orçamento não encontrado' })
+  @ApiResponse({
+    status: 400,
+    description: 'Orçamento já tem mecânico atribuído ou não está disponível',
+  })
+  async claimQuote(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser('id') currentUserId: string,
+  ): Promise<QuoteResponseDto> {
+    return this.quotesService.claimQuote(tenantId, id, currentUserId);
+  }
+
+  @Post(':id/complete-diagnosis')
+  @Roles('admin', 'manager', 'mechanic')
+  @ApiOperation({ summary: 'Completar diagnóstico do mecânico' })
+  @ApiParam({ name: 'id', description: 'ID do orçamento' })
+  @ApiResponse({
+    status: 200,
+    description: 'Diagnóstico concluído com sucesso',
+    type: QuoteResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Orçamento não encontrado' })
+  @ApiResponse({
+    status: 400,
+    description: 'Orçamento não está aguardando diagnóstico',
+  })
+  async completeDiagnosis(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() completeDiagnosisDto: CompleteDiagnosisDto,
+  ): Promise<QuoteResponseDto> {
+    return this.quotesService.completeDiagnosis(
+      tenantId,
+      id,
+      completeDiagnosisDto,
+    );
+  }
+
+  @Post(':id/send')
+  @Roles('admin', 'manager', 'receptionist')
+  @ApiOperation({ summary: 'Enviar orçamento ao cliente' })
+  @ApiParam({ name: 'id', description: 'ID do orçamento' })
+  @ApiResponse({
+    status: 200,
+    description: 'Orçamento enviado ao cliente com sucesso',
+    type: QuoteResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Orçamento não encontrado' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Orçamento não pode ser enviado (falta de itens ou status inválido)',
+  })
+  async sendToCustomer(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<QuoteResponseDto> {
+    return this.quotesService.sendToCustomer(tenantId, id);
+  }
+
   @Post(':id/approve')
   @Roles('admin', 'manager', 'receptionist')
   @ApiOperation({ summary: 'Aprovar orçamento e converter em Service Order' })
@@ -185,5 +312,50 @@ export class QuotesController {
     @Param('id') id: string,
   ): Promise<void> {
     return this.quotesService.remove(tenantId, id);
+  }
+
+  @Post(':id/approve-manually')
+  @Roles('admin', 'manager', 'receptionist')
+  @ApiOperation({
+    summary: 'Aprovar orçamento manualmente (após assinatura física)',
+  })
+  @ApiParam({ name: 'id', description: 'ID do orçamento' })
+  @ApiResponse({
+    status: 200,
+    description: 'Orçamento aprovado manualmente e Service Order criada',
+  })
+  @ApiResponse({ status: 404, description: 'Orçamento não encontrado' })
+  @ApiResponse({
+    status: 400,
+    description: 'Orçamento não pode ser aprovado manualmente',
+  })
+  async approveManually(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { customerSignature?: string; notes?: string },
+  ) {
+    return this.quotesService.approveManually(
+      tenantId,
+      id,
+      body.customerSignature,
+      body.notes,
+    );
+  }
+
+  @Post(':id/regenerate-token')
+  @Roles('admin', 'manager', 'receptionist')
+  @ApiOperation({ summary: 'Regenerar token público do orçamento' })
+  @ApiParam({ name: 'id', description: 'ID do orçamento' })
+  @ApiResponse({
+    status: 200,
+    description: 'Token público regenerado com sucesso',
+    type: QuoteResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Orçamento não encontrado' })
+  async regenerateToken(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<QuoteResponseDto> {
+    return this.quotesService.regeneratePublicToken(tenantId, id);
   }
 }

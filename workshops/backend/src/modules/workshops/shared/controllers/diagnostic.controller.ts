@@ -14,9 +14,9 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
-import { TenantGuard } from '@auth/guards/tenant.guard';
-import { CurrentTenant } from '@auth/decorators/current-tenant.decorator';
+import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
+import { TenantGuard } from '@common/guards/tenant.guard';
+import { TenantId } from '@common/decorators/tenant.decorator';
 import {
   DiagnosticService,
   DiagnosticSuggestion,
@@ -65,7 +65,7 @@ export class DiagnosticController {
     type: [Object],
   })
   async suggestProblems(
-    @CurrentTenant() tenantId: string,
+    @TenantId() tenantId: string,
     @Body() dto: SuggestProblemsDto,
   ): Promise<DiagnosticSuggestion[]> {
     return this.diagnosticService.suggestProblems(dto.symptoms, dto.category);
@@ -83,7 +83,7 @@ export class DiagnosticController {
     type: [Object],
   })
   async getProblemsByCategory(
-    @CurrentTenant() tenantId: string,
+    @TenantId() tenantId: string,
     @Query('category') category: ProblemCategory,
   ): Promise<DiagnosticSuggestion[]> {
     return this.diagnosticService.getProblemsByCategory(category);

@@ -1,0 +1,41 @@
+# Etapa de construção
+FROM node:18-alpine AS builder
+
+# Definir diretório de trabalho
+WORKDIR /usr/src/app
+
+# Copiar arquivos de dependências
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Instalar dependências
+RUN npm ci
+
+# Copiar o restante dos arquivos
+COPY . .
+
+# Gerar Prisma Client
+RUN npx prisma generate
+
+# Compilar a aplicação
+RUN npm run build
+
+# Etapa de execução
+FROM node:18-alpine
+
+WORKDIR /usr/src/app
+
+# Copiar arquivos necessários
+COPY --from=builder /usr/src/app/package*.json ./
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/prisma ./prisma
+
+# Instalar Prisma Client
+RUN npx prisma generate
+
+# Expor a porta da aplicação
+EXPOSE 3000
+
+# Comando para executar a aplicação
+CMD ["npm", "run", "start:dev"]

@@ -17,7 +17,16 @@ import { VehiclesModule } from '../modules/workshops/vehicles/vehicles.module';
 import { ElevatorsModule } from '../modules/workshops/elevators/elevators.module';
 import { ServiceOrdersModule } from '../modules/workshops/service-orders/service-orders.module';
 import { QuotesModule } from '../modules/workshops/quotes/quotes.module';
+import { WorkshopSettingsModule } from '../modules/workshops/workshop-settings/workshop-settings.module';
 import { SharedModule } from '../modules/workshops/shared/shared.module';
+import { AuditModule } from '../modules/core/audit/audit.module';
+import { PartsModule } from '../modules/workshops/parts/parts.module';
+import { AppointmentsModule } from '../modules/workshops/appointments/appointments.module';
+import { AttachmentsModule } from '../modules/workshops/attachments/attachments.module';
+import { ChecklistsModule } from '../modules/workshops/checklists/checklists.module';
+import { InvoicingModule } from '../modules/workshops/invoicing/invoicing.module';
+import { PaymentsModule } from '../modules/workshops/payments/payments.module';
+import { ReportsModule } from '../modules/workshops/reports/reports.module';
 import { TenantResolverMiddleware } from '../common/middleware/tenant-resolver.middleware';
 import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
 import { ValidationPipe } from '../common/pipes/validation.pipe';
@@ -43,7 +52,16 @@ import appConfig from '../config/app.config';
     ElevatorsModule,
     ServiceOrdersModule,
     QuotesModule,
+    WorkshopSettingsModule,
     SharedModule,
+    AuditModule,
+    PartsModule,
+    AppointmentsModule,
+    AttachmentsModule,
+    ChecklistsModule,
+    InvoicingModule,
+    PaymentsModule,
+    ReportsModule,
     // TODO: Adicionar outros módulos aqui
   ],
   controllers: [AppController],

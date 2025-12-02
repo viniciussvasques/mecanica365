@@ -11,8 +11,20 @@ interface RequestWithUser extends Request {
 }
 
 export const CurrentUser = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext) => {
+  (data: string | undefined, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest<RequestWithUser>();
-    return request.user;
+    const user = request.user;
+
+    if (!user) {
+      return undefined;
+    }
+
+    // Se um campo específico foi solicitado (ex: 'id', 'role'), retornar apenas esse campo
+    if (data && typeof data === 'string') {
+      return user[data as keyof typeof user];
+    }
+
+    // Caso contrário, retornar o objeto user completo
+    return user;
   },
 );

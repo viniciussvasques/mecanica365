@@ -40,7 +40,10 @@ export class DiagnosticService {
       );
 
       // Buscar problemas comuns ativos
-      const where: unknown = {
+      const where: {
+        isActive: boolean;
+        category?: ProblemCategory;
+      } = {
         isActive: true,
       };
 

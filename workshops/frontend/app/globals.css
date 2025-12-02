@@ -211,6 +211,28 @@ textarea:not(:placeholder-shown) {
   }
 }
 
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(58, 191, 248, 0.4), 0 0 20px rgba(58, 191, 248, 0.2);
+    border-color: rgba(58, 191, 248, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(58, 191, 248, 0.8), 0 0 40px rgba(58, 191, 248, 0.4);
+    border-color: rgba(58, 191, 248, 1);
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 0.6s ease-out;
 }
@@ -229,6 +251,14 @@ textarea:not(:placeholder-shown) {
 
 .animate-glow {
   animation: glow 2s ease-in-out infinite;
+}
+
+.animate-blink {
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
 
 /* Glassmorphism escuro */
@@ -294,4 +324,19 @@ textarea:not(:placeholder-shown) {
 .status-scheduled {
   background: linear-gradient(135deg, rgba(58, 191, 248, 0.1), rgba(58, 191, 248, 0.05));
   border-color: var(--color-mechanical-blue);
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
 }

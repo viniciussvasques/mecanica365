@@ -20,7 +20,7 @@ describe('UsersService', () => {
     email: 'test@example.com',
     name: 'Test User',
     password: 'hashedPassword',
-    role: UserRole.TECHNICIAN,
+    role: UserRole.MECHANIC,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -61,7 +61,7 @@ describe('UsersService', () => {
       email: 'test@example.com',
       name: 'Test User',
       password: 'Password123',
-      role: UserRole.TECHNICIAN,
+      role: UserRole.MECHANIC,
       isActive: true,
     };
 

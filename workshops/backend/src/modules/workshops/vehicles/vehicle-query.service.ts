@@ -1,5 +1,4 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-// @ts-expect-error - Axios types may not be resolved in watch mode
 import axios, { AxiosInstance } from 'axios';
 import { getErrorMessage } from '@common/utils/error.utils';
 

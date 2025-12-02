@@ -9,11 +9,18 @@ interface ClientLayoutProps {
 }
 
 // Rotas que não devem ter sidebar
-const publicRoutes = ['/login', '/register', '/onboarding', '/'];
+const publicRoutes = ['/login', '/register', '/onboarding', '/', '/quotes/view'];
 
 export function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname();
-  const isPublicRoute = publicRoutes.includes(pathname || '');
+  // Verificar se é rota pública (exata ou começa com a rota pública)
+  const isPublicRoute = publicRoutes.some(route => {
+    if (!pathname) return false;
+    if (pathname === route) return true;
+    // Para /quotes/view, verificar se começa com essa rota
+    if (route === '/quotes/view' && pathname.startsWith('/quotes/view')) return true;
+    return false;
+  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
 

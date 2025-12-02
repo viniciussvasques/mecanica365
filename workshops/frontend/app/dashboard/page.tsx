@@ -32,9 +32,16 @@ export default function DashboardPage() {
     setMounted(true);
     const token = localStorage.getItem('token');
     const subdomain = searchParams.get('subdomain') || localStorage.getItem('subdomain');
+    const userRole = localStorage.getItem('userRole');
 
     if (!token) {
       router.push('/login');
+      return;
+    }
+
+    // Se for mecânico, redirecionar para dashboard do mecânico
+    if (userRole === 'mechanic') {
+      router.push('/mechanic/dashboard');
       return;
     }
 
@@ -57,7 +64,7 @@ export default function DashboardPage() {
       setUser({
         name: 'Admin',
         email: 'admin@oficina.com',
-        role: 'admin',
+        role: userRole || 'admin',
       });
       setLoading(false);
     }, 1000);

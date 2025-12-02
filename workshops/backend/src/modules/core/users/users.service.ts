@@ -74,12 +74,14 @@ export class UsersService {
   async findAll(
     tenantId: string,
     includeInactive = false,
+    role?: string,
   ): Promise<UserResponseDto[]> {
     try {
       const users = await this.prisma.user.findMany({
         where: {
           tenantId,
           ...(includeInactive ? {} : { isActive: true }),
+          ...(role ? { role } : {}),
         },
         orderBy: {
           createdAt: 'desc',

@@ -1,0 +1,23 @@
+=== COMANDOS PARA DIGITAR NO DISKPART ===
+
+1. Abra o PowerShell como Administrador
+
+2. Digite: diskpart
+
+3. Digite os seguintes comandos (um por vez, pressionando Enter após cada um):
+
+select vdisk file="C:\Users\vinic\AppData\Local\Docker\wsl\disk\docker_data.vhdx"
+
+attach vdisk readonly
+
+compact vdisk
+
+detach vdisk
+
+exit
+
+=== IMPORTANTE ===
+- Certifique-se de que o WSL está parado antes: wsl --shutdown
+- O processo pode levar vários minutos
+- Não feche a janela durante a compactação
+

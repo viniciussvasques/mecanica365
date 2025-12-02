@@ -101,3 +101,10 @@ export const BellIcon: React.FC<IconProps> = ({ className = '', size = 24 }) => 
   </svg>
 );
 
+export const ClockIcon: React.FC<IconProps> = ({ className = '', size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 6v6l4 2" />
+  </svg>
+);
+

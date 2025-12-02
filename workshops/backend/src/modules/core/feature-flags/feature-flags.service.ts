@@ -46,12 +46,12 @@ export class FeatureFlagsService {
       appointments: { enabled: true, unlimited: true },
       bodywork: { enabled: true, unlimited: true },
       diagnostics: { enabled: false },
-      reports: { enabled: false },
+      reports: { enabled: false }, // Premium - apenas Enterprise
       suppliers: { enabled: false },
       parts_catalog: { enabled: false },
       documents: { enabled: true, unlimited: true },
-      invoices: { enabled: true, unlimited: true },
-      payments: { enabled: true, unlimited: true },
+      invoices: { enabled: false }, // Premium - apenas Enterprise
+      payments: { enabled: false }, // Premium - apenas Enterprise
       vehicle_history: { enabled: true, unlimited: true },
       automations: { enabled: true, unlimited: true },
     },
@@ -65,12 +65,12 @@ export class FeatureFlagsService {
       appointments: { enabled: true, unlimited: true },
       bodywork: { enabled: true, unlimited: true },
       diagnostics: { enabled: true, unlimited: true },
-      reports: { enabled: true, unlimited: true },
+      reports: { enabled: false }, // Premium - apenas Enterprise
       suppliers: { enabled: true, unlimited: true },
       parts_catalog: { enabled: true, unlimited: true },
       documents: { enabled: true, unlimited: true },
-      invoices: { enabled: true, unlimited: true },
-      payments: { enabled: true, unlimited: true },
+      invoices: { enabled: false }, // Premium - apenas Enterprise
+      payments: { enabled: false }, // Premium - apenas Enterprise
       vehicle_history: { enabled: true, unlimited: true },
       automations: { enabled: true, unlimited: true },
     },

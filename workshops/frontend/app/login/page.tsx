@@ -95,6 +95,13 @@ export default function LoginPage() {
           localStorage.setItem('userId', response.user.id);
         }
         
+        if (response.user?.role) {
+          localStorage.setItem('userRole', response.user.role);
+          console.log('[Login] Role salvo no localStorage:', response.user.role);
+        } else {
+          console.warn('[Login] Role não encontrado na resposta:', response.user);
+        }
+        
         const isFirstLogin = response.isFirstLogin === true;
         const passwordChangedKey = response.user?.id ? `passwordChanged_${response.user.id}` : null;
         const alreadyChanged = passwordChangedKey ? localStorage.getItem(passwordChangedKey) : null;
@@ -104,7 +111,15 @@ export default function LoginPage() {
           localStorage.setItem('showPasswordModal', 'true');
         }
         
-        router.push(`/dashboard?subdomain=${tenantSubdomain}${isFirstLogin && !alreadyChanged ? '&firstLogin=true' : ''}`);
+        // Redirecionar baseado no role
+        const userRole = response.user?.role;
+        const queryParams = `subdomain=${tenantSubdomain}${isFirstLogin && !alreadyChanged ? '&firstLogin=true' : ''}`;
+        
+        if (userRole === 'mechanic') {
+          router.push(`/mechanic/dashboard?${queryParams}`);
+        } else {
+          router.push(`/dashboard?${queryParams}`);
+        }
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Erro ao fazer login. Verifique suas credenciais.';

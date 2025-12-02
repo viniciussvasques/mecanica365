@@ -8,45 +8,63 @@ datasource db {
 }
 
 model Tenant {
-  id            String         @id @default(uuid())
-  name          String
-  subdomain     String         @unique
-  plan          String
-  status        String         @default("active")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  documentType  String         @default("cnpj") @map("document_type") @db.VarChar(10)
-  document      String         @unique @db.VarChar(20)
-  adminEmail    String?        @map("admin_email") @db.VarChar(255)
-  appointments  Appointment[]
-  customers     Customer[]
-  elevators     Elevator[]
-  invoices      Invoice[]
-  parts         Part[]
-  serviceOrders ServiceOrder[]
-  quotes        Quote[]
-  subscription  Subscription?
-  users         User[]
+  id               String            @id @default(uuid())
+  name             String
+  subdomain        String            @unique
+  plan             String
+  status           String            @default("active")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  documentType     String            @default("cnpj") @map("document_type") @db.VarChar(10)
+  document         String            @unique @db.VarChar(20)
+  adminEmail       String?           @map("admin_email") @db.VarChar(255)
+  appointments     Appointment[]
+  customers        Customer[]
+  elevators        Elevator[]
+  invoices         Invoice[]
+  parts            Part[]
+  serviceOrders    ServiceOrder[]
+  quotes           Quote[]
+  subscription     Subscription?
+  users            User[]
+  notifications    Notification[]
+  checklists       Checklist[]
+  workshopSettings WorkshopSettings?
+  auditLogs        AuditLog[]
+  suppliers        Supplier[]
+  webhooks         Webhook[]
+  payments         Payment[]
+  partMovements    PartMovement[]
+  attachments      Attachment[]
 
   @@map("tenants")
 }
 
 model User {
-  id            String         @id @default(uuid())
-  tenantId      String
-  email         String
-  name          String
-  password      String
-  role          String
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  appointments  Appointment[]  @relation("AssignedTo")
-  refreshTokens RefreshToken[]
-  serviceOrders ServiceOrder[] @relation("Technician")
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id                     String                   @id @default(uuid())
+  tenantId               String
+  email                  String
+  name                   String
+  password               String
+  role                   String
+  isActive               Boolean                  @default(true)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  appointments           Appointment[]            @relation("AssignedTo")
+  refreshTokens          RefreshToken[]
+  serviceOrders          ServiceOrder[]           @relation("Technician")
+  assignedQuotes         Quote[]                  @relation("AssignedQuotes") // Orçamentos atribuídos
+  quoteAssignments       QuoteAssignmentHistory[] @relation("QuoteAssignments") // Histórico de atribuições feitas por este usuário
+  quoteAssignmentHistory QuoteAssignmentHistory[] @relation("QuoteAssignmentMechanic") // Histórico de atribuições onde este usuário é o mecânico
+  notifications          Notification[]           @relation("Notifications") // Notificações do usuário
+  auditLogs              AuditLog[] // Logs de auditoria
+  uploadedAttachments    Attachment[]             @relation("UploadedAttachments") // Arquivos enviados por este usuário
+  completedChecklists    Checklist[]              @relation("CompletedChecklists") // Checklists completados por este usuário
+  tenant                 Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, email])
+  @@index([tenantId, role])
+  @@index([role])
   @@map("users")
 }
 
@@ -142,6 +160,7 @@ model ServiceOrder {
   elevatorUsages    ElevatorUsage[]
   quotes            Quote[]
   identifiedProblem CommonProblem?        @relation("IdentifiedProblem", fields: [identifiedProblemId], references: [id])
+  attachments       Attachment[] // Anexos da ordem de serviço
 
   @@unique([tenantId, number])
   @@index([tenantId, status])
@@ -159,8 +178,8 @@ model ServiceOrderService {
   hours          Decimal
   cost           Decimal
   performedAt    DateTime?    @map("performed_at")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime     @default(now()) @map("createdAt")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
   serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
 
   @@index([serviceOrderId])
@@ -225,6 +244,7 @@ model Customer {
   invoices      Invoice[]
   serviceOrders ServiceOrder[]
   quotes        Quote[]
+  attachments   Attachment[] // Anexos do cliente
 
   @@unique([tenantId, phone])
   @@unique([tenantId, cpf])
@@ -251,6 +271,7 @@ model CustomerVehicle {
   customer       Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   elevatorUsages ElevatorUsage[] // Histórico de uso em elevadores
   quotes         Quote[] // Orçamentos relacionados ao veículo
+  attachments    Attachment[] // Anexos do veículo
 
   @@index([renavan])
   @@map("customer_vehicles")
@@ -259,70 +280,185 @@ model CustomerVehicle {
 model Part {
   id          String             @id @default(uuid())
   tenantId    String
-  partNumber  String?
-  description String
-  category    String?
-  supplier    String?
+  partNumber  String?            @map("part_number") @db.VarChar(100)
+  name        String
+  description String?            @db.Text
+  category    String?            @db.VarChar(100)
+  brand       String?            @db.VarChar(100)
+  supplierId  String?            @map("supplier_id")
   quantity    Int                @default(0)
-  minQuantity Int                @default(0)
-  unitCost    Decimal
-  unitPrice   Decimal
-  location    String?
-  isActive    Boolean            @default(true)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  minQuantity Int                @default(0) @map("min_quantity")
+  costPrice   Decimal            @map("cost_price") @db.Decimal(10, 2)
+  sellPrice   Decimal            @map("sell_price") @db.Decimal(10, 2)
+  location    String?            @db.VarChar(100)
+  isActive    Boolean            @default(true) @map("is_active")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
   movements   PartMovement[]
   tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier    Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   consumedIn  ServiceOrderPart[]
+  quoteItems  QuoteItem[]        @relation("PartQuoteItems")
 
   @@index([tenantId, partNumber])
   @@index([tenantId, category])
+  @@index([supplierId])
   @@map("parts")
 }
 
 model PartMovement {
-  id          String   @id @default(uuid())
-  tenantId    String
-  partId      String
-  type        String
-  quantity    Int
-  unitCost    Decimal?
-  referenceId String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  part        Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  partId        String   @map("part_id")
+  type          String   @map("movement_type") @db.VarChar(50) // receive, sale, transfer, adjustment, consumption
+  quantity      Int
+  unitCost      Decimal? @map("unit_cost") @db.Decimal(10, 2)
+  referenceId   String?  @map("reference_id")
+  referenceType String?  @map("reference_type") @db.VarChar(50) // ServiceOrder, Quote, etc.
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  part          Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
 
-  @@index([tenantId, partId])
+  @@index([tenantId, createdAt])
+  @@index([partId])
+  @@index([referenceType, referenceId])
   @@map("part_movements")
 }
 
 model Invoice {
-  id             String       @id @default(uuid())
-  tenantId       String
-  invoiceNumber  String       @unique
-  serviceOrderId String       @unique
-  customerId     String?
-  total          Decimal
-  taxAmount      Decimal      @default(0)
-  discount       Decimal      @default(0)
-  nfeKey         String?      @unique
-  nfeXmlUrl      String?
-  nfePdfUrl      String?
-  nfeStatus      String?
-  paymentMethod  String?
-  paymentStatus  String       @default("pending")
-  paidAt         DateTime?
-  status         String       @default("draft")
-  issuedAt       DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  customer       Customer?    @relation(fields: [customerId], references: [id])
-  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id             String        @id @default(uuid())
+  tenantId       String        @map("tenant_id")
+  invoiceNumber  String        @unique @map("invoice_number") @db.VarChar(100)
+  serviceOrderId String?       @unique @map("service_order_id")
+  customerId     String?       @map("customer_id")
+  type           String        @db.VarChar(50) // service, sale, part
+  total          Decimal       @db.Decimal(10, 2)
+  taxAmount      Decimal       @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  discount       Decimal       @default(0) @db.Decimal(10, 2)
+  nfeKey         String?       @unique @map("nfe_key") @db.VarChar(44)
+  nfeXmlUrl      String?       @map("nfe_xml_url") @db.Text
+  nfePdfUrl      String?       @map("nfe_pdf_url") @db.Text
+  nfeStatus      String?       @map("nfe_status") @db.VarChar(50)
+  paymentMethod  String?       @map("payment_method") @db.VarChar(50)
+  paymentStatus  String        @default("pending") @map("payment_status") @db.VarChar(50)
+  paidAt         DateTime?     @map("paid_at")
+  status         String        @default("draft") @db.VarChar(50)
+  issuedAt       DateTime?     @map("issued_at")
+  dueDate        DateTime?     @map("due_date")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  customer       Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items          InvoiceItem[]
+  payments       Payment[]
 
   @@index([tenantId, status])
   @@index([tenantId, customerId])
+  @@index([paymentStatus])
   @@map("invoices")
+}
+
+// Invoice Items - Itens da fatura
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String   @map("invoice_id")
+  type        String   @db.VarChar(50) // service, part
+  name        String
+  description String?  @db.Text
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(10, 2)
+  totalPrice  Decimal  @map("total_price") @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+// Payments - Pagamentos
+model Payment {
+  id            String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  invoiceId     String?   @map("invoice_id")
+  amount        Decimal   @db.Decimal(10, 2)
+  method        String    @db.VarChar(50) // cash, credit_card, debit_card, pix, boleto, transfer
+  status        String    @default("pending") @db.VarChar(50) // pending, completed, failed, refunded
+  paidAt        DateTime? @map("paid_at")
+  transactionId String?   @map("transaction_id") @db.VarChar(255) // ID da transação no gateway
+  installments  Int       @default(1) // Número de parcelas
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice       Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([invoiceId])
+  @@index([status])
+  @@map("payments")
+}
+
+// Suppliers - Fornecedores
+model Supplier {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  name         String
+  document     String?  @db.VarChar(20) // CNPJ
+  documentType String?  @default("cnpj") @map("document_type") @db.VarChar(10)
+  phone        String?  @db.VarChar(20)
+  email        String?  @db.VarChar(255)
+  address      String?  @db.Text
+  city         String?  @db.VarChar(100)
+  state        String?  @db.VarChar(2)
+  zipCode      String?  @map("zip_code") @db.VarChar(10)
+  contactName  String?  @map("contact_name") @db.VarChar(255)
+  notes        String?  @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parts        Part[]
+
+  @@index([tenantId])
+  @@map("suppliers")
+}
+
+// Webhooks - Configuração de webhooks externos
+model Webhook {
+  id              String           @id @default(uuid())
+  tenantId        String           @map("tenant_id")
+  url             String           @db.Text
+  secret          String           @db.VarChar(255) // Secret para assinatura HMAC
+  events          String[] // Eventos que o webhook escuta
+  isActive        Boolean          @default(true) @map("is_active")
+  lastTriggeredAt DateTime?        @map("last_triggered_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attempts        WebhookAttempt[]
+
+  @@index([tenantId])
+  @@index([isActive])
+  @@map("webhooks")
+}
+
+// Webhook Attempts - Tentativas de envio de webhook
+model WebhookAttempt {
+  id          String   @id @default(uuid())
+  webhookId   String   @map("webhook_id")
+  event       String   @db.VarChar(100)
+  payload     Json
+  status      String   @db.VarChar(50) // success, failed, pending
+  statusCode  Int?     @map("status_code")
+  response    String?  @db.Text
+  error       String?  @db.Text
+  attemptedAt DateTime @default(now()) @map("attempted_at")
+  webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, attemptedAt])
+  @@map("webhook_attempts")
 }
 
 model WorkshopService {
@@ -351,6 +487,7 @@ model CommonProblem {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   serviceOrders ServiceOrder[] @relation("IdentifiedProblem") // Ordens de serviço que identificaram este problema
+  quotes        Quote[]        @relation("QuoteIdentifiedProblem") // Orçamentos que identificaram este problema
 
   @@index([category])
   @@index([severity])
@@ -433,7 +570,7 @@ model Quote {
   vehicleId      String? // Referência a CustomerVehicle
   elevatorId     String? // Elevador onde será realizado (se necessário)
   serviceOrderId String? // ServiceOrder gerada quando aprovado
-  status         String  @default("draft") // draft, sent, viewed, accepted, rejected, expired, converted
+  status         String  @default("draft") // draft, awaiting_diagnosis, diagnosed, sent, viewed, accepted, rejected, expired, converted
   version        Int     @default(1)
   parentQuoteId  String? // Para versões/revisões
 
@@ -443,6 +580,7 @@ model Quote {
   totalCost Decimal  @default(0)
   discount  Decimal  @default(0)
   taxAmount Decimal  @default(0)
+  estimatedHours Decimal? @map("estimatedHours") // Tempo estimado de serviço em horas (preenchido no diagnóstico)
 
   // Validade
   expiresAt  DateTime?
@@ -455,6 +593,11 @@ model Quote {
   rejectedAt        DateTime?
   rejectedReason    String?
   customerSignature String? // Base64 da assinatura do cliente
+  approvalMethod    String? // 'digital' ou 'manual' - método de aprovação usado
+
+  // Link público para visualização e aprovação
+  publicToken          String?   @unique // Token único para acesso público
+  publicTokenExpiresAt DateTime? // Data de expiração do token (padrão: 30 dias)
 
   // Conversão
   convertedAt               DateTime?
@@ -469,6 +612,7 @@ model Quote {
   identifiedProblemCategory    String? // Categoria do problema identificado
   identifiedProblemDescription String? // Descrição do problema identificado pelo mecânico
   identifiedProblemId          String? // Referência a CommonProblem (se identificado)
+  identifiedProblem            CommonProblem? @relation("QuoteIdentifiedProblem", fields: [identifiedProblemId], references: [id])
 
   // Diagnóstico e observações do mecânico
   diagnosticNotes  String? // Observações do mecânico durante diagnóstico
@@ -478,15 +622,22 @@ model Quote {
   // Recomendações
   recommendations String? // Recomendações do mecânico (troca de peça, manutenção preventiva, etc.)
 
+  // Atribuição de mecânico
+  assignedMechanicId String? // Mecânico atribuído para diagnóstico
+  assignedAt         DateTime? // Quando foi atribuído
+
   // Relações
-  items        QuoteItem[]
-  customer     Customer?        @relation(fields: [customerId], references: [id])
-  vehicle      CustomerVehicle? @relation(fields: [vehicleId], references: [id])
-  elevator     Elevator?        @relation(fields: [elevatorId], references: [id])
-  serviceOrder ServiceOrder?    @relation(fields: [serviceOrderId], references: [id])
-  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parentQuote  Quote?           @relation("QuoteVersions", fields: [parentQuoteId], references: [id])
-  childQuotes  Quote[]          @relation("QuoteVersions")
+  items             QuoteItem[]
+  customer          Customer?                @relation(fields: [customerId], references: [id])
+  vehicle           CustomerVehicle?         @relation(fields: [vehicleId], references: [id])
+  elevator          Elevator?                @relation(fields: [elevatorId], references: [id])
+  serviceOrder      ServiceOrder?            @relation(fields: [serviceOrderId], references: [id])
+  tenant            Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parentQuote       Quote?                   @relation("QuoteVersions", fields: [parentQuoteId], references: [id])
+  childQuotes       Quote[]                  @relation("QuoteVersions")
+  assignedMechanic  User?                    @relation("AssignedQuotes", fields: [assignedMechanicId], references: [id])
+  assignmentHistory QuoteAssignmentHistory[] // Histórico de atribuições
+  attachments       Attachment[] // Anexos do orçamento
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -496,6 +647,8 @@ model Quote {
   @@index([tenantId, customerId])
   @@index([tenantId, vehicleId])
   @@index([elevatorId])
+  @@index([assignedMechanicId])
+  @@index([tenantId, status, assignedMechanicId])
   @@map("quotes")
 }
 
@@ -513,8 +666,214 @@ model QuoteItem {
   hours       Decimal? // Para serviços
 
   quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  part  Part? @relation("PartQuoteItems", fields: [partId], references: [id], onDelete: SetNull)
 
   @@index([quoteId])
   @@index([type])
   @@map("quote_items")
+}
+
+// Histórico de atribuições de orçamentos
+model QuoteAssignmentHistory {
+  id             String    @id @default(uuid())
+  quoteId        String
+  mechanicId     String // Mecânico atribuído
+  assignedBy     String // Usuário que fez a atribuição (pode ser o próprio mecânico)
+  assignedAt     DateTime  @default(now())
+  unassignedAt   DateTime? // Quando foi desatribuído (se aplicável)
+  reason         String? // Motivo da atribuição/desatribuição
+  quote          Quote     @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  mechanic       User      @relation("QuoteAssignmentMechanic", fields: [mechanicId], references: [id], onDelete: Cascade)
+  assignedByUser User      @relation("QuoteAssignments", fields: [assignedBy], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@index([mechanicId])
+  @@index([assignedAt])
+  @@map("quote_assignment_history")
+}
+
+// Notificações do sistema
+model Notification {
+  id        String    @id @default(uuid())
+  tenantId  String
+  userId    String? // Usuário específico (null = todos do tenant)
+  type      String // 'quote_assigned', 'quote_available', 'diagnosis_completed', etc.
+  title     String
+  message   String
+  data      Json? // Dados adicionais (ex: quoteId, mechanicId)
+  read      Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User?     @relation("Notifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId])
+  @@index([userId, read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model WorkshopSettings {
+  id       String @id @default(uuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Informações básicas
+  displayName String? @map("display_name") @db.VarChar(255)
+  logoUrl     String? @map("logo_url") @db.Text
+  faviconUrl  String? @map("favicon_url") @db.Text
+
+  // Cores e tema
+  primaryColor   String? @map("primary_color") @db.VarChar(7) // Hex color
+  secondaryColor String? @map("secondary_color") @db.VarChar(7)
+  accentColor    String? @map("accent_color") @db.VarChar(7)
+
+  // Contatos
+  phone    String? @db.VarChar(20)
+  email    String? @db.VarChar(255)
+  whatsapp String? @db.VarChar(20)
+
+  // Endereço
+  address String? @db.Text
+  city    String? @db.VarChar(100)
+  state   String? @db.VarChar(2)
+  zipCode String? @map("zip_code") @db.VarChar(10)
+  country String? @default("BR") @db.VarChar(2)
+
+  // Redes sociais
+  website   String? @db.VarChar(255)
+  facebook  String? @db.VarChar(255)
+  instagram String? @db.VarChar(255)
+  linkedin  String? @db.VarChar(255)
+
+  // Configurações de documentos
+  showLogoOnQuotes    Boolean @default(true) @map("show_logo_on_quotes")
+  showAddressOnQuotes Boolean @default(true) @map("show_address_on_quotes")
+  showContactOnQuotes Boolean @default(true) @map("show_contact_on_quotes")
+
+  // Textos personalizados
+  quoteFooterText   String? @map("quote_footer_text") @db.Text
+  invoiceFooterText String? @map("invoice_footer_text") @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("workshop_settings")
+}
+
+// Audit Logs - Rastreamento de ações dos usuários
+model AuditLog {
+  id           String   @id @default(uuid())
+  tenantId     String?  @map("tenant_id")
+  userId       String?  @map("user_id")
+  action       String // CREATE, UPDATE, DELETE, VIEW, EXPORT, LOGIN, LOGOUT
+  resourceType String?  @map("resource_type") @db.VarChar(50) // Customer, Quote, ServiceOrder, etc.
+  resourceId   String?  @map("resource_id")
+  changes      Json? // Before/After changes
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.Text
+  metadata     Json? // Additional metadata
+  createdAt    DateTime @default(now()) @map("created_at")
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+// Attachments - Gerenciamento de arquivos e fotos
+model Attachment {
+  id           String @id @default(uuid())
+  tenantId     String @map("tenant_id")
+  type         String // "photo_before" | "photo_during" | "photo_after" | "document"
+  fileName     String @map("file_name")
+  originalName String @map("original_name")
+  mimeType     String @map("mime_type")
+  fileSize     Int    @map("file_size") // em bytes
+  filePath     String @map("file_path") // caminho relativo do arquivo
+  url          String // URL pública para acesso
+
+  // Relacionamentos opcionais
+  quoteId        String? @map("quote_id")
+  serviceOrderId String? @map("service_order_id")
+  customerId     String? @map("customer_id")
+  vehicleId      String? @map("vehicle_id")
+
+  // Metadados
+  description  String? @db.Text
+  uploadedById String? @map("uploaded_by_id")
+
+  // Relações
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quote        Quote?           @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  serviceOrder ServiceOrder?    @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  customer     Customer?        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vehicle      CustomerVehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  uploadedBy   User?            @relation("UploadedAttachments", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([quoteId])
+  @@index([serviceOrderId])
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([tenantId, quoteId])
+  @@index([tenantId, serviceOrderId])
+  @@map("attachments")
+}
+
+// Checklists - Sistema de checklists para validação de processos
+model Checklist {
+  id            String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  entityType    String    @map("entity_type") // 'quote' | 'service_order'
+  entityId      String    @map("entity_id") // ID da entidade relacionada
+  checklistType String    @map("checklist_type") // 'pre_diagnosis' | 'pre_service' | 'during_service' | 'post_service'
+  name          String
+  description   String?   @db.Text
+  status        String    @default("pending") // 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  completedAt   DateTime? @map("completed_at")
+  completedById String?   @map("completed_by_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relações
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  completedBy User?           @relation("CompletedChecklists", fields: [completedById], references: [id], onDelete: SetNull)
+  items       ChecklistItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, checklistType])
+  @@index([entityType, entityId])
+  @@index([status])
+  @@map("checklists")
+}
+
+model ChecklistItem {
+  id          String    @id @default(uuid())
+  checklistId String    @map("checklist_id")
+  title       String
+  description String?   @db.Text
+  isRequired  Boolean   @default(false) @map("is_required")
+  isCompleted Boolean   @default(false) @map("is_completed")
+  completedAt DateTime? @map("completed_at")
+  notes       String?   @db.Text
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relações
+  checklist Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  @@index([checklistId])
+  @@index([checklistId, order])
+  @@map("checklist_items")
 }

@@ -59,6 +59,13 @@ export class UsersController {
     type: Boolean,
     description: 'Incluir usuários inativos',
   })
+  @ApiQuery({
+    name: 'role',
+    required: false,
+    type: String,
+    description:
+      'Filtrar por role (admin, manager, mechanic, receptionist, accountant)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lista de usuários',
@@ -67,9 +74,10 @@ export class UsersController {
   async findAll(
     @TenantId() tenantId: string,
     @Query('includeInactive') includeInactive?: string,
+    @Query('role') role?: string,
   ): Promise<UserResponseDto[]> {
     const include = includeInactive === 'true';
-    return this.usersService.findAll(tenantId, include);
+    return this.usersService.findAll(tenantId, include, role);
   }
 
   @Get(':id')

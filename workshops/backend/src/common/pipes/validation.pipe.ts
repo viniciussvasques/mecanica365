@@ -26,6 +26,15 @@ export class ValidationPipe implements PipeTransform<unknown> {
       const messages = errors.map((error) =>
         Object.values(error.constraints || {}).join(', '),
       );
+      // Log detalhado para debug
+      console.error(
+        '[ValidationPipe] Erros de validação:',
+        JSON.stringify(errors, null, 2),
+      );
+      console.error(
+        '[ValidationPipe] Valor recebido:',
+        JSON.stringify(value, null, 2),
+      );
       throw new BadRequestException(messages);
     }
 

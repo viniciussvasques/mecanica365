@@ -278,4 +278,59 @@ export class ServiceOrderResponseDto {
     example: '2024-01-15T11:00:00Z',
   })
   updatedAt: Date;
+
+  @ApiProperty({
+    description: 'Informações do elevador',
+    nullable: true,
+  })
+  elevator?: {
+    id: string;
+    name: string;
+    number: string;
+    status: string;
+  };
+
+  @ApiProperty({
+    description: 'Informações do orçamento relacionado',
+    nullable: true,
+  })
+  quote?: {
+    id: string;
+    number: string;
+    totalCost: number;
+  };
+
+  @ApiProperty({
+    description: 'Itens da ordem de serviço',
+    type: 'array',
+    required: false,
+  })
+  items?: Array<{
+    id?: string;
+    serviceId?: string;
+    partId?: string;
+    name: string;
+    description?: string;
+    quantity: number;
+    unitCost: number;
+    totalCost: number;
+    hours?: number;
+  }>;
+
+  // Integrações com novos módulos
+  @ApiProperty({ type: [Object], required: false })
+  attachments?: Array<{
+    id: string;
+    type: string;
+    url: string;
+    originalName: string;
+  }>;
+
+  @ApiProperty({ type: [Object], required: false })
+  checklists?: Array<{
+    id: string;
+    checklistType: string;
+    name: string;
+    status: string;
+  }>;
 }

@@ -1,0 +1,543 @@
+﻿========================================
+RELATÃ“RIO COMPLETO DE PROCESSOS E MEMÃ“RIA
+Gerado em: 30/11/2025 12:15:58
+========================================
+
+=== INFORMAÃ‡Ã•ES DO SISTEMA ===
+Total de RAM: 15.04 GB
+RAM Usada: 6.31 GB (41.95%)
+RAM Livre: 8.73 GB
+
+=== TODOS OS PROCESSOS (ordenados por memÃ³ria) ===Cursor                             661.96 MB | CPU:   408.83 s | PID: 10364
+explorer                           329.25 MB | CPU:    85.41 s | PID: 10260
+Cursor                             261.12 MB | CPU:    37.67 s | PID: 10856
+MsMpEng                            239.15 MB | CPU:        0 s | PID: 6060
+chrome                             203.34 MB | CPU:    30.84 s | PID: 6104
+OmenCommandCenterBackground        189.29 MB | CPU:   128.55 s | PID: 11368
+Cursor                             158.05 MB | CPU:    95.94 s | PID: 12604
+LightStudio-background             152.71 MB | CPU:  2168.09 s | PID: 18008
+Cursor                             141.88 MB | CPU:   144.67 s | PID: 13136
+chrome                             135.41 MB | CPU:    15.61 s | PID: 22648
+powershell                          121.1 MB | CPU:   176.91 s | PID: 16360
+chrome                               85.8 MB | CPU:      0.2 s | PID: 11616
+powershell                          82.73 MB | CPU:     3.14 s | PID: 22704
+chrome                              80.25 MB | CPU:     6.84 s | PID: 18128
+Secure System                        79.9 MB | CPU:        0 s | PID: 236
+Cursor                              77.83 MB | CPU:     4.91 s | PID: 17412
+PhoneExperienceHost                 74.76 MB | CPU:     1.83 s | PID: 19208
+Cursor                              72.37 MB | CPU:     3.84 s | PID: 5384
+dwm                                 66.63 MB | CPU:        0 s | PID: 1940
+chrome                              57.38 MB | CPU:     0.11 s | PID: 13988
+OneDrive.Sync.Service               54.02 MB | CPU:     0.44 s | PID: 18724
+NVIDIA Overlay                      50.37 MB | CPU:     5.89 s | PID: 7380
+powershell                          50.09 MB | CPU:     0.91 s | PID: 15564
+SearchHost                          49.61 MB | CPU:     4.86 s | PID: 13220
+powershell                          48.97 MB | CPU:      1.2 s | PID: 16556
+Cursor                              46.73 MB | CPU:     1.73 s | PID: 2412
+Cursor                              44.75 MB | CPU:     0.52 s | PID: 2216
+Cursor                              44.68 MB | CPU:     0.31 s | PID: 10352
+StartMenuExperienceHost              43.7 MB | CPU:      2.5 s | PID: 13228
+powershell                          42.96 MB | CPU:     0.91 s | PID: 22044
+Cursor                              41.91 MB | CPU:     2.12 s | PID: 14548
+ShellExperienceHost                 41.65 MB | CPU:     1.52 s | PID: 20512
+SearchIndexer                       40.68 MB | CPU:        0 s | PID: 11620
+chrome                              39.27 MB | CPU:     2.58 s | PID: 15532
+NVIDIA Overlay                       34.5 MB | CPU:     1.55 s | PID: 10924
+TextInputHost                       34.24 MB | CPU:      1.8 s | PID: 17716
+msedgewebview2                      34.01 MB | CPU:     1.11 s | PID: 20460
+svchost                             33.81 MB | CPU:        0 s | PID: 9356
+Cursor                              32.96 MB | CPU:      0.2 s | PID: 21628
+BridgeCommunication                 32.56 MB | CPU:     0.09 s | PID: 22800
+Widgets                             32.17 MB | CPU:     0.86 s | PID: 11988
+SDXHelper                           31.91 MB | CPU:     2.31 s | PID: 17988
+TouchpointAnalyticsClientService      31.85 MB | CPU:        0 s | PID: 3564
+chrome                              31.84 MB | CPU:     0.05 s | PID: 19616
+Registry                            30.61 MB | CPU:        0 s | PID: 280
+nvcontainer                         29.62 MB | CPU:    11.44 s | PID: 7592
+backgroundTaskHost                  28.48 MB | CPU:     0.19 s | PID: 24500
+RadeonSoftware                      28.14 MB | CPU:     2.44 s | PID: 21372
+svchost                              27.7 MB | CPU:        0 s | PID: 5948
+XboxPcAppFT                         26.91 MB | CPU:     0.73 s | PID: 12892
+svchost                             23.82 MB | CPU:        0 s | PID: 4432
+svchost                             23.52 MB | CPU:        0 s | PID: 1696
+svchost                             23.11 MB | CPU:        0 s | PID: 5964
+RuntimeBroker                       22.88 MB | CPU:     0.31 s | PID: 10940
+svchost                              22.8 MB | CPU:     5.61 s | PID: 9192
+svchost                             21.81 MB | CPU:        0 s | PID: 22316
+NVIDIA Overlay                      21.58 MB | CPU:     2.77 s | PID: 5840
+sihost                              21.52 MB | CPU:     3.25 s | PID: 9072
+AdobeCollabSync                        21 MB | CPU:     2.78 s | PID: 20080
+OfficeClickToRun                    20.97 MB | CPU:        0 s | PID: 4960
+SearchProtocolHost                  20.73 MB | CPU:        0 s | PID: 14940
+gamingservices                      19.89 MB | CPU:        0 s | PID: 8856
+Cursor                              19.53 MB | CPU:      0.3 s | PID: 11792
+AppActions                          18.46 MB | CPU:      0.2 s | PID: 5032
+wslservice                          18.41 MB | CPU:        0 s | PID: 6116
+svchost                             18.33 MB | CPU:        0 s | PID: 4276
+ctfmon                              17.97 MB | CPU:     3.05 s | PID: 15812
+msedgewebview2                      17.75 MB | CPU:     0.56 s | PID: 17104
+NVDisplay.Container                  17.5 MB | CPU:        0 s | PID: 3660
+NVIDIA Overlay                       17.1 MB | CPU:     0.94 s | PID: 9296
+SysInfoCap                          17.02 MB | CPU:        0 s | PID: 4124
+nvcontainer                         16.91 MB | CPU:        0 s | PID: 7536
+svchost                             16.61 MB | CPU:     0.12 s | PID: 12392
+audiodg                             16.57 MB | CPU:    15.95 s | PID: 4584
+svchost                             16.15 MB | CPU:        0 s | PID: 3260
+lsass                               16.14 MB | CPU:        0 s | PID: 1532
+RuntimeBroker                       16.04 MB | CPU:     0.25 s | PID: 21040
+WmiPrvSE                            15.99 MB | CPU:        0 s | PID: 20028
+HPMediaNetwork                      15.66 MB | CPU:     0.22 s | PID: 18524
+conhost                             15.64 MB | CPU:     0.86 s | PID: 3328
+svchost                             15.58 MB | CPU:     0.42 s | PID: 9056
+svchost                              15.5 MB | CPU:        0 s | PID: 8592
+svchost                             15.49 MB | CPU:        0 s | PID: 8600
+vds                                 14.99 MB | CPU:        0 s | PID: 21404
+RuntimeBroker                       14.48 MB | CPU:     0.11 s | PID: 17192
+RuntimeBroker                       14.43 MB | CPU:     0.41 s | PID: 17360
+svchost                             14.37 MB | CPU:        0 s | PID: 4656
+taskhostw                           14.24 MB | CPU:     0.64 s | PID: 8436
+svchost                             14.15 MB | CPU:        0 s | PID: 1820
+svchost                             14.14 MB | CPU:        0 s | PID: 22616
+svchost                             14.13 MB | CPU:        0 s | PID: 9184
+svchost                             13.87 MB | CPU:        0 s | PID: 3412
+RuntimeBroker                       13.73 MB | CPU:     0.19 s | PID: 3544
+NVDisplay.Container                 13.66 MB | CPU:        0 s | PID: 3208
+msedgewebview2                      13.62 MB | CPU:     0.41 s | PID: 19648
+SystemOptimizer                     13.55 MB | CPU:     1.09 s | PID: 8564
+msedgewebview2                      13.19 MB | CPU:     0.12 s | PID: 2068
+SecurityHealthService               13.13 MB | CPU:        0 s | PID: 15632
+MpDefenderCoreService               12.79 MB | CPU:        0 s | PID: 8180
+smartscreen                         12.55 MB | CPU:     0.02 s | PID: 20580
+HPSystemEventUtilityHost            12.34 MB | CPU:     0.11 s | PID: 18552
+HPSystemEventUtilityBackground         12 MB | CPU:     1.38 s | PID: 16652
+msedgewebview2                       11.8 MB | CPU:     1.97 s | PID: 14748
+BridgeCommunication                 11.43 MB | CPU:     0.16 s | PID: 1648
+Cursor                              11.08 MB | CPU:     0.06 s | PID: 11388
+svchost                             10.96 MB | CPU:        0 s | PID: 9712
+nvcontainer                         10.71 MB | CPU:        0 s | PID: 5996
+ShellHost                           10.62 MB | CPU:     0.25 s | PID: 10372
+GameInputRedistService              10.61 MB | CPU:        0 s | PID: 15100
+vmcompute                           10.51 MB | CPU:        0 s | PID: 12008
+svchost                             10.33 MB | CPU:        0 s | PID: 2568
+WhatsApp                             9.68 MB | CPU:     0.72 s | PID: 4196
+svchost                              9.25 MB | CPU:        0 s | PID: 10060
+svchost                              9.07 MB | CPU:        0 s | PID: 23292
+svchost                              9.03 MB | CPU:        0 s | PID: 2236
+svchost                              8.93 MB | CPU:        0 s | PID: 13824
+svchost                              8.91 MB | CPU:        0 s | PID: 12000
+conhost                              8.84 MB | CPU:     0.77 s | PID: 22944
+svchost                              8.75 MB | CPU:        0 s | PID: 12208
+svchost                              8.73 MB | CPU:        0 s | PID: 6004
+svchost                              8.72 MB | CPU:        0 s | PID: 5588
+OverlayHelper                         8.7 MB | CPU:     0.44 s | PID: 8384
+OmenInstallMonitor                    8.7 MB | CPU:     0.38 s | PID: 8292
+diskpart                             8.52 MB | CPU:     0.05 s | PID: 14504
+svchost                              8.46 MB | CPU:        0 s | PID: 4356
+chrome                               8.28 MB | CPU:     0.14 s | PID: 14936
+svchost                              8.23 MB | CPU:        0 s | PID: 3128
+services                             7.28 MB | CPU:        0 s | PID: 1460
+svchost                              7.07 MB | CPU:        0 s | PID: 14616
+svchost                              6.88 MB | CPU:        0 s | PID: 10680
+CrossDeviceResume                    6.84 MB | CPU:     0.48 s | PID: 10884
+svchost                              6.82 MB | CPU:        0 s | PID: 23400
+svchost                              6.46 MB | CPU:        0 s | PID: 4332
+conhost                               6.2 MB | CPU:     0.03 s | PID: 4052
+svchost                              6.19 MB | CPU:        0 s | PID: 2452
+conhost                              6.18 MB | CPU:      1.2 s | PID: 3248
+msedgewebview2                       6.03 MB | CPU:     0.06 s | PID: 16856
+RuntimeBroker                        6.02 MB | CPU:        0 s | PID: 20652
+conhost                              5.88 MB | CPU:     0.02 s | PID: 8736
+NisSrv                                5.8 MB | CPU:        0 s | PID: 18352
+svchost                              5.72 MB | CPU:        0 s | PID: 2268
+AppHelperCap                         5.71 MB | CPU:        0 s | PID: 4044
+WmiPrvSE                             5.64 MB | CPU:        0 s | PID: 5164
+svchost                              5.59 MB | CPU:        0 s | PID: 2276
+chrome                               5.49 MB | CPU:        0 s | PID: 18156
+svchost                              5.43 MB | CPU:        0 s | PID: 1880
+nvcontainer                          5.34 MB | CPU:     1.86 s | PID: 7556
+conhost                              5.34 MB | CPU:     0.05 s | PID: 22144
+msedgewebview2                       5.29 MB | CPU:     1.22 s | PID: 15416
+svchost                              5.26 MB | CPU:        0 s | PID: 2184
+AdobeCollabSync                      5.25 MB | CPU:     0.03 s | PID: 20020
+NVIDIA Overlay                       5.18 MB | CPU:     0.08 s | PID: 9820
+svchost                              5.04 MB | CPU:        0 s | PID: 6912
+svchost                              5.01 MB | CPU:        0 s | PID: 2112
+svchost                              4.79 MB | CPU:        0 s | PID: 4004
+svchost                              4.74 MB | CPU:        0 s | PID: 22752
+msedgewebview2                       4.55 MB | CPU:     0.36 s | PID: 15472
+NetworkCap                            4.5 MB | CPU:        0 s | PID: 860
+svchost                              4.48 MB | CPU:        0 s | PID: 5188
+svchost                              4.32 MB | CPU:        0 s | PID: 2760
+fontdrvhost                          4.21 MB | CPU:        0 s | PID: 1732
+svchost                              4.13 MB | CPU:     0.06 s | PID: 6088
+svchost                              4.08 MB | CPU:        0 s | PID: 5620
+svchost                              4.06 MB | CPU:        0 s | PID: 2260
+svchost                              3.98 MB | CPU:        0 s | PID: 2560
+svchost                              3.98 MB | CPU:        0 s | PID: 14276
+svchost                              3.92 MB | CPU:        0 s | PID: 10532
+AggregatorHost                       3.91 MB | CPU:        0 s | PID: 10024
+svchost                              3.88 MB | CPU:     0.08 s | PID: 16968
+msedgewebview2                       3.81 MB | CPU:     0.02 s | PID: 8664
+svchost                              3.77 MB | CPU:        0 s | PID: 3308
+RtkAudUService64                     3.75 MB | CPU:     0.19 s | PID: 23912
+atieclxx                             3.57 MB | CPU:        0 s | PID: 4012
+RtkAudUService64                     3.57 MB | CPU:        0 s | PID: 6016
+OmenCap                              3.48 MB | CPU:        0 s | PID: 3048
+SecurityHealthSystray                3.45 MB | CPU:     0.03 s | PID: 18800
+spoolsv                              3.37 MB | CPU:        0 s | PID: 5700
+csrss                                3.28 MB | CPU:        0 s | PID: 1388
+MoNotificationUx                     3.23 MB | CPU:     0.05 s | PID: 22096
+WidgetService                        3.15 MB | CPU:     0.28 s | PID: 13432
+csrss                                3.01 MB | CPU:        0 s | PID: 1204
+svchost                              2.99 MB | CPU:        0 s | PID: 5512
+LockApp                              2.98 MB | CPU:     0.55 s | PID: 4652
+svchost                              2.98 MB | CPU:        0 s | PID: 2296
+nvsphelper64                         2.96 MB | CPU:     3.08 s | PID: 3932
+svchost                              2.93 MB | CPU:        0 s | PID: 9020
+winlogon                             2.88 MB | CPU:        0 s | PID: 1488
+unsecapp                             2.84 MB | CPU:     0.05 s | PID: 17920
+DiagsCap                             2.74 MB | CPU:        0 s | PID: 3688
+svchost                              2.68 MB | CPU:        0 s | PID: 9636
+svchost                              2.68 MB | CPU:        0 s | PID: 5800
+jusched                              2.66 MB | CPU:     0.02 s | PID: 23812
+svchost                              2.62 MB | CPU:        0 s | PID: 12160
+svchost                              2.53 MB | CPU:        0 s | PID: 11640
+svchost                               2.4 MB | CPU:        0 s | PID: 3480
+DtsApo4Service                       2.34 MB | CPU:        0 s | PID: 5928
+svchost                              2.28 MB | CPU:     0.06 s | PID: 12652
+svchost                              2.21 MB | CPU:        0 s | PID: 2172
+svchost                              2.21 MB | CPU:        0 s | PID: 11952
+svchost                              2.21 MB | CPU:        0 s | PID: 5980
+unsecapp                              2.2 MB | CPU:        0 s | PID: 5116
+svchost                              2.15 MB | CPU:        0 s | PID: 5556
+svchost                               2.1 MB | CPU:        0 s | PID: 3876
+svchost                               1.8 MB | CPU:        0 s | PID: 996
+svchost                               1.8 MB | CPU:        0 s | PID: 4060
+gamingservicesnet                    1.79 MB | CPU:        0 s | PID: 8848
+svchost                              1.69 MB | CPU:        0 s | PID: 5912
+svchost                              1.59 MB | CPU:        0 s | PID: 3420
+svchost                              1.55 MB | CPU:        0 s | PID: 6048
+svchost                              1.54 MB | CPU:        0 s | PID: 3532
+svchost                              1.48 MB | CPU:        0 s | PID: 16524
+svchost                              1.45 MB | CPU:     0.02 s | PID: 9140
+svchost                              1.41 MB | CPU:        0 s | PID: 10688
+FAHWindow64                          1.35 MB | CPU:    54.81 s | PID: 19000
+svchost                              1.34 MB | CPU:        0 s | PID: 3132
+msedgewebview2                       1.33 MB | CPU:     3.11 s | PID: 15844
+msedgewebview2                       1.29 MB | CPU:     0.05 s | PID: 15616
+backgroundTaskHost                   1.26 MB | CPU:     0.19 s | PID: 21788
+cncmd                                 1.2 MB | CPU:        0 s | PID: 21208
+msedgewebview2                       1.13 MB | CPU:     0.02 s | PID: 15064
+svchost                              1.09 MB | CPU:        0 s | PID: 2444
+wininit                              0.89 MB | CPU:        0 s | PID: 1380
+smss                                 0.86 MB | CPU:        0 s | PID: 768
+svchost                              0.68 MB | CPU:        0 s | PID: 1376
+RtkBtManServ                         0.62 MB | CPU:        0 s | PID: 5972
+atiesrxx                             0.44 MB | CPU:        0 s | PID: 3268
+svchost                              0.43 MB | CPU:        0 s | PID: 5956
+LsaIso                               0.25 MB | CPU:        0 s | PID: 1512
+fontdrvhost                          0.18 MB | CPU:        0 s | PID: 1728
+ss_conn_service2                     0.18 MB | CPU:        0 s | PID: 6092
+amdfendrsr                           0.17 MB | CPU:        0 s | PID: 3252
+ss_conn_service                      0.16 MB | CPU:        0 s | PID: 6072
+NgcIso                               0.16 MB | CPU:        0 s | PID: 12016
+armsvc                               0.14 MB | CPU:        0 s | PID: 5940
+System                               0.13 MB | CPU:        0 s | PID: 4
+Idle                                 0.01 MB | CPU:        0 s | PID: 0
+
+Total de processos: 236
+MemÃ³ria total dos processos: 5.74 GB
+
+=== PROCESSOS AGRUPADOS POR NOME ===Cursor                          1614.84 MB ( 1.58 GB) | 13 instÃ¢ncia(s)
+chrome                           647.07 MB ( 0.63 GB) | 9 instÃ¢ncia(s)
+svchost                          622.64 MB ( 0.61 GB) | 80 instÃ¢ncia(s)
+powershell                       345.87 MB ( 0.34 GB) | 5 instÃ¢ncia(s)
+explorer                         329.25 MB ( 0.32 GB) | 1 instÃ¢ncia(s)
+MsMpEng                          239.16 MB ( 0.23 GB) | 1 instÃ¢ncia(s)
+OmenCommandCenterBackground      189.29 MB ( 0.18 GB) | 1 instÃ¢ncia(s)
+LightStudio-background           158.53 MB ( 0.15 GB) | 1 instÃ¢ncia(s)
+NVIDIA Overlay                   128.73 MB ( 0.13 GB) | 5 instÃ¢ncia(s)
+msedgewebview2                    113.8 MB ( 0.11 GB) | 12 instÃ¢ncia(s)
+RuntimeBroker                     87.59 MB ( 0.09 GB) | 6 instÃ¢ncia(s)
+Secure System                      79.9 MB ( 0.08 GB) | 1 instÃ¢ncia(s)
+PhoneExperienceHost               74.76 MB ( 0.07 GB) | 1 instÃ¢ncia(s)
+dwm                               66.63 MB ( 0.07 GB) | 1 instÃ¢ncia(s)
+nvcontainer                       62.59 MB ( 0.06 GB) | 4 instÃ¢ncia(s)
+OneDrive.Sync.Service             54.02 MB ( 0.05 GB) | 1 instÃ¢ncia(s)
+SearchHost                        49.61 MB ( 0.05 GB) | 1 instÃ¢ncia(s)
+conhost                           48.09 MB ( 0.05 GB) | 6 instÃ¢ncia(s)
+BridgeCommunication                  44 MB ( 0.04 GB) | 2 instÃ¢ncia(s)
+StartMenuExperienceHost            43.7 MB ( 0.04 GB) | 1 instÃ¢ncia(s)
+ShellExperienceHost               41.65 MB ( 0.04 GB) | 1 instÃ¢ncia(s)
+SearchIndexer                     40.68 MB ( 0.04 GB) | 1 instÃ¢ncia(s)
+TextInputHost                     34.24 MB ( 0.03 GB) | 1 instÃ¢ncia(s)
+Widgets                           32.17 MB ( 0.03 GB) | 1 instÃ¢ncia(s)
+SDXHelper                         31.91 MB ( 0.03 GB) | 1 instÃ¢ncia(s)
+TouchpointAnalyticsClientService    31.85 MB ( 0.03 GB) | 1 instÃ¢ncia(s)
+NVDisplay.Container               31.17 MB ( 0.03 GB) | 2 instÃ¢ncia(s)
+Registry                          30.61 MB ( 0.03 GB) | 1 instÃ¢ncia(s)
+backgroundTaskHost                29.74 MB ( 0.03 GB) | 2 instÃ¢ncia(s)
+RadeonSoftware                    28.14 MB ( 0.03 GB) | 1 instÃ¢ncia(s)
+XboxPcAppFT                       26.91 MB ( 0.03 GB) | 1 instÃ¢ncia(s)
+AdobeCollabSync                   26.25 MB ( 0.03 GB) | 2 instÃ¢ncia(s)
+WmiPrvSE                          21.63 MB ( 0.02 GB) | 2 instÃ¢ncia(s)
+sihost                            21.52 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+OfficeClickToRun                  20.97 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+SearchProtocolHost                20.73 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+gamingservices                    19.89 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+AppActions                        18.46 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+wslservice                        18.41 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+ctfmon                            17.97 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+SysInfoCap                        17.02 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+audiodg                           16.57 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+lsass                             16.14 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+HPMediaNetwork                    15.66 MB ( 0.02 GB) | 1 instÃ¢ncia(s)
+vds                               14.99 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+taskhostw                         14.24 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+SystemOptimizer                   13.55 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+SecurityHealthService             13.13 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+MpDefenderCoreService             12.79 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+smartscreen                       12.55 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+HPSystemEventUtilityHost          12.34 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+HPSystemEventUtilityBackground       12 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+ShellHost                         10.62 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+GameInputRedistService            10.61 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+vmcompute                         10.51 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+WhatsApp                           9.68 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+OverlayHelper                       8.7 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+OmenInstallMonitor                  8.7 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+diskpart                           8.52 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+RtkAudUService64                   7.32 MB ( 0.01 GB) | 2 instÃ¢ncia(s)
+services                           7.28 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+CrossDeviceResume                  6.84 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+csrss                              6.29 MB ( 0.01 GB) | 2 instÃ¢ncia(s)
+NisSrv                              5.8 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+AppHelperCap                       5.71 MB ( 0.01 GB) | 1 instÃ¢ncia(s)
+unsecapp                           5.04 MB (    0 GB) | 2 instÃ¢ncia(s)
+NetworkCap                          4.5 MB (    0 GB) | 1 instÃ¢ncia(s)
+fontdrvhost                        4.39 MB (    0 GB) | 2 instÃ¢ncia(s)
+AggregatorHost                     3.91 MB (    0 GB) | 1 instÃ¢ncia(s)
+atieclxx                           3.57 MB (    0 GB) | 1 instÃ¢ncia(s)
+OmenCap                            3.48 MB (    0 GB) | 1 instÃ¢ncia(s)
+SecurityHealthSystray              3.45 MB (    0 GB) | 1 instÃ¢ncia(s)
+spoolsv                            3.37 MB (    0 GB) | 1 instÃ¢ncia(s)
+MoNotificationUx                   3.23 MB (    0 GB) | 1 instÃ¢ncia(s)
+WidgetService                      3.15 MB (    0 GB) | 1 instÃ¢ncia(s)
+LockApp                            2.98 MB (    0 GB) | 1 instÃ¢ncia(s)
+nvsphelper64                       2.96 MB (    0 GB) | 1 instÃ¢ncia(s)
+winlogon                           2.88 MB (    0 GB) | 1 instÃ¢ncia(s)
+DiagsCap                           2.74 MB (    0 GB) | 1 instÃ¢ncia(s)
+jusched                            2.66 MB (    0 GB) | 1 instÃ¢ncia(s)
+DtsApo4Service                     2.34 MB (    0 GB) | 1 instÃ¢ncia(s)
+gamingservicesnet                  1.79 MB (    0 GB) | 1 instÃ¢ncia(s)
+FAHWindow64                        1.35 MB (    0 GB) | 1 instÃ¢ncia(s)
+cncmd                               1.2 MB (    0 GB) | 1 instÃ¢ncia(s)
+wininit                            0.89 MB (    0 GB) | 1 instÃ¢ncia(s)
+smss                               0.86 MB (    0 GB) | 1 instÃ¢ncia(s)
+RtkBtManServ                       0.62 MB (    0 GB) | 1 instÃ¢ncia(s)
+atiesrxx                           0.44 MB (    0 GB) | 1 instÃ¢ncia(s)
+LsaIso                             0.25 MB (    0 GB) | 1 instÃ¢ncia(s)
+ss_conn_service2                   0.18 MB (    0 GB) | 1 instÃ¢ncia(s)
+amdfendrsr                         0.17 MB (    0 GB) | 1 instÃ¢ncia(s)
+ss_conn_service                    0.16 MB (    0 GB) | 1 instÃ¢ncia(s)
+NgcIso                             0.16 MB (    0 GB) | 1 instÃ¢ncia(s)
+armsvc                             0.14 MB (    0 GB) | 1 instÃ¢ncia(s)
+System                             0.13 MB (    0 GB) | 1 instÃ¢ncia(s)
+Idle                               0.01 MB (    0 GB) | 1 instÃ¢ncia(s)
+
+=== PROCESSOS EM BACKGROUND (sem janela, >50MB) ===Cursor                             661.85 MB | PID: 10364
+Cursor                             261.12 MB | PID: 10856
+MsMpEng                            239.16 MB | PID: 6060
+chrome                             203.34 MB | PID: 6104
+OmenCommandCenterBackground        189.29 MB | PID: 11368
+LightStudio-background             158.53 MB | PID: 18008
+Cursor                             141.88 MB | PID: 13136
+powershell                         121.12 MB | PID: 16360
+chrome                               85.8 MB | PID: 11616
+powershell                          82.73 MB | PID: 22704
+chrome                              80.25 MB | PID: 18128
+Secure System                        79.9 MB | PID: 236
+Cursor                              77.83 MB | PID: 17412
+PhoneExperienceHost                 74.76 MB | PID: 19208
+Cursor                              72.37 MB | PID: 5384
+chrome                              57.38 MB | PID: 13988
+OneDrive.Sync.Service               54.02 MB | PID: 18724
+powershell                          50.09 MB | PID: 15564
+
+=== SERVIÃ‡OS RODANDO ===Adobe Acrobat Update Service                       Running    Automatic
+AMD Crash Defender Service                         Running    Automatic
+AMD External Events Utility                        Running    Automatic
+Application Information                            Running    Manual
+AppX Deployment Service (AppXSVC)                  Running    Manual
+Background Tasks Infrastructure Service            Running    Automatic
+Base Filtering Engine                              Running    Automatic
+BitLocker Drive Encryption Service                 Running    Manual
+Capability Access Manager Service                  Running    Automatic
+cbdhsvc_f19e2                                      Running    Automatic
+CDPUserSvc_f19e2                                   Running    Automatic
+CNG Key Isolation                                  Running    Manual
+COM+ Event System                                  Running    Automatic
+Connected Devices Platform Service                 Running    Automatic
+Connected User Experiences and Telemetry           Running    Automatic
+CoreMessaging                                      Running    Automatic
+Credential Manager                                 Running    Manual
+Cryptographic Services                             Running    Automatic
+Data Usage                                         Running    Automatic
+DCOM Server Process Launcher                       Running    Automatic
+Device Association Service                         Running    Manual
+Device Install Service                             Running    Manual
+DevQuery Background Discovery Broker               Running    Manual
+DHCP Client                                        Running    Automatic
+Diagnostic Policy Service                          Running    Automatic
+Diagnostic System Host                             Running    Manual
+Display Policy Service                             Running    Automatic
+Distributed Link Tracking Client                   Running    Automatic
+DNS Client                                         Running    Automatic
+DtsApo4Service                                     Running    Automatic
+Function Discovery Provider Host                   Running    Manual
+GameInput Redist Service                           Running    Manual
+Gaming Services                                    Running    Automatic
+Gaming Services                                    Running    Automatic
+Geolocation Service                                Running    Manual
+Host Network Service                               Running    Manual
+HP App Helper HSA Service                          Running    Automatic
+HP Diagnostics HSA Service                         Running    Automatic
+HP Insights Analytics                              Running    Automatic
+HP Network HSA Service                             Running    Automatic
+HP Omen HSA Service                                Running    Automatic
+HP System Info HSA Service                         Running    Automatic
+Human Interface Device Service                     Running    Manual
+HV Host Service                                    Running    Manual
+Hyper-V Host Compute Service                       Running    Manual
+IKE and AuthIP IPsec Keying Modules                Running    Automatic
+Internet Connection Sharing (ICS)                  Running    Manual
+Inventory and Compatibility Appraisal service      Running    Automatic
+IP Helper                                          Running    Automatic
+IPsec Policy Agent                                 Running    Manual
+Local Session Manager                              Running    Automatic
+Microsoft Account Sign-in Assistant                Running    Manual
+Microsoft Defender Antivirus Network Inspection Service Running    Manual
+Microsoft Defender Antivirus Service               Running    Automatic
+Microsoft Defender Core Service                    Running    Automatic
+Microsoft Office Click-to-Run Service              Running    Automatic
+Microsoft Passport                                 Running    Manual
+Microsoft Passport Container                       Running    Manual
+Microsoft Store Install Service                    Running    Manual
+Network Connection Broker                          Running    Manual
+Network List Service                               Running    Manual
+Network Store Interface Service                    Running    Automatic
+Network Virtualization Service                     Running    Manual
+NPSMSvc_f19e2                                      Running    Manual
+NVIDIA Display Container LS                        Running    Automatic
+NVIDIA LocalSystem Container                       Running    Automatic
+OneSyncSvc_f19e2                                   Running    Automatic
+Plug and Play                                      Running    Manual
+Power                                              Running    Automatic
+Print Spooler                                      Running    Automatic
+Program Compatibility Assistant Service            Running    Automatic
+Radio Management Service                           Running    Manual
+Realtek Audio Universal Service                    Running    Automatic
+Realtek Bluetooth Device Manager Service           Running    Automatic
+Remote Procedure Call (RPC)                        Running    Automatic
+RPC Endpoint Mapper                                Running    Automatic
+SAMSUNG Mobile Connectivity Service                Running    Automatic
+SAMSUNG Mobile Connectivity Service V2             Running    Automatic
+Security Accounts Manager                          Running    Automatic
+Security Center                                    Running    Automatic
+Server                                             Running    Automatic
+Shell Hardware Detection                           Running    Automatic
+SSDP Discovery                                     Running    Manual
+State Repository Service                           Running    Automatic
+Storage Service                                    Running    Automatic
+System Event Notification Service                  Running    Automatic
+System Events Broker                               Running    Automatic
+Task Scheduler                                     Running    Automatic
+TCP/IP NetBIOS Helper                              Running    Manual
+Text Input Management Service                      Running    Automatic
+Time Broker                                        Running    Manual
+UdkUserSvc_f19e2                                   Running    Manual
+Update Orchestrator Service                        Running    Automatic
+User Manager                                       Running    Automatic
+User Profile Service                               Running    Automatic
+Virtual Disk                                       Running    Manual
+Web Account Manager                                Running    Manual
+webthreatdefusersvc_f19e2                          Running    Automatic
+Windows Audio                                      Running    Automatic
+Windows Audio Endpoint Builder                     Running    Automatic
+Windows Connect Now - Config Registrar             Running    Manual
+Windows Connection Manager                         Running    Automatic
+Windows Defender Firewall                          Running    Automatic
+Windows Event Log                                  Running    Automatic
+Windows Font Cache Service                         Running    Automatic
+Windows Health and Optimized Experiences           Running    Automatic
+Windows License Manager Service                    Running    Manual
+Windows Management Instrumentation                 Running    Automatic
+Windows Push Notifications System Service          Running    Automatic
+Windows Search                                     Running    Manual
+Windows Security Service                           Running    Manual
+WinHTTP Web Proxy Auto-Discovery Service           Running    Manual
+WLAN AutoConfig                                    Running    Automatic
+Workstation                                        Running    Automatic
+WpnUserService_f19e2                               Running    Automatic
+WSAIFabricSvc                                      Running    Automatic
+WSL Service                                        Running    Automatic
+Xbox Live Auth Manager                             Running    Manual
+
+=== SERVIÃ‡OS MANUAIS RODANDO (podem ser parados) ===Application Information
+AppX Deployment Service (AppXSVC)
+BitLocker Drive Encryption Service
+CNG Key Isolation
+Credential Manager
+Device Association Service
+Device Install Service
+DevQuery Background Discovery Broker
+Diagnostic System Host
+Function Discovery Provider Host
+GameInput Redist Service
+Geolocation Service
+Host Network Service
+Human Interface Device Service
+HV Host Service
+Hyper-V Host Compute Service
+Internet Connection Sharing (ICS)
+IPsec Policy Agent
+Microsoft Account Sign-in Assistant
+Microsoft Defender Antivirus Network Inspection Service
+Microsoft Passport
+Microsoft Passport Container
+Microsoft Store Install Service
+Network Connection Broker
+Network List Service
+Network Virtualization Service
+NPSMSvc_f19e2
+Plug and Play
+Radio Management Service
+SSDP Discovery
+TCP/IP NetBIOS Helper
+Time Broker
+UdkUserSvc_f19e2
+Virtual Disk
+Web Account Manager
+Windows Connect Now - Config Registrar
+Windows License Manager Service
+Windows Search
+Windows Security Service
+WinHTTP Web Proxy Auto-Discovery Service
+Xbox Live Auth Manager
+
+=== PROCESSOS DE DESENVOLVIMENTO ===Cursor                             662.12 MB | PID: 10364
+Cursor                             261.16 MB | PID: 10856
+Cursor                             158.05 MB | PID: 12604
+Cursor                             141.88 MB | PID: 13136
+Cursor                              77.83 MB | PID: 17412
+Cursor                              72.37 MB | PID: 5384
+Cursor                              46.73 MB | PID: 2412
+Cursor                              44.75 MB | PID: 2216
+Cursor                              44.68 MB | PID: 10352
+Cursor                              41.91 MB | PID: 14548
+Cursor                              32.96 MB | PID: 21628
+Cursor                              19.53 MB | PID: 11792
+Cursor                              11.08 MB | PID: 11388
+
+=== RECOMENDAÃ‡Ã•ES ===
+=== FIM DO RELATÃ“RIO ===

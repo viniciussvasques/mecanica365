@@ -1,4 +1,773 @@
 ---
-description: PASSO 1: Planejamento Estratégico  Definição do produto  Objetivo do software / SaaS  Problema que resolve e público-alvo  Funcionalidades principais (MVP)  Diferenciais competitivos  Pesquisa de mercado  Concorrentes diretos e indiretos  Benchmark de funcionalidades  Preço e modelo de monetização  Roadmap de produto  MVP → Versão 1 → Expansão  Funcionalidades por versão  Priorização (MoSCoW: Must, Should, Could, Won’t)  Requisitos  Funcionais: o que o sistema deve fazer  Não funcionais: performance, escalabilidade, segurança  Regras de negócio e compliance (LGPD, PCI, GDPR)  PASSO 2: Arquitetura & Infraestrutura  Escolha de stack tecnológico  Frontend, backend, banco de dados, cache, filas, storage  Arquitetura  Monolito, microservices, serverless, event-driven  Multi-tenant (se SaaS)  Infraestrutura  Cloud provider, CI/CD, IaC (Terraform, Ansible)  Observabilidade: métricas, logs, alertas  Segurança  Autenticação / RBAC / MFA  Criptografia, backups, compliance  Escalabilidade  Horizontal / vertical  Cache, sharding, filas, workers  PASSO 3: Design e UX/UI  Wireframes / protótipos  Fluxo de telas  Componentes reutilizáveis  Design system  Cores, fontes, botões, tabelas  Padronização para todo o projeto  User journeys  Mapear fluxo do usuário  Validar experiência intuitiva  PASSO 4: Desenvolvimento  Configuração de repositórios  Monorepo vs múltiplos repositórios  Branching strategy (GitFlow, trunk-based)  Setup inicial  CI/CD pipelines  Linters, pre-commit hooks, testes unitários  Back-end  APIs REST / GraphQL  Modelagem de banco de dados  Workers / jobs assíncronos  Front-end  Componentização  Consumo de APIs  Responsividade  Integrações externas  Pagamentos, ERPs, APIs de parceiros  Webhooks / streaming data  PASSO 5: Testes  Unitários  Testar funções isoladas  Integração  Testar comunicação entre módulos  E2E  Testar fluxo do usuário do início ao fim  Performance  Load test, stress test  Segurança  Testes de vulnerabilidade  Automação  Integrar testes ao pipeline CI/CD  PASSO 6: Documentação  Documentação técnica  APIs (Swagger / OpenAPI)  ERD / Modelos de dados  Arquitetura / microservices diagram  Documentação de usuário  Guias de uso  Tutoriais passo a passo  FAQs  Documentação de projeto  Roadmap  Decisões de arquitetura  Requisitos funcionais e não funcionais  PASSO 7: Deploy e Operação  Ambientes  Dev → QA → Staging → Production  Deploy  CI/CD automatizado  Canary / blue-green deployment  Monitoramento  Logs centralizados  Métricas de performance  Alertas de erros  Backup & Disaster Recovery  Backups periódicos  Plano de recuperação  PASSO 8: Onboarding e Suporte  Onboarding  Wizards / tutoriais para novos usuários  Configuração inicial  Suporte  Chat in-app, ticket, email  Base de conhecimento / FAQ  Treinamento  Vídeos, webinars, documentação avançada  PASSO 9: Operação e Manutenção  Atualizações  Releases planejadas  Migração de dados  Correção de bugs  Bugs críticos → hotfix  Bugs menores → sprint backlog  Monitoramento contínuo  Performance  Logs e alertas  Segurança  Patching de vulnerabilidades  Testes periódicos  PASSO 10: Evolução e Escalabilidade  Feedback contínuo  Coletar métricas de uso  Melhorias baseadas em dados  Novas funcionalidades  Incrementar módulos  Integrações externas adicionais  Escalabilidade  Horizontal: mais instâncias / containers  Vertical: otimização de DB / caches  Internacionalização  Suporte a múltiplos idiomas / moedas
-alwaysApply: false
+description: |
+  Regras completas para desenvolvimento do Mecânica365 Backend.
+  Inclui: Padrões de criação de módulos, Boas práticas, Anti-patterns, 
+  Processo de desenvolvimento, Docker, Git, Testes, e muito mais.
+alwaysApply: true
 ---
+
+# 📐 Regras Completas - Mecânica365 Backend
+
+**Última atualização:** 01/12/2025  
+**Status:** Ativo - Obrigatório para todo desenvolvimento
+
+---
+
+## 🎯 PADRÕES DE CRIAÇÃO DE MÓDULOS
+
+### ETAPA 1 — Planejamento
+**Antes de criar qualquer arquivo, você define:**
+
+1. **Responsabilidade única do módulo**
+   - Exemplo: `auth` (login, tokens, refresh), `user` (dados do usuário)
+   - ⚠️ **Regra:** Se tiver mais de 1 responsabilidade → divida em mais módulos
+
+### ETAPA 2 — Definição do Contrato (API / Interface)
+**Antes do código, você define o que o módulo expõe:**
+
+**Para backend:**
+- Endpoints
+- Schemas
+- Events
+- Filas/topics
+- DTOs
+- Use cases
+- Validações
+
+**👉 Você escreve o contrato sem implementar nada.**
+
+### ETAPA 3 — Estrutura da Pasta do Módulo
+**Padrão recomendado:**
+```
+/module-name
+    /domain
+        entities/
+        value-objects/
+        services/
+    /application
+        use-cases/
+        dto/
+    /infra
+        http/
+        prisma/
+        models/
+        repositories/
+    /tests
+    index.ts
+```
+
+### ETAPA 4 — Criação das Entidades (Domain)
+- Entidades (User, Product, Machine)
+- Regras de negócio
+- Validações
+- Value objects
+- Services de domínio
+
+**⚠️ Aqui não existe banco de dados nem http ainda.**
+
+### ETAPA 5 — Criar Use Cases (Application Layer)
+**Cada caso de uso é isolado:**
+- CreateUser, UpdateUser, DeleteUser, ListUsers, LoginUser
+
+**Cada use case:**
+- Recebe um DTO
+- Executa a lógica da entidade
+- Chama repositórios via interface
+- Retorna resultado ou exceção
+
+### ETAPA 6 — Implementar Infraestrutura
+- Prisma (ORM)
+- Repositório real
+- Controllers
+- Rotas
+- Kafka/Rabbit
+- Cache Redis
+- Filas
+- Webhooks
+
+### ETAPA 7 — Testes
+**Crie pelo menos:**
+- **Unitários:** entidades, services, use-cases
+- **Integração:** db, http, mensagens
+- **E2E:** (opcional, mas recomendado em SaaS)
+- **Mínimo 80% de cobertura** para código crítico
+
+### ETAPA 8 — Documentação
+- README
+- Fluxos
+- Diagramas
+- Contratos
+- Decisões arquiteturais
+
+### ETAPA 9 — Versionamento e Integração
+- CI/CD
+- Testes automáticos
+- Geração automática de documentação
+- Validação de contratos
+- Lint
+- Verificação do padrão de pastas
+- **Registrar no `app.module.ts`**
+
+### ETAPA 10 — Publicação / Integração Automática
+- Dockerfile
+- Helm chart
+- Version bump
+- Tag automática
+- **Integração automática com outros módulos**
+
+---
+
+## ✅ CHECKLIST DE CONFORMIDADE (por Módulo)
+
+Antes de considerar um módulo completo, verificar:
+
+- [ ] Responsabilidade única e bem definida
+- [ ] Contrato/Interface documentado
+- [ ] Estrutura de pastas seguindo padrão
+- [ ] Entidades de domínio criadas
+- [ ] Use cases implementados
+- [ ] Infraestrutura conectada
+- [ ] Testes unitários (mínimo 80% cobertura)
+- [ ] Testes de integração
+- [ ] README completo
+- [ ] Integrado no sistema principal (`app.module.ts`)
+- [ ] Lint passando
+- [ ] TypeScript sem erros
+- [ ] Build passando
+- [ ] **Push feito para repositório**
+- [ ] **Backend reiniciado no container**
+
+---
+
+## ❌ ANTI-PATTERNS (O que NÃO fazer)
+
+### 1. Imports Não Utilizados
+**❌ ERRADO:**
+```typescript
+import { ConflictException, BadRequestException, Logger } from '@nestjs/common';
+// ConflictException nunca é usado
+```
+
+**✅ CORRETO:**
+```typescript
+import { BadRequestException, Logger } from '@nestjs/common';
+```
+
+**Como evitar:**
+- Execute `npm run lint -- --fix` para correção automática
+- Revise imports antes de fazer commit
+
+### 2. Variáveis Não Utilizadas
+**❌ ERRADO:**
+```typescript
+const subscription = await this.prisma.subscription.findFirst({...});
+// subscription nunca é usado depois
+```
+
+**✅ CORRETO:**
+```typescript
+await this.prisma.subscription.findFirst({...});
+// Se não precisa do valor, não atribua a uma variável
+```
+
+**Como evitar:**
+- Remova variáveis que não são usadas
+- Para parâmetros não usados, prefixe com `_`: `_email: string`
+
+### 3. Uso de `any` Desnecessário
+**❌ ERRADO:**
+```typescript
+const plan = metadata.plan as any;
+const updateData: any = {};
+const featureMatrix = (this.featureFlagsService as any).featureMatrix;
+```
+
+**✅ CORRETO:**
+```typescript
+const plan = metadata.plan as SubscriptionPlan;
+const updateData: Prisma.SubscriptionUpdateInput = {};
+const planFeatures = this.featureFlagsService.getEnabledFeaturesForPlan(plan);
+```
+
+**Como evitar:**
+- Defina tipos apropriados para todas as variáveis
+- Use `unknown` ao invés de `any` quando o tipo é realmente desconhecido
+- Use tipos do Prisma (`Prisma.ModelUpdateInput`) ao invés de `any`
+- Crie métodos públicos ao invés de acessar propriedades privadas via type casting
+- **ESLint está configurado para converter `any` para `unknown` automaticamente**
+
+### 4. Acesso Direto a `error.message` e `error.stack`
+**❌ ERRADO:**
+```typescript
+catch (error: any) {
+  this.logger.error(`Erro: ${error.message}`, error.stack);
+}
+```
+
+**✅ CORRETO:**
+```typescript
+import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
+
+catch (error: unknown) {
+  this.logger.error(
+    `Erro: ${getErrorMessage(error)}`,
+    getErrorStack(error),
+  );
+}
+```
+
+**Como evitar:**
+- **SEMPRE use `unknown` para erros capturados, nunca `any`**
+- Use funções helper `getErrorMessage()` e `getErrorStack()` para tratamento seguro
+
+### 5. `await` em Métodos Não-Async
+**❌ ERRADO:**
+```typescript
+async getAvailablePlans(): Promise<any[]> {
+  return [...]; // Método não precisa ser async
+}
+```
+
+**✅ CORRETO:**
+```typescript
+getAvailablePlans(): Array<{...}> {
+  return [...]; // Método síncrono
+}
+```
+
+**Como evitar:**
+- Remova `async` de métodos que não usam `await`
+- Use tipos de retorno explícitos
+
+### 6. Template Literals com Objetos
+**❌ ERRADO:**
+```typescript
+const url = `https://example.com/${session.invoice}`;
+// session.invoice pode ser um objeto, não uma string
+```
+
+**✅ CORRETO:**
+```typescript
+const invoiceId = typeof session.invoice === 'string' 
+  ? session.invoice 
+  : session.invoice?.toString() || '';
+const url = `https://example.com/${invoiceId}`;
+```
+
+**Como evitar:**
+- Sempre verifique o tipo antes de usar em template literals
+- Use type guards para garantir tipos corretos
+- **Nunca use `String()` diretamente em valores que podem ser objetos**
+
+### 7. Acesso a Propriedades Privadas Via Type Casting
+**❌ ERRADO:**
+```typescript
+const featureMatrix = (this.featureFlagsService as any).featureMatrix;
+```
+
+**✅ CORRETO:**
+```typescript
+// Criar método público no FeatureFlagsService:
+getEnabledFeaturesForPlan(plan: string): Record<string, FeatureConfig> {
+  return this.featureMatrix[plan] || {};
+}
+
+// Usar o método público:
+const planFeatures = this.featureFlagsService.getEnabledFeaturesForPlan(plan);
+```
+
+**Como evitar:**
+- Nunca acesse propriedades privadas via `(service as any).property`
+- Crie métodos públicos quando necessário
+
+---
+
+## ✅ BOAS PRÁTICAS
+
+### 1. Limpeza Regular de Código
+- Execute `npm run lint` antes de cada commit
+- Use `npm run lint -- --fix` para correções automáticas
+- Revise warnings e erros regularmente
+
+### 2. Type Safety
+- Sempre use tipos explícitos
+- Evite `any` - use `unknown` quando necessário
+- Use type guards para validação de tipos
+- **Use tipos do Prisma (`Prisma.ModelUpdateInput`, `Prisma.ModelCreateInput`) ao invés de `any`**
+- **Crie métodos públicos ao invés de acessar propriedades privadas via type casting**
+- **Remova `async` de métodos que não usam `await`**
+
+### 3. Organização de Imports
+- Agrupe imports por origem (NestJS, bibliotecas externas, módulos locais)
+- Remova imports não utilizados
+- Use path aliases (`@modules/*`, `@core/*`) para imports locais
+
+### 4. Nomenclatura
+- Use nomes descritivos para variáveis e funções
+- Prefixe parâmetros não usados com `_`: `_email: string`
+- Use constantes para valores mágicos
+
+### 5. Tratamento de Erros
+- Sempre trate erros adequadamente
+- Use tipos específicos de exceção (NotFoundException, BadRequestException, etc.)
+- Log erros com contexto suficiente
+- **SEMPRE use `unknown` para erros capturados, nunca `any`**
+- **Use funções helper `getErrorMessage()` e `getErrorStack()` para acesso seguro**
+
+### 6. Testes
+- Escreva testes para todas as funcionalidades
+- Mantenha mocks atualizados
+- Execute testes antes de fazer commit
+- **Use type assertions em testes E2E** para evitar warnings de `any`
+- **Tipar `app.getHttpServer()` como `App`** em testes com Supertest
+- **Tipar `response.body`** com interfaces específicas ao invés de `any`
+
+**Exemplo de teste E2E tipado:**
+```typescript
+import type { App } from 'supertest/types';
+
+const response = await request(app.getHttpServer() as App)
+  .post('/api/auth/login')
+  .send({ email: 'test@test.com', password: 'password' })
+  .expect(200);
+
+const body = response.body as {
+  accessToken: string;
+  refreshToken: string;
+  user: { email: string };
+};
+
+expect(body.accessToken).toBeDefined();
+```
+
+### 7. Warnings de Type Safety em Testes
+**Em testes, é aceitável usar `any` para mocks, mas com supressões específicas:**
+
+```typescript
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+const mockService = service as any;
+// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+mockService.stripe.checkout.sessions.list.mockResolvedValue({...});
+```
+
+**Como evitar:**
+- Use supressões do ESLint apenas onde necessário
+- Seja específico: adicione apenas as regras que realmente geram warnings
+- Prefira supressões inline (`// eslint-disable-next-line`) ao invés de desabilitar regras globalmente
+
+---
+
+## 🐳 DOCKER E CONTAINERS
+
+### Comandos Essenciais
+
+**Subir containers:**
+```bash
+docker-compose up -d
+```
+
+**Parar containers:**
+```bash
+docker-compose down
+```
+
+**Ver logs:**
+```bash
+docker-compose logs -f backend
+```
+
+**Reiniciar backend (OBRIGATÓRIO após mudanças):**
+```bash
+docker-compose restart backend
+# OU
+docker-compose up -d --force-recreate backend
+```
+
+**Rebuild da imagem:**
+```bash
+docker-compose build backend
+docker-compose up -d backend
+```
+
+**Executar comandos no container:**
+```bash
+docker-compose exec backend npm run lint
+docker-compose exec backend npm run test
+docker-compose exec backend npm run build
+```
+
+**Acessar PostgreSQL:**
+```bash
+docker-compose exec postgres psql -U mecanica365 -d mecanica365_db
+```
+
+**Acessar Redis CLI:**
+```bash
+docker-compose exec redis redis-cli
+```
+
+### ⚠️ REGRA CRÍTICA: Reiniciar Backend Após Mudanças
+
+**SEMPRE reinicie o backend no container após:**
+- ✅ Mudanças em código TypeScript
+- ✅ Mudanças em DTOs
+- ✅ Mudanças em Services
+- ✅ Mudanças em Controllers
+- ✅ Mudanças em Modules
+- ✅ Mudanças no `app.module.ts`
+- ✅ Mudanças no schema Prisma (após migration)
+- ✅ Mudanças em configurações
+- ✅ Qualquer alteração que afete o runtime
+
+**Comando:**
+```bash
+docker-compose restart backend
+```
+
+**Verificar se reiniciou corretamente:**
+```bash
+docker-compose logs backend --tail 50
+```
+
+---
+
+## 🔄 PROCESSO DE DESENVOLVIMENTO
+
+### Fluxo Completo (OBRIGATÓRIO)
+
+1. **Antes de começar:**
+   - [ ] Ler documentação do módulo/feature
+   - [ ] Verificar se há TODOs relacionados
+   - [ ] Verificar dependências
+
+2. **Durante desenvolvimento:**
+   - [ ] Seguir padrões de criação de módulos (10 etapas)
+   - [ ] Seguir boas práticas e evitar anti-patterns
+   - [ ] Executar `npm run lint` frequentemente
+   - [ ] Executar `npm run build` para verificar erros TypeScript
+   - [ ] Escrever testes enquanto desenvolve
+
+3. **Antes de commit:**
+   - [ ] `npm run lint` não retorna erros
+   - [ ] `npm run test` passa todos os testes
+   - [ ] `npm run build` compila sem erros
+   - [ ] Imports não utilizados foram removidos
+   - [ ] Variáveis não utilizadas foram removidas
+   - [ ] Tipos estão corretos (sem `any` desnecessário)
+   - [ ] Tratamento de erros está adequado
+   - [ ] Código está documentado quando necessário
+
+4. **Após commit (OBRIGATÓRIO):**
+   - [ ] **Fazer push para repositório**
+   - [ ] **Reiniciar backend no container: `docker-compose restart backend`**
+   - [ ] **Verificar logs: `docker-compose logs backend --tail 50`**
+   - [ ] **Verificar se aplicação está rodando: `docker-compose ps`**
+
+5. **Revisão de código:**
+   - [ ] Verificar se segue padrões de criação de módulos
+   - [ ] Verificar se segue boas práticas
+   - [ ] Verificar se não tem anti-patterns
+   - [ ] Verificar se testes estão passando
+   - [ ] Verificar se build está passando
+   - [ ] Verificar se lint está passando
+   - [ ] Verificar se documentação está atualizada
+
+---
+
+## 📋 CHECKLIST ANTES DE COMMIT
+
+- [ ] `npm run lint` não retorna erros
+- [ ] `npm run test` passa todos os testes
+- [ ] `npm run build` compila sem erros
+- [ ] Imports não utilizados foram removidos
+- [ ] Variáveis não utilizadas foram removidas
+- [ ] Tipos estão corretos (sem `any` desnecessário)
+- [ ] Tratamento de erros está adequado
+- [ ] Código está documentado quando necessário
+- [ ] Testes foram escritos (mínimo 80% cobertura para código crítico)
+- [ ] README atualizado (se aplicável)
+
+---
+
+## 📋 CHECKLIST APÓS COMMIT (OBRIGATÓRIO)
+
+- [ ] **Push feito para repositório**
+- [ ] **Backend reiniciado no container: `docker-compose restart backend`**
+- [ ] **Logs verificados: `docker-compose logs backend --tail 50`**
+- [ ] **Aplicação está rodando: `docker-compose ps`**
+- [ ] **Health check passando: Verificar `/api/health`**
+
+---
+
+## 🔧 FERRAMENTAS E COMANDOS ÚTEIS
+
+### Linting e Build
+```bash
+# Verificar erros de linting
+npm run lint
+
+# Corrigir erros automaticamente
+npm run lint -- --fix
+
+# Verificar apenas um arquivo
+npm run lint src/modules/core/onboarding/onboarding.service.ts
+
+# Build do projeto
+npm run build
+
+# Verificar tipos TypeScript sem compilar
+npx tsc --noEmit
+```
+
+### Testes
+```bash
+# Executar todos os testes
+npm run test
+
+# Executar testes em modo watch
+npm run test:watch
+
+# Executar testes com cobertura
+npm run test:cov
+
+# Executar testes E2E
+npm run test:e2e
+```
+
+### Docker
+```bash
+# Subir containers
+docker-compose up -d
+
+# Parar containers
+docker-compose down
+
+# Ver logs
+docker-compose logs -f backend
+
+# Reiniciar backend (OBRIGATÓRIO após mudanças)
+docker-compose restart backend
+
+# Rebuild da imagem
+docker-compose build backend
+docker-compose up -d backend
+
+# Executar comando no container
+docker-compose exec backend npm run lint
+docker-compose exec backend npm run test
+docker-compose exec backend npm run build
+```
+
+### Prisma
+```bash
+# Gerar Prisma Client
+npm run prisma:generate
+
+# Criar migration
+npm run prisma:migrate
+
+# Executar migration no container
+docker-compose exec backend npx prisma migrate dev
+
+# Abrir Prisma Studio
+npm run prisma:studio
+```
+
+### Git
+```bash
+# Verificar status
+git status
+
+# Adicionar arquivos
+git add .
+
+# Commit
+git commit -m "feat: descrição da mudança"
+
+# Push (OBRIGATÓRIO após commit)
+git push
+
+# Verificar branch atual
+git branch
+```
+
+---
+
+## 🎯 MÓDULOS PRIORITÁRIOS PARA IMPLEMENTAÇÃO
+
+### Prioridade Alta 🔴
+
+1. **AppointmentsModule**
+   - Schema Prisma já existe
+   - Implementar Service, Controller, DTOs
+   - Integração automática após aprovação de orçamento
+
+2. **AttachmentsModule**
+   - Criar model `Attachment` no Prisma
+   - Sistema de upload estruturado
+   - Substituir arrays de strings por referências
+
+3. **ChecklistsModule**
+   - Criar do zero (schema + implementação)
+   - Templates de checklist
+   - Validação antes de finalizar
+
+### Prioridade Média 🟡
+
+4. **JobsModule** (Bull + Redis)
+5. **RateLimitingModule** (Throttler)
+6. **WebhooksModule**
+7. **InvoicingModule**
+8. **PaymentsModule**
+
+### Prioridade Baixa 🟢
+
+9. **ReportsModule**
+10. **SuppliersModule**
+11. **TemplatesModule**
+12. **ExportImportModule**
+
+---
+
+## 📊 ESTATÍSTICAS E METAS
+
+### Metas de Qualidade
+- ✅ **Zero erros de linting** antes de cada commit
+- ✅ **Zero warnings de linting** antes de cada commit
+- ✅ **Build passando** sem erros
+- ✅ **Type safety** em 100% do código
+- ✅ **80% de cobertura de testes** para código crítico
+
+### Status Atual
+- ✅ **0 erros** de linting
+- ✅ **0 warnings** de linting
+- ✅ **Build passando** sem erros
+- ✅ **Type safety** em 100% do código
+- ✅ **ESLint configurado** para bloquear `any` explicitamente
+- ✅ **Testes E2E** completamente tipados
+- ✅ **Testes unitários** com supressões ESLint apropriadas para mocks
+
+---
+
+## 🔄 WORKFLOW COMPLETO DE DESENVOLVIMENTO
+
+### 1. Planejamento
+- [ ] Definir responsabilidade do módulo
+- [ ] Criar contrato/interface
+- [ ] Verificar dependências
+
+### 2. Desenvolvimento
+- [ ] Criar estrutura de pastas
+- [ ] Criar entidades de domínio
+- [ ] Criar use cases
+- [ ] Implementar infraestrutura
+- [ ] Escrever testes (enquanto desenvolve)
+
+### 3. Validação
+- [ ] Executar `npm run lint`
+- [ ] Executar `npm run build`
+- [ ] Executar `npm run test`
+- [ ] Verificar cobertura de testes
+
+### 4. Documentação
+- [ ] Atualizar README
+- [ ] Documentar fluxos
+- [ ] Documentar decisões arquiteturais
+
+### 5. Integração
+- [ ] Registrar no `app.module.ts`
+- [ ] Verificar lint, build, testes
+- [ ] **Fazer commit**
+- [ ] **Fazer push**
+- [ ] **Reiniciar backend: `docker-compose restart backend`**
+- [ ] **Verificar logs: `docker-compose logs backend --tail 50`**
+
+### 6. Revisão
+- [ ] Verificar se segue padrões
+- [ ] Verificar se segue boas práticas
+- [ ] Verificar se não tem anti-patterns
+- [ ] Verificar se testes estão passando
+- [ ] Verificar se aplicação está rodando
+
+---
+
+## ⚠️ REGRAS CRÍTICAS (NUNCA ESQUECER)
+
+1. **SEMPRE reiniciar backend após mudanças:**
+   ```bash
+   docker-compose restart backend
+   ```
+
+2. **SEMPRE fazer push após commit:**
+   ```bash
+   git push
+   ```
+
+3. **SEMPRE verificar logs após reiniciar:**
+   ```bash
+   docker-compose logs backend --tail 50
+   ```
+
+4. **SEMPRE executar lint antes de commit:**
+   ```bash
+   npm run lint
+   ```
+
+5. **SEMPRE executar build antes de commit:**
+   ```bash
+   npm run build
+   ```
+
+6. **SEMPRE executar testes antes de commit:**
+   ```bash
+   npm run test
+   ```
+
+7. **NUNCA usar `any` - use `unknown` quando necessário**
+
+8. **NUNCA acessar propriedades privadas via `(service as any).property`**
+
+9. **SEMPRE usar `unknown` para erros capturados, nunca `any`**
+
+10. **SEMPRE usar funções helper `getErrorMessage()` e `getErrorStack()` para erros**
+
+---
+
+## 📝 NOTAS IMPORTANTES
+
+### Sobre Módulos
+- **AppointmentsModule:** Schema Prisma já existe, apenas implementar Service, Controller, DTOs
+- **AttachmentsModule:** Substituir arrays de strings (`inspectionPhotos`) por referências ao model `Attachment`
+- **ChecklistsModule:** Criar do zero, incluindo schema Prisma
+
+### Sobre Docker
+- Backend roda em Docker
+- Sempre reiniciar após mudanças em código
+- Verificar logs após reiniciar
+- Usar `docker-compose exec backend` para executar comandos
+
+### Sobre Git
+- Sempre fazer push após commit
+- Usar mensagens de commit descritivas
+- Verificar status antes de commit
+
+### Sobre Testes
+- Mínimo 80% de cobertura para código crítico
+- Escrever testes enquanto desenvolve
+- Executar testes antes de commit
+
+---
+
+## 🎯 RESUMO RÁPIDO PARA USO DIÁRIO
+
+1. ✅ Seguir padrões de criação de módulos (10 etapas)
+2. ✅ Seguir boas práticas e evitar anti-patterns
+3. ✅ Executar lint, build, testes antes de commit
+4. ✅ Fazer commit e push
+5. ✅ **Reiniciar backend: `docker-compose restart backend`**
+6. ✅ **Verificar logs: `docker-compose logs backend --tail 50`**
+7. ✅ Verificar se aplicação está rodando
+
+---
+
+**Última atualização:** 01/12/2025

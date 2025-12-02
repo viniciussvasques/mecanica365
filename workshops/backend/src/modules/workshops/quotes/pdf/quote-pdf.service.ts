@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { QuoteResponseDto } from '../dto';
+import { WorkshopSettings } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class QuotePdfService {
@@ -9,7 +12,10 @@ export class QuotePdfService {
   /**
    * Gera PDF do orçamento
    */
-  async generatePdf(quote: QuoteResponseDto): Promise<Buffer> {
+  async generatePdf(
+    quote: QuoteResponseDto,
+    workshopSettings?: WorkshopSettings | null,
+  ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
         const doc = new PDFDocument({
@@ -30,28 +36,66 @@ export class QuotePdfService {
           reject(error instanceof Error ? error : new Error(String(error))),
         );
 
-        // Cabeçalho
-        this.addHeader(doc, quote);
+        // Cores personalizadas da oficina ou padrão
+        const primaryColor = workshopSettings?.primaryColor || '#00E0B8';
+        const secondaryColor = workshopSettings?.secondaryColor || '#3ABFF8';
+
+        // Cabeçalho com logo e informações da oficina
+        this.addHeader(doc, quote, workshopSettings, primaryColor);
 
         // Informações do cliente e veículo
         this.addCustomerInfo(doc, quote);
+
+        // Problema relatado pelo cliente
+        if (
+          quote.reportedProblemDescription ||
+          quote.reportedProblemCategory ||
+          quote.reportedProblemSymptoms?.length > 0
+        ) {
+          this.addReportedProblem(doc, quote);
+        }
+
+        // Problema identificado pelo mecânico
+        if (
+          quote.identifiedProblemDescription ||
+          quote.identifiedProblemCategory
+        ) {
+          this.addIdentifiedProblem(doc, quote);
+        }
 
         // Itens do orçamento
         this.addItems(doc, quote);
 
         // Totais
-        this.addTotals(doc, quote);
+        this.addTotals(doc, quote, primaryColor);
 
-        // Observações
-        this.addNotes(doc, quote);
+        // Recomendações
+        if (quote.recommendations) {
+          this.addRecommendations(doc, quote);
+        }
+
+        // Observações e diagnóstico
+        if (quote.diagnosticNotes || quote.inspectionNotes) {
+          this.addNotes(doc, quote);
+        }
+
+        // Mecânico atribuído
+        if (quote.assignedMechanic) {
+          this.addMechanicInfo(doc, quote);
+        }
+
+        // Validade
+        if (quote.validUntil) {
+          this.addValidity(doc, quote);
+        }
 
         // Assinatura (se houver)
         if (quote.customerSignature) {
           this.addSignature(doc, quote);
         }
 
-        // Rodapé
-        this.addFooter(doc, quote);
+        // Rodapé com informações da oficina
+        this.addFooter(doc, quote, workshopSettings);
 
         doc.end();
       } catch (error) {
@@ -64,39 +108,108 @@ export class QuotePdfService {
   private addHeader(
     doc: InstanceType<typeof PDFDocument>,
     quote: QuoteResponseDto,
+    workshopSettings: WorkshopSettings | null | undefined,
+    primaryColor: string,
   ): void {
-    // Logo e título (você pode adicionar logo depois)
+    const headerY = 50;
+    let currentY = headerY;
+
+    // Logo da oficina (se configurado)
+    if (
+      workshopSettings?.logoUrl &&
+      workshopSettings?.showLogoOnQuotes !== false
+    ) {
+      try {
+        const logoPath = this.getLogoPath(workshopSettings.logoUrl);
+        if (logoPath && fs.existsSync(logoPath)) {
+          doc.image(logoPath, 50, currentY, {
+            width: 80,
+            height: 80,
+            fit: [80, 80],
+          });
+          currentY += 90;
+        }
+      } catch (error) {
+        this.logger.warn(`Erro ao carregar logo: ${error}`);
+      }
+    }
+
+    // Nome da oficina
+    const workshopName = workshopSettings?.displayName || 'Oficina Mecânica';
     doc
-      .fontSize(20)
+      .fontSize(16)
       .font('Helvetica-Bold')
-      .text('ORÇAMENTO', { align: 'center' })
-      .moveDown(0.5);
+      .fillColor(primaryColor)
+      .text(workshopName, 50, headerY, { align: 'center', width: 500 });
 
+    // Título ORÇAMENTO
     doc
-      .fontSize(14)
-      .font('Helvetica')
-      .text(`Número: ${quote.number}`, { align: 'center' })
-      .moveDown(0.3);
+      .fontSize(24)
+      .font('Helvetica-Bold')
+      .fillColor('#000000')
+      .text('ORÇAMENTO', 50, headerY + 25, { align: 'center', width: 500 });
 
+    // Número do orçamento com destaque
+    doc
+      .fontSize(18)
+      .font('Helvetica-Bold')
+      .fillColor(primaryColor)
+      .text(`Nº ${quote.number}`, 50, headerY + 55, {
+        align: 'center',
+        width: 500,
+      });
+
+    // Data
     doc
       .fontSize(10)
-      .text(`Data: ${new Date(quote.createdAt).toLocaleDateString('pt-BR')}`, {
-        align: 'center',
-      })
-      .moveDown(1);
+      .font('Helvetica')
+      .fillColor('#666666')
+      .text(
+        `Data: ${new Date(quote.createdAt).toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })}`,
+        50,
+        headerY + 80,
+        { align: 'center', width: 500 },
+      );
 
-    // Linha separadora
-    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-    doc.moveDown(1);
+    // Status do orçamento
+    const statusText = this.getStatusText(quote.status);
+    doc
+      .fontSize(9)
+      .font('Helvetica-Bold')
+      .fillColor(this.getStatusColor(quote.status))
+      .text(`Status: ${statusText}`, 50, headerY + 95, {
+        align: 'center',
+        width: 500,
+      });
+
+    // Linha separadora colorida
+    doc
+      .moveTo(50, headerY + 115)
+      .lineTo(550, headerY + 115)
+      .lineWidth(2)
+      .strokeColor(primaryColor)
+      .stroke();
+
+    doc.y = headerY + 130;
   }
 
   private addCustomerInfo(
     doc: InstanceType<typeof PDFDocument>,
     quote: QuoteResponseDto,
   ): void {
-    doc.fontSize(12).font('Helvetica-Bold').text('DADOS DO CLIENTE', {
-      underline: true,
-    });
+    const sectionY = doc.y;
+
+    // DADOS DO CLIENTE
+    doc
+      .fontSize(12)
+      .font('Helvetica-Bold')
+      .fillColor('#000000')
+      .text('DADOS DO CLIENTE', 50, sectionY);
+
     doc.moveDown(0.5);
 
     if (quote.customer) {
@@ -114,11 +227,9 @@ export class QuotePdfService {
 
     doc.moveDown(1);
 
-    // Informações do veículo
+    // DADOS DO VEÍCULO
     if (quote.vehicle) {
-      doc.fontSize(12).font('Helvetica-Bold').text('DADOS DO VEÍCULO', {
-        underline: true,
-      });
+      doc.fontSize(12).font('Helvetica-Bold').text('DADOS DO VEÍCULO');
       doc.moveDown(0.5);
 
       doc.fontSize(10).font('Helvetica');
@@ -149,13 +260,71 @@ export class QuotePdfService {
     doc.moveDown(1);
   }
 
+  private addReportedProblem(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
+    doc
+      .fontSize(12)
+      .font('Helvetica-Bold')
+      .text('PROBLEMA RELATADO PELO CLIENTE');
+    doc.moveDown(0.5);
+
+    doc.fontSize(10).font('Helvetica');
+
+    if (quote.reportedProblemCategory) {
+      doc.text(`Categoria: ${quote.reportedProblemCategory}`);
+    }
+
+    if (quote.reportedProblemDescription) {
+      doc.text('Descrição:', { continued: false });
+      doc.text(quote.reportedProblemDescription, { indent: 20 });
+      doc.moveDown(0.3);
+    }
+
+    if (
+      quote.reportedProblemSymptoms &&
+      quote.reportedProblemSymptoms.length > 0
+    ) {
+      doc.text('Sintomas:', { continued: false });
+      quote.reportedProblemSymptoms.forEach((symptom) => {
+        doc.text(`• ${symptom}`, { indent: 20 });
+      });
+    }
+
+    doc.moveDown(1);
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown(1);
+  }
+
+  private addIdentifiedProblem(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
+    doc.fontSize(12).font('Helvetica-Bold').text('PROBLEMA IDENTIFICADO');
+    doc.moveDown(0.5);
+
+    doc.fontSize(10).font('Helvetica');
+
+    if (quote.identifiedProblemCategory) {
+      doc.text(`Categoria: ${quote.identifiedProblemCategory}`);
+    }
+
+    if (quote.identifiedProblemDescription) {
+      doc.text('Descrição:', { continued: false });
+      doc.text(quote.identifiedProblemDescription, { indent: 20 });
+    }
+
+    doc.moveDown(1);
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown(1);
+  }
+
   private addItems(
     doc: InstanceType<typeof PDFDocument>,
     quote: QuoteResponseDto,
   ): void {
-    doc.fontSize(12).font('Helvetica-Bold').text('ITENS DO ORÇAMENTO', {
-      underline: true,
-    });
+    doc.fontSize(12).font('Helvetica-Bold').text('ITENS DO ORÇAMENTO');
     doc.moveDown(0.5);
 
     // Cabeçalho da tabela
@@ -173,6 +342,12 @@ export class QuotePdfService {
     // Itens
     quote.items.forEach((item) => {
       const itemY = doc.y;
+
+      // Verificar se precisa de nova página
+      if (doc.y > 700) {
+        doc.addPage();
+        doc.y = 50;
+      }
 
       doc.fontSize(9).font('Helvetica');
       doc.text(item.name, 50, itemY, { width: 280 });
@@ -201,6 +376,7 @@ export class QuotePdfService {
   private addTotals(
     doc: InstanceType<typeof PDFDocument>,
     quote: QuoteResponseDto,
+    primaryColor: string,
   ): void {
     const totalsY = doc.y;
     const rightAlign = 480;
@@ -254,12 +430,31 @@ export class QuotePdfService {
     doc.moveTo(350, doc.y).lineTo(550, doc.y).stroke();
     doc.moveDown(0.3);
 
-    doc.fontSize(14).font('Helvetica-Bold');
+    // TOTAL em destaque
+    doc.fontSize(16).font('Helvetica-Bold').fillColor(primaryColor);
     doc.text('TOTAL:', 350, doc.y);
     doc.text(`R$ ${quote.totalCost.toFixed(2)}`, rightAlign, doc.y, {
       align: 'right',
     });
+    doc.fillColor('#000000'); // Resetar cor
 
+    doc.moveDown(1);
+  }
+
+  private addRecommendations(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
+    doc.fontSize(12).font('Helvetica-Bold').text('RECOMENDAÇÕES');
+    doc.moveDown(0.5);
+
+    doc.fontSize(10).font('Helvetica');
+    if (quote.recommendations) {
+      doc.text(quote.recommendations, { indent: 20 });
+    }
+
+    doc.moveDown(1);
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
     doc.moveDown(1);
   }
 
@@ -267,38 +462,59 @@ export class QuotePdfService {
     doc: InstanceType<typeof PDFDocument>,
     quote: QuoteResponseDto,
   ): void {
-    if (quote.diagnosticNotes || quote.inspectionNotes) {
-      doc.fontSize(12).font('Helvetica-Bold').text('OBSERVAÇÕES', {
-        underline: true,
-      });
+    doc.fontSize(12).font('Helvetica-Bold').text('OBSERVAÇÕES E DIAGNÓSTICO');
+    doc.moveDown(0.5);
+
+    doc.fontSize(10).font('Helvetica');
+
+    if (quote.diagnosticNotes) {
+      doc.text('Diagnóstico:', { continued: false });
+      doc.text(quote.diagnosticNotes, { indent: 20 });
       doc.moveDown(0.5);
-
-      doc.fontSize(10).font('Helvetica');
-
-      if (quote.diagnosticNotes) {
-        doc.text('Diagnóstico:', { continued: false });
-        doc.text(quote.diagnosticNotes, { indent: 20 });
-        doc.moveDown(0.5);
-      }
-
-      if (quote.inspectionNotes) {
-        doc.text('Inspeção:', { continued: false });
-        doc.text(quote.inspectionNotes, { indent: 20 });
-        doc.moveDown(0.5);
-      }
-
-      doc.moveDown(1);
     }
 
-    // Validade
-    if (quote.validUntil) {
-      doc.fontSize(9).font('Helvetica');
+    if (quote.inspectionNotes) {
+      doc.text('Inspeção:', { continued: false });
+      doc.text(quote.inspectionNotes, { indent: 20 });
+      doc.moveDown(0.5);
+    }
+
+    doc.moveDown(1);
+  }
+
+  private addMechanicInfo(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
+    if (!quote.assignedMechanic) return;
+
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`Mecânico Responsável: ${quote.assignedMechanic.name}`, {
+      align: 'right',
+    });
+
+    if (quote.assignedAt) {
       doc.text(
-        `Validade: ${new Date(quote.validUntil).toLocaleDateString('pt-BR')}`,
-        { align: 'center' },
+        `Atribuído em: ${new Date(quote.assignedAt).toLocaleDateString('pt-BR')}`,
+        { align: 'right' },
       );
-      doc.moveDown(1);
     }
+
+    doc.moveDown(1);
+  }
+
+  private addValidity(
+    doc: InstanceType<typeof PDFDocument>,
+    quote: QuoteResponseDto,
+  ): void {
+    if (!quote.validUntil) return;
+
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text(
+      `Validade: ${new Date(quote.validUntil).toLocaleDateString('pt-BR')}`,
+      { align: 'center', width: 500 },
+    );
+    doc.moveDown(1);
   }
 
   private addSignature(
@@ -324,18 +540,113 @@ export class QuotePdfService {
   private addFooter(
     doc: InstanceType<typeof PDFDocument>,
     quote: QuoteResponseDto,
+    workshopSettings: WorkshopSettings | null | undefined,
   ): void {
     const pageHeight = doc.page.height;
     const footerY = pageHeight - 100;
 
+    // Linha separadora
     doc
-      .fontSize(8)
-      .font('Helvetica')
-      .text(
-        `Orçamento ${quote.number} - Gerado em ${new Date().toLocaleString('pt-BR')}`,
-        50,
-        footerY,
-        { align: 'center' },
-      );
+      .moveTo(50, footerY - 20)
+      .lineTo(550, footerY - 20)
+      .stroke();
+
+    // Informações da oficina (se configurado)
+    if (workshopSettings?.showContactOnQuotes !== false) {
+      doc.fontSize(8).font('Helvetica');
+      let footerText = '';
+
+      if (workshopSettings?.phone) {
+        footerText += `Tel: ${workshopSettings.phone}`;
+      }
+      if (workshopSettings?.email) {
+        if (footerText) footerText += ' | ';
+        footerText += `Email: ${workshopSettings.email}`;
+      }
+      if (workshopSettings?.whatsapp) {
+        if (footerText) footerText += ' | ';
+        footerText += `WhatsApp: ${workshopSettings.whatsapp}`;
+      }
+
+      if (footerText) {
+        doc.text(footerText, 50, footerY - 10, { align: 'center' });
+      }
+
+      // Endereço (se configurado)
+      if (
+        workshopSettings?.showAddressOnQuotes !== false &&
+        workshopSettings?.address
+      ) {
+        const addressParts = [
+          workshopSettings.address,
+          workshopSettings.city,
+          workshopSettings.state,
+          workshopSettings.zipCode,
+        ]
+          .filter(Boolean)
+          .join(' - ');
+        doc.text(addressParts, 50, footerY, { align: 'center' });
+      }
+    }
+
+    // Texto de rodapé personalizado
+    if (workshopSettings?.quoteFooterText) {
+      doc.text(workshopSettings.quoteFooterText, 50, footerY + 10, {
+        align: 'center',
+      });
+    }
+
+    // Informação de geração
+    doc.fontSize(7).font('Helvetica').fillColor('#999999');
+    doc.text(
+      `Orçamento ${quote.number} - Gerado em ${new Date().toLocaleString('pt-BR')}`,
+      50,
+      footerY + 20,
+      { align: 'center' },
+    );
+  }
+
+  private getLogoPath(logoUrl: string): string | null {
+    if (!logoUrl) return null;
+
+    // Se for URL relativa (uploads)
+    if (logoUrl.startsWith('/uploads/')) {
+      const logoPath = path.join(process.cwd(), logoUrl);
+      return logoPath;
+    }
+
+    // Se for URL absoluta externa, não podemos carregar diretamente
+    // Retornar null para não quebrar o PDF
+    return null;
+  }
+
+  private getStatusText(status: string): string {
+    const statusMap: Record<string, string> = {
+      draft: 'Rascunho',
+      awaiting_diagnosis: 'Aguardando Diagnóstico',
+      diagnosed: 'Diagnosticado',
+      sent: 'Enviado',
+      viewed: 'Visualizado',
+      accepted: 'Aprovado',
+      rejected: 'Rejeitado',
+      expired: 'Expirado',
+      converted: 'Convertido',
+    };
+    return statusMap[status] || status;
+  }
+
+  private getStatusColor(status: string): string {
+    const colorMap: Record<string, string> = {
+      draft: '#999999',
+      awaiting_diagnosis: '#FFA500',
+      diagnosed: '#3ABFF8',
+      sent: '#3ABFF8',
+      viewed: '#3ABFF8',
+      accepted: '#00E0B8',
+      rejected: '#FF4E3D',
+      expired: '#999999',
+      converted: '#00E0B8',
+    };
+    return colorMap[status] || '#000000';
   }
 }

@@ -1,0 +1,156 @@
+// Configuração do Prisma para o Carvex - Histórico de Veículos Brasil
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Habilita extensão PostGIS para geolocalização
+  extensions = [postgis(version: "3.3.2")]
+}
+
+// Extensão PostGIS
+enum GeometryType {
+  POINT
+  LINE_STRING
+  POLYGON
+  MULTI_POINT
+  MULTI_LINE_STRING
+  MULTI_POLYGON
+  GEOMETRY_COLLECTION
+}
+
+// Tabela principal de histórico de veículos
+model Veiculo {
+  id              String      @id @default(uuid())
+  placa           String?     @unique
+  placaAntiga     String?     // Para veículos que trocaram de placa
+  renavam         String?     @unique
+  chassi          String?     @unique // VIN
+  marca           String
+  modelo          String
+  anoFabricacao   Int
+  anoModelo       String      // Ex: "2023/2024"
+  cor             String
+  especie         String      // Automóvel, Caminhão, Moto, etc.
+  categoria       String?     // Passeio, Passeio Misto, etc.
+  carroceria      String?     // Sedan, Hatch, etc.
+  combustivel     String[]    // Array de tipos de combustível
+  numPassageiros  Int?        // Número de passageiros
+  potencia        Int?        // Em CV
+  cilindradas     Int?        // Em cm³
+  numEixos        Int?        // Para caminhões e ônibus
+  capCarga        Float?      // Capacidade de carga em kg
+  procedencia     String      // Nacional ou Importado
+  municipio       String?     // Cidade de emplacamento
+  uf              String?     // UF de emplacamento
+  situacao        String      // Ativo, Roubado, Leilão, etc.
+  
+  // Dados de histórico
+  historicoProprietarios Json[]   // Array de históricos de proprietários
+  historicoMultas      Json[]     // Histórico de multas
+  historicoRouboFurto  Json[]     // Histórico de roubo/furto
+  historicoLeilao      Json?       // Dados de leilão, se aplicável
+  historicoServicos    Json[]     // Histórico de serviços em oficinas
+  
+  // Dados financeiros
+  ipvaAtual       Json?       // Dados do IPVA atual
+  ipvaAnteriores  Json[]      // Histórico de IPVAs
+  multas          Json[]      // Multas ativas
+  restricoes      Json[]      // Restrições financeiras
+  
+  // Score e análise
+  scoreBrasil     Int         @default(0) // 0-1000
+  statusDetran    String      // Status no Detran
+  statusSinesp    String?     // Status no SINESP (roubo/furto)
+  
+  // Auditoria
+  dataAtualizacao DateTime    @updatedAt
+  dataCriacao     DateTime    @default(now())
+  
+  // Relacionamentos
+  documentos      Documento[]
+  sinistros       Sinistro[]
+  
+  // Índices
+  @@index([placa])
+  @@index([chassi])
+  @@index([renavam])
+  @@index([marca, modelo])
+  @@fulltext([marca, modelo, placa])
+}
+
+// Documentos do veículo
+model Documento {
+  id              String    @id @default(uuid())
+  tipo            String    // CRLV, DUT, Nota Fiscal, etc.
+  numero          String
+  orgaoEmissor    String?
+  ufEmissor       String?
+  dataEmissao     DateTime?
+  dataValidade    DateTime?
+  status          String    // Ativo, Vencido, Cancelado
+  arquivoUrl      String?   // URL do documento digitalizado
+  
+  // Relacionamentos
+  veiculoId       String
+  veiculo         Veiculo   @relation(fields: [veiculoId], references: [id])
+  
+  // Auditoria
+  dataCriacao     DateTime  @default(now())
+  dataAtualizacao DateTime  @updatedAt
+}
+
+// Registro de sinistros
+model Sinistro {
+  id              String    @id @default(uuid())
+  tipo            String    // Colisão, Incêndio, Enchente, etc.
+  dataOcorrencia  DateTime
+  descricao       String?
+  valorPrejuizo   Float?
+  seguradora      String?
+  numeroProcesso  String?
+  status          String    // Em andamento, Indenizado, etc.
+  
+  // Localização
+  endereco        String?
+  cidade          String?
+  uf              String?
+  coordenadas     Json?     // { lat: number, lng: number }
+  
+  // Relacionamentos
+  veiculoId       String
+  veiculo         Veiculo   @relation(fields: [veiculoId], references: [id])
+  
+  // Auditoria
+  dataCriacao     DateTime  @default(now())
+  dataAtualizacao DateTime  @updatedAt
+  
+  // Índices
+  @@index([veiculoId])
+  @@index([dataOcorrencia])
+}
+
+// Tabela de auditoria
+model Auditoria {
+  id              String    @id @default(uuid())
+  entidade        String    // Nome da entidade afetada (ex: 'Veiculo', 'Documento')
+  entidadeId      String    // ID da entidade afetada
+  acao            String    // CREATE, UPDATE, DELETE
+  dadosAntigos    Json?     // Dados antes da alteração
+  dadosNovos      Json?     // Dados após a alteração
+  ip              String?
+  userAgent       String?
+  
+  // Relacionamentos
+  usuarioId       String?
+  
+  // Auditoria
+  dataCriacao     DateTime  @default(now())
+  
+  // Índices
+  @@index([entidade, entidadeId])
+  @@index([dataCriacao])
+}

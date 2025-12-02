@@ -24,6 +24,7 @@ import {
   UpdateServiceOrderDto,
   ServiceOrderResponseDto,
   ServiceOrderFiltersDto,
+  CompleteServiceOrderDto,
 } from './dto';
 import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@core/auth/guards/roles.guard';
@@ -138,13 +139,22 @@ export class ServiceOrdersController {
     description: 'Ordem de serviço finalizada com sucesso',
     type: ServiceOrderResponseDto,
   })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Checklists obrigatórios não estão completos ou OS já está finalizada',
+  })
   @ApiResponse({ status: 404, description: 'Ordem de serviço não encontrada' })
-  @ApiResponse({ status: 400, description: 'OS já finalizada ou cancelada' })
   async complete(
     @TenantId() tenantId: string,
     @Param('id') id: string,
+    @Body() completeDto?: CompleteServiceOrderDto,
   ): Promise<ServiceOrderResponseDto> {
-    return this.serviceOrdersService.complete(tenantId, id);
+    return this.serviceOrdersService.complete(
+      tenantId,
+      id,
+      completeDto?.finalNotes,
+    );
   }
 
   @Post(':id/cancel')

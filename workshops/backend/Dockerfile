@@ -51,6 +51,10 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001
 
+# Criar pasta de uploads
+RUN mkdir -p /app/uploads/logos && \
+    chown -R nestjs:nodejs /app/uploads
+
 # Mudar ownership
 RUN chown -R nestjs:nodejs /app
 USER nestjs
