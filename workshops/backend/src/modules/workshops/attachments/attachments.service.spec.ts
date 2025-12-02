@@ -18,7 +18,7 @@ describe('AttachmentsService', () => {
     mimetype: 'image/jpeg',
     size: 1024000,
     buffer: Buffer.from('test-image-data'),
-  } as any;
+  } as unknown;
 
   const mockAttachment = {
     id: mockAttachmentId,
@@ -104,11 +104,7 @@ describe('AttachmentsService', () => {
 
     it('deve lançar BadRequestException se arquivo não for fornecido', async () => {
       await expect(
-        service.create(
-          mockTenantId,
-          createDto,
-          null as unknown as any,
-        ),
+        service.create(mockTenantId, createDto, null as unknown),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -116,7 +112,7 @@ describe('AttachmentsService', () => {
       const invalidFile = {
         ...mockFile,
         mimetype: 'application/pdf',
-      } as any;
+      };
 
       await expect(
         service.create(mockTenantId, createDto, invalidFile),
@@ -131,7 +127,7 @@ describe('AttachmentsService', () => {
       const invalidFile = {
         ...mockFile,
         mimetype: 'image/jpeg',
-      } as any;
+      };
 
       await expect(
         service.create(mockTenantId, documentDto, invalidFile),

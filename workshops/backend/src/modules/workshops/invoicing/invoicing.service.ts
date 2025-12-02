@@ -37,7 +37,7 @@ export class InvoicingService {
       return 'FAT-001';
     }
 
-    const lastNumber = parseInt(
+    const lastNumber = Number.parseInt(
       lastInvoice.invoiceNumber.replace('FAT-', ''),
       10,
     );

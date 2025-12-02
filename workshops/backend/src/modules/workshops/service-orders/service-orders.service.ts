@@ -16,12 +16,7 @@ import { Prisma } from '@prisma/client';
 import { getErrorMessage } from '@common/utils/error.utils';
 import { ElevatorsService } from '../elevators/elevators.service';
 import { ChecklistsService } from '../checklists/checklists.service';
-import {
-  ChecklistType,
-  ChecklistEntityType,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  ChecklistStatus,
-} from '../checklists/dto';
+import { ChecklistType, ChecklistEntityType } from '../checklists/dto';
 import { AttachmentsService } from '../attachments/attachments.service';
 import {
   NotificationsService,
@@ -53,7 +48,7 @@ export class ServiceOrdersService {
       return 'OS-001';
     }
 
-    const lastNumber = parseInt(lastOrder.number.replace('OS-', ''), 10);
+    const lastNumber = Number.parseInt(lastOrder.number.replace('OS-', ''), 10);
     const nextNumber = lastNumber + 1;
     return `OS-${nextNumber.toString().padStart(3, '0')}`;
   }
@@ -589,17 +584,17 @@ export class ServiceOrdersService {
 
       // Calcular custo total se valores foram atualizados
       const laborCost =
-        updateServiceOrderDto.laborCost !== undefined
-          ? updateServiceOrderDto.laborCost
-          : existingOrder.laborCost?.toNumber() || 0;
+        updateServiceOrderDto.laborCost ??
+        existingOrder.laborCost?.toNumber() ??
+        0;
       const partsCost =
-        updateServiceOrderDto.partsCost !== undefined
-          ? updateServiceOrderDto.partsCost
-          : existingOrder.partsCost?.toNumber() || 0;
+        updateServiceOrderDto.partsCost ??
+        existingOrder.partsCost?.toNumber() ??
+        0;
       const discount =
-        updateServiceOrderDto.discount !== undefined
-          ? updateServiceOrderDto.discount
-          : existingOrder.discount?.toNumber() || 0;
+        updateServiceOrderDto.discount ??
+        existingOrder.discount?.toNumber() ??
+        0;
 
       const totalCost = laborCost + partsCost - discount;
 
@@ -1404,12 +1399,14 @@ export class ServiceOrdersService {
     const discount = toNumber(serviceOrder.discount);
     const calculatedTotal = laborCost + partsCost - discount;
     const totalCostValue = toNumber(serviceOrder.totalCost);
-    const totalCost =
-      totalCostValue > 0
-        ? totalCostValue
-        : calculatedTotal > 0
-          ? calculatedTotal
-          : undefined;
+    let totalCost: number | undefined;
+    if (totalCostValue > 0) {
+      totalCost = totalCostValue;
+    } else if (calculatedTotal > 0) {
+      totalCost = calculatedTotal;
+    } else {
+      totalCost = undefined;
+    }
 
     // Converter items (services + parts) se existirem
     const services = Array.isArray(serviceOrder.services)
