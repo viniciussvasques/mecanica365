@@ -36,13 +36,13 @@ export class BulkEmailService {
     const batchSize = 10;
     const batches = this.chunkArray(data.recipients, batchSize);
 
-    for (let i = 0; i < batches.length; i++) {
+    const batchesLength = batches.length;
+    for (let i = 0; i < batchesLength; i++) {
       const batch = batches[i];
       const batchIndex = i + 1;
-      const batchesLength = batches.length;
       const batchLength = batch.length;
       this.logger.log(
-        `Processando lote ${batchIndex}/${batchesLength} (${batchLength} emails)`,
+        `Processando lote ${String(batchIndex)}/${String(batchesLength)} (${String(batchLength)} emails)`,
       );
 
       // Processar emails do lote em paralelo
@@ -109,7 +109,8 @@ export class BulkEmailService {
       await Promise.all(promises);
 
       // Aguardar um pouco entre lotes para não sobrecarregar o SMTP
-      if (i < batches.length - 1) {
+      const isLastBatch = i >= batchesLength - 1;
+      if (!isLastBatch) {
         await this.delay(1000); // 1 segundo entre lotes
       }
     }
