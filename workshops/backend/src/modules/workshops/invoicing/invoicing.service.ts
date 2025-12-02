@@ -679,7 +679,8 @@ export class InvoicingService {
         throw new BadRequestException('Fatura já está cancelada');
       }
 
-      if (invoice.paymentStatus === PaymentStatus.PAID) {
+      const paymentStatus = invoice.paymentStatus as PaymentStatus;
+      if (paymentStatus === PaymentStatus.PAID) {
         throw new BadRequestException(
           'Não é possível cancelar uma fatura já paga',
         );
