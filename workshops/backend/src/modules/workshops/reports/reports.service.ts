@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
+import { Prisma } from '@prisma/client';
 import {
   GenerateReportDto,
   ReportResponseDto,
@@ -110,7 +111,9 @@ export class ReportsService {
           );
           break;
         default:
-          throw new BadRequestException(`Tipo de relatório inválido: ${type}`);
+          throw new BadRequestException(
+            `Tipo de relatório inválido: ${String(type)}`,
+          );
       }
 
       // Gerar arquivo baseado no formato
@@ -158,24 +161,30 @@ export class ReportsService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    const where: unknown = {
+    const serviceOrderWhere: Prisma.ServiceOrderWhereInput = {
+      tenantId,
+    };
+
+    const invoiceWhere: Prisma.InvoiceWhereInput = {
       tenantId,
     };
 
     if (startDate || endDate) {
-      where.createdAt = {};
+      const dateFilter: Prisma.DateTimeFilter = {};
       if (startDate) {
-        where.createdAt.gte = new Date(startDate);
+        dateFilter.gte = new Date(startDate);
       }
       if (endDate) {
-        where.createdAt.lte = new Date(endDate);
+        dateFilter.lte = new Date(endDate);
       }
+      serviceOrderWhere.createdAt = dateFilter;
+      invoiceWhere.createdAt = dateFilter;
     }
 
     const [serviceOrders, invoices] = await Promise.all([
       this.prisma.serviceOrder.findMany({
         where: {
-          ...where,
+          ...serviceOrderWhere,
           status: 'completed',
         },
         include: {
@@ -189,7 +198,7 @@ export class ReportsService {
       }),
       this.prisma.invoice.findMany({
         where: {
-          ...where,
+          ...invoiceWhere,
           status: 'issued',
         },
         include: {
@@ -228,7 +237,7 @@ export class ReportsService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    const where: unknown = {
+    const where: Prisma.ServiceOrderWhereInput = {
       tenantId,
     };
 
@@ -285,29 +294,33 @@ export class ReportsService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    const where: unknown = {
+    const invoiceWhere: Prisma.InvoiceWhereInput = {
       tenantId,
     };
 
+    const paymentWhere: Prisma.PaymentWhereInput = {
+      tenantId,
+      status: 'completed',
+    };
+
     if (startDate || endDate) {
-      where.createdAt = {};
+      const dateFilter: Prisma.DateTimeFilter = {};
       if (startDate) {
-        where.createdAt.gte = new Date(startDate);
+        dateFilter.gte = new Date(startDate);
       }
       if (endDate) {
-        where.createdAt.lte = new Date(endDate);
+        dateFilter.lte = new Date(endDate);
       }
+      invoiceWhere.createdAt = dateFilter;
+      paymentWhere.createdAt = dateFilter;
     }
 
     const [invoices, payments] = await Promise.all([
       this.prisma.invoice.findMany({
-        where,
+        where: invoiceWhere,
       }),
       this.prisma.payment.findMany({
-        where: {
-          ...where,
-          status: 'completed',
-        },
+        where: paymentWhere,
       }),
     ]);
 
@@ -377,7 +390,7 @@ export class ReportsService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    const where: unknown = {
+    const where: Prisma.CustomerWhereInput = {
       tenantId,
     };
 
@@ -419,7 +432,7 @@ export class ReportsService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    const where: unknown = {
+    const where: Prisma.UserWhereInput = {
       tenantId,
       role: 'mechanic',
       isActive: true,
@@ -436,7 +449,7 @@ export class ReportsService {
       },
     });
 
-    const serviceOrdersWhere: unknown = {
+    const serviceOrdersWhere: Prisma.ServiceOrderWhereInput = {
       tenantId,
       technicianId: { in: mechanics.map((m) => m.id) },
     };
@@ -493,7 +506,7 @@ export class ReportsService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    const where: unknown = {
+    const where: Prisma.QuoteWhereInput = {
       tenantId,
     };
 
@@ -550,7 +563,7 @@ export class ReportsService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    const where: unknown = {
+    const where: Prisma.InvoiceWhereInput = {
       tenantId,
     };
 
@@ -607,7 +620,7 @@ export class ReportsService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    const where: unknown = {
+    const where: Prisma.PaymentWhereInput = {
       tenantId,
     };
 

@@ -28,8 +28,9 @@ export class BulkEmailService {
       errors: [],
     };
 
+    const totalRecipients = String(result.total);
     this.logger.log(
-      `Iniciando disparo em massa para ${result.total} destinatários`,
+      `Iniciando disparo em massa para ${totalRecipients} destinatários`,
     );
 
     // Processar em lotes de 10 para não sobrecarregar o SMTP
@@ -109,7 +110,7 @@ export class BulkEmailService {
       await Promise.all(promises);
 
       // Aguardar um pouco entre lotes para não sobrecarregar o SMTP
-      const lastBatchIndex: number = batchesLength - 1;
+      const lastBatchIndex: number = batchesLength > 0 ? batchesLength - 1 : 0;
       const isLastBatch: boolean = i >= lastBatchIndex;
       if (!isLastBatch) {
         await this.delay(1000); // 1 segundo entre lotes
@@ -117,7 +118,7 @@ export class BulkEmailService {
     }
 
     this.logger.log(
-      `Disparo em massa concluído: ${result.sent} enviados, ${result.failed} falhas de ${result.total} total`,
+      `Disparo em massa concluído: ${String(result.sent)} enviados, ${String(result.failed)} falhas de ${String(result.total)} total`,
     );
 
     return result;

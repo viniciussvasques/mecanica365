@@ -16,6 +16,7 @@ import {
   Req,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import type { File } from 'multer';
 import {
   ApiTags,
   ApiOperation,
@@ -108,7 +109,7 @@ export class AttachmentsController {
   async create(
     @TenantId() tenantId: string,
     @Req() req: Request,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: File,
   ): Promise<AttachmentResponseDto> {
     if (!file) {
       throw new BadRequestException('Arquivo é obrigatório');

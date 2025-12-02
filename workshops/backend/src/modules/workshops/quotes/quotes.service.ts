@@ -909,8 +909,10 @@ export class QuotesService {
         typeof quoteWithEstimatedHours.estimatedHours === 'object' &&
         'toNumber' in quoteWithEstimatedHours.estimatedHours
       ) {
-        createServiceOrderData.estimatedHours =
-          quoteWithEstimatedHours.estimatedHours.toNumber();
+        const estimatedHours = quoteWithEstimatedHours.estimatedHours as {
+          toNumber: () => number;
+        };
+        createServiceOrderData.estimatedHours = estimatedHours.toNumber();
       } else {
         const totalHours = quote.items
           .filter((item) => item.hours)

@@ -19,6 +19,7 @@ import { ChecklistsService } from '../checklists/checklists.service';
 import {
   ChecklistType,
   ChecklistEntityType,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ChecklistStatus,
 } from '../checklists/dto';
 import { AttachmentsService } from '../attachments/attachments.service';
@@ -1086,18 +1087,6 @@ export class ServiceOrdersService {
           },
           take: 1,
         },
-        customer: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        technician: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
       },
     });
 
@@ -1165,7 +1154,21 @@ export class ServiceOrdersService {
 
     // Buscar checklists e attachments separadamente (relação polimórfica)
     const relations = await this.enrichServiceOrderWithRelations(tenantId, id);
-    const responseDto = this.toResponseDto(updatedOrder);
+
+    // Garantir que customer tenha todos os campos necessários
+    const orderWithFullCustomer = {
+      ...updatedOrder,
+      customer: updatedOrder.customer
+        ? {
+            id: updatedOrder.customer.id,
+            name: updatedOrder.customer.name,
+            phone: updatedOrder.customer.phone || '',
+            email: updatedOrder.customer.email || null,
+          }
+        : null,
+    } as Parameters<typeof this.toResponseDto>[0];
+
+    const responseDto = this.toResponseDto(orderWithFullCustomer);
     responseDto.attachments = relations.attachments;
     responseDto.checklists = relations.checklists;
 

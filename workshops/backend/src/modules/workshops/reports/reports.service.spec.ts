@@ -203,7 +203,7 @@ describe('ReportsService', () => {
 
     it('deve lançar erro se tipo de relatório inválido', async () => {
       const generateReportDto = {
-        type: 'invalid_type' as unknown,
+        type: 'invalid_type' as unknown as ReportType,
         format: ReportFormat.PDF,
       };
 
