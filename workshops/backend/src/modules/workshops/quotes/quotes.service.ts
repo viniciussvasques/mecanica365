@@ -140,7 +140,7 @@ export class QuotesService {
       }
 
       // Validar itens - só é obrigatório se não for rascunho
-      const status = createQuoteDto.status || QuoteStatus.DRAFT;
+      const status: QuoteStatus = createQuoteDto.status || QuoteStatus.DRAFT;
       const isDraft = status === QuoteStatus.DRAFT;
       if (
         !isDraft &&
