@@ -109,8 +109,8 @@ export class BulkEmailService {
       await Promise.all(promises);
 
       // Aguardar um pouco entre lotes para não sobrecarregar o SMTP
-      const lastBatchIndex = batchesLength - 1;
-      const isLastBatch = i >= lastBatchIndex;
+      const lastBatchIndex: number = batchesLength - 1;
+      const isLastBatch: boolean = i >= lastBatchIndex;
       if (!isLastBatch) {
         await this.delay(1000); // 1 segundo entre lotes
       }

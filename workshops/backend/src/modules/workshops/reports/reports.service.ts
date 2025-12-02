@@ -155,6 +155,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
@@ -224,6 +225,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
@@ -280,6 +282,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
@@ -332,6 +335,7 @@ export class ReportsService {
    */
   private async generateInventoryReport(
     tenantId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const parts = await this.prisma.part.findMany({
@@ -370,6 +374,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
@@ -411,6 +416,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
@@ -484,6 +490,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
@@ -540,6 +547,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
@@ -596,6 +604,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
