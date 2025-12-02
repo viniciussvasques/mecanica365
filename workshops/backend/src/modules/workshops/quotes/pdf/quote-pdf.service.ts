@@ -38,7 +38,6 @@ export class QuotePdfService {
 
         // Cores personalizadas da oficina ou padrão
         const primaryColor = workshopSettings?.primaryColor || '#00E0B8';
-        const secondaryColor = workshopSettings?.secondaryColor || '#3ABFF8';
 
         // Cabeçalho com logo e informações da oficina
         this.addHeader(doc, quote, workshopSettings, primaryColor);

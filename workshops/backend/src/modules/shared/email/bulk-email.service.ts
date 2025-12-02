@@ -38,8 +38,11 @@ export class BulkEmailService {
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
+      const batchIndex = i + 1;
+      const batchesLength = batches.length;
+      const batchLength = batch.length;
       this.logger.log(
-        `Processando lote ${i + 1}/${batches.length} (${batch.length} emails)`,
+        `Processando lote ${batchIndex}/${batchesLength} (${batchLength} emails)`,
       );
 
       // Processar emails do lote em paralelo

@@ -155,7 +155,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
-    filters?: Record<string, unknown>,
+    _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
       tenantId,
@@ -224,7 +224,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
-    filters?: Record<string, unknown>,
+    _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
       tenantId,
@@ -280,7 +280,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
-    filters?: Record<string, unknown>,
+    _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
       tenantId,
@@ -332,7 +332,7 @@ export class ReportsService {
    */
   private async generateInventoryReport(
     tenantId: string,
-    filters?: Record<string, unknown>,
+    _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const parts = await this.prisma.part.findMany({
       where: {
@@ -370,7 +370,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
-    filters?: Record<string, unknown>,
+    _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
       tenantId,
@@ -411,7 +411,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
-    filters?: Record<string, unknown>,
+    _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
       tenantId,
@@ -484,7 +484,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
-    filters?: Record<string, unknown>,
+    _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
       tenantId,
@@ -540,7 +540,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
-    filters?: Record<string, unknown>,
+    _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
       tenantId,
@@ -596,7 +596,7 @@ export class ReportsService {
     tenantId: string,
     startDate?: string,
     endDate?: string,
-    filters?: Record<string, unknown>,
+    _filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const where: unknown = {
       tenantId,
