@@ -36,7 +36,7 @@ export class BulkEmailService {
     const batchSize = 10;
     const batches = this.chunkArray(data.recipients, batchSize);
 
-    const batchesLength = batches.length;
+    const batchesLength: number = batches.length;
     for (let i = 0; i < batchesLength; i++) {
       const batch = batches[i];
       const batchIndex = i + 1;
