@@ -140,8 +140,8 @@ export class QuotesService {
       }
 
       // Validar itens - só é obrigatório se não for rascunho
-      const isDraft =
-        (createQuoteDto.status || QuoteStatus.DRAFT) === QuoteStatus.DRAFT;
+      const status = createQuoteDto.status || QuoteStatus.DRAFT;
+      const isDraft = String(status) === QuoteStatus.DRAFT;
       if (
         !isDraft &&
         (!createQuoteDto.items || createQuoteDto.items.length === 0)
@@ -541,7 +541,7 @@ export class QuotesService {
       }
 
       // Não permitir atualizar orçamento já convertido
-      if (existingQuote.status === (QuoteStatus.CONVERTED as string)) {
+      if (String(existingQuote.status) === QuoteStatus.CONVERTED) {
         throw new BadRequestException(
           'Não é possível atualizar um orçamento já convertido em OS',
         );
@@ -830,17 +830,17 @@ export class QuotesService {
         throw new NotFoundException('Orçamento não encontrado');
       }
 
-      if (quote.status === (QuoteStatus.CONVERTED as string)) {
+      if (String(quote.status) === QuoteStatus.CONVERTED) {
         throw new BadRequestException('Orçamento já foi convertido em OS');
       }
 
-      if (quote.status === (QuoteStatus.REJECTED as string)) {
+      if (String(quote.status) === QuoteStatus.REJECTED) {
         throw new BadRequestException(
           'Não é possível aprovar um orçamento rejeitado',
         );
       }
 
-      if (quote.status === (QuoteStatus.EXPIRED as string)) {
+      if (String(quote.status) === QuoteStatus.EXPIRED) {
         throw new BadRequestException(
           'Não é possível aprovar um orçamento expirado',
         );
@@ -1077,7 +1077,7 @@ export class QuotesService {
     }
 
     // Não permitir remover orçamento convertido
-    if (quote.status === (QuoteStatus.CONVERTED as string)) {
+    if (String(quote.status) === QuoteStatus.CONVERTED) {
       throw new BadRequestException(
         'Não é possível remover um orçamento já convertido em OS',
       );
@@ -1136,7 +1136,7 @@ export class QuotesService {
     }
 
     // Validar que o status é DRAFT
-    if (quote.status !== (QuoteStatus.DRAFT as string)) {
+    if (String(quote.status) !== QuoteStatus.DRAFT) {
       throw new BadRequestException(
         'Apenas orçamentos em rascunho podem ser enviados para diagnóstico',
       );
@@ -1264,7 +1264,7 @@ export class QuotesService {
     }
 
     // Validar que o status é AWAITING_DIAGNOSIS
-    if (quote.status !== (QuoteStatus.AWAITING_DIAGNOSIS as string)) {
+    if (String(quote.status) !== QuoteStatus.AWAITING_DIAGNOSIS) {
       throw new BadRequestException(
         'Apenas orçamentos aguardando diagnóstico podem ter o diagnóstico concluído',
       );
@@ -1577,8 +1577,8 @@ export class QuotesService {
           viewedAt: new Date(),
           // Atualizar status para VIEWED se ainda não foi visualizado e está em SENT ou DIAGNOSED
           status:
-            quote.status === QuoteStatus.SENT ||
-            quote.status === QuoteStatus.DIAGNOSED
+            String(quote.status) === QuoteStatus.SENT ||
+            String(quote.status) === QuoteStatus.DIAGNOSED
               ? QuoteStatus.VIEWED
               : quote.status,
         },
@@ -1586,8 +1586,8 @@ export class QuotesService {
       // Atualizar o objeto quote para refletir a mudança
       quote.viewedAt = new Date();
       quote.status =
-        quote.status === QuoteStatus.SENT ||
-        quote.status === QuoteStatus.DIAGNOSED
+        String(quote.status) === QuoteStatus.SENT ||
+        String(quote.status) === QuoteStatus.DIAGNOSED
           ? QuoteStatus.VIEWED
           : quote.status;
     }
@@ -2418,7 +2418,7 @@ export class QuotesService {
     };
 
     // Se status for DRAFT, mudar para AWAITING_DIAGNOSIS
-    if (quote.status === (QuoteStatus.DRAFT as string)) {
+    if (String(quote.status) === QuoteStatus.DRAFT) {
       updateData.status = QuoteStatus.AWAITING_DIAGNOSIS;
     }
 
@@ -2897,7 +2897,7 @@ export class QuotesService {
     }
 
     // Validar que o status permite atribuição
-    if (quote.status !== (QuoteStatus.AWAITING_DIAGNOSIS as string)) {
+    if (String(quote.status) !== QuoteStatus.AWAITING_DIAGNOSIS) {
       throw new BadRequestException(
         'Apenas orçamentos aguardando diagnóstico podem ser pegos',
       );
