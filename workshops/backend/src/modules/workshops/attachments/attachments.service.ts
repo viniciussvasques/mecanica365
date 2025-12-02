@@ -4,7 +4,6 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import type { File } from 'multer';
 import { PrismaService } from '@database/prisma.service';
 import {
   CreateAttachmentDto,
@@ -30,7 +29,8 @@ export class AttachmentsService {
   async create(
     tenantId: string,
     createAttachmentDto: CreateAttachmentDto,
-    file: File,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    file: any,
   ): Promise<AttachmentResponseDto> {
     try {
       // Validar que pelo menos um relacionamento foi fornecido
