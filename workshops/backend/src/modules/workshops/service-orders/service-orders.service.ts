@@ -54,6 +54,400 @@ export class ServiceOrdersService {
   }
 
   /**
+   * Valida cliente se fornecido
+   */
+  private async validateCustomerIfProvided(
+    tenantId: string,
+    customerId?: string,
+  ): Promise<void> {
+    if (!customerId) {
+      return;
+    }
+
+    const customer = await this.prisma.customer.findFirst({
+      where: {
+        id: customerId,
+        tenantId,
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Cliente não encontrado');
+    }
+  }
+
+  /**
+   * Valida mecânico se fornecido
+   */
+  private async validateTechnicianIfProvided(
+    tenantId: string,
+    technicianId?: string,
+  ): Promise<void> {
+    if (!technicianId) {
+      return;
+    }
+
+    const technician = await this.prisma.user.findFirst({
+      where: {
+        id: technicianId,
+        tenantId,
+        role: { in: ['mechanic', 'admin', 'manager'] },
+      },
+    });
+
+    if (!technician) {
+      throw new NotFoundException('Mecânico não encontrado');
+    }
+  }
+
+  /**
+   * Calcula custo total
+   */
+  private calculateTotalCost(
+    laborCost?: number | null,
+    partsCost?: number | null,
+    discount?: number | null,
+  ): number {
+    return (
+      (laborCost ?? 0) + (partsCost ?? 0) - (discount ?? 0)
+    );
+  }
+
+  /**
+   * Prepara dados de criação da OS
+   */
+  private prepareServiceOrderCreateData(
+    tenantId: string,
+    number: string,
+    createServiceOrderDto: CreateServiceOrderDto,
+    totalCost: number,
+  ): Prisma.ServiceOrderUncheckedCreateInput {
+    return {
+      tenantId,
+      number,
+      customerId: createServiceOrderDto.customerId,
+      vehicleVin: createServiceOrderDto.vehicleVin?.toUpperCase().trim(),
+      vehiclePlaca: createServiceOrderDto.vehiclePlaca?.toUpperCase().trim(),
+      vehicleMake: createServiceOrderDto.vehicleMake?.trim(),
+      vehicleModel: createServiceOrderDto.vehicleModel?.trim(),
+      vehicleYear: createServiceOrderDto.vehicleYear,
+      vehicleMileage: createServiceOrderDto.vehicleMileage,
+      technicianId: createServiceOrderDto.technicianId,
+      status: createServiceOrderDto.status || ServiceOrderStatus.SCHEDULED,
+      appointmentDate: createServiceOrderDto.appointmentDate
+        ? new Date(createServiceOrderDto.appointmentDate)
+        : null,
+      estimatedHours: createServiceOrderDto.estimatedHours ?? null,
+      laborCost: createServiceOrderDto.laborCost ?? null,
+      partsCost: createServiceOrderDto.partsCost ?? null,
+      totalCost: totalCost > 0 ? totalCost : null,
+      discount: createServiceOrderDto.discount ?? 0,
+      reportedProblemCategory:
+        createServiceOrderDto.reportedProblemCategory ?? null,
+      reportedProblemDescription:
+        createServiceOrderDto.reportedProblemDescription ?? null,
+      reportedProblemSymptoms:
+        createServiceOrderDto.reportedProblemSymptoms ?? [],
+      identifiedProblemCategory:
+        createServiceOrderDto.identifiedProblemCategory ?? null,
+      identifiedProblemDescription:
+        createServiceOrderDto.identifiedProblemDescription ?? null,
+      identifiedProblemId: createServiceOrderDto.identifiedProblemId ?? null,
+      inspectionNotes: createServiceOrderDto.notes ?? null,
+      diagnosticNotes: createServiceOrderDto.diagnosticNotes ?? null,
+      recommendations: createServiceOrderDto.recommendations ?? null,
+    };
+  }
+
+  /**
+   * Prepara dados de atualização de veículo
+   */
+  private prepareVehicleUpdateData(
+    updateServiceOrderDto: UpdateServiceOrderDto,
+  ): Partial<Prisma.ServiceOrderUpdateInput> {
+    const updateData: Partial<Prisma.ServiceOrderUpdateInput> = {};
+
+    if (updateServiceOrderDto.vehicleVin !== undefined) {
+      updateData.vehicleVin = updateServiceOrderDto.vehicleVin
+        ? updateServiceOrderDto.vehicleVin.toUpperCase().trim()
+        : null;
+    }
+
+    if (updateServiceOrderDto.vehiclePlaca !== undefined) {
+      updateData.vehiclePlaca = updateServiceOrderDto.vehiclePlaca
+        ? updateServiceOrderDto.vehiclePlaca.toUpperCase().trim()
+        : null;
+    }
+
+    if (updateServiceOrderDto.vehicleMake !== undefined) {
+      updateData.vehicleMake =
+        updateServiceOrderDto.vehicleMake?.trim() || null;
+    }
+
+    if (updateServiceOrderDto.vehicleModel !== undefined) {
+      updateData.vehicleModel =
+        updateServiceOrderDto.vehicleModel?.trim() || null;
+    }
+
+    if (updateServiceOrderDto.vehicleYear !== undefined) {
+      updateData.vehicleYear = updateServiceOrderDto.vehicleYear || null;
+    }
+
+    if (updateServiceOrderDto.vehicleMileage !== undefined) {
+      updateData.vehicleMileage = updateServiceOrderDto.vehicleMileage || null;
+    }
+
+    return updateData;
+  }
+
+  /**
+   * Prepara dados de atualização de problemas
+   */
+  private prepareProblemsUpdateData(
+    updateServiceOrderDto: UpdateServiceOrderDto,
+  ): Partial<Prisma.ServiceOrderUpdateInput> {
+    const updateData: Partial<Prisma.ServiceOrderUpdateInput> = {};
+
+    // Problema relatado pelo cliente
+    if (updateServiceOrderDto.reportedProblemCategory !== undefined) {
+      updateData.reportedProblemCategory =
+        updateServiceOrderDto.reportedProblemCategory || null;
+    }
+    if (updateServiceOrderDto.reportedProblemDescription !== undefined) {
+      updateData.reportedProblemDescription =
+        updateServiceOrderDto.reportedProblemDescription?.trim() || null;
+    }
+    if (updateServiceOrderDto.reportedProblemSymptoms !== undefined) {
+      updateData.reportedProblemSymptoms =
+        updateServiceOrderDto.reportedProblemSymptoms || [];
+    }
+
+    // Problema identificado pelo mecânico
+    if (updateServiceOrderDto.identifiedProblemCategory !== undefined) {
+      updateData.identifiedProblemCategory =
+        updateServiceOrderDto.identifiedProblemCategory || null;
+    }
+    if (updateServiceOrderDto.identifiedProblemDescription !== undefined) {
+      updateData.identifiedProblemDescription =
+        updateServiceOrderDto.identifiedProblemDescription?.trim() || null;
+    }
+    if (updateServiceOrderDto.identifiedProblemId !== undefined) {
+      updateData.identifiedProblem = updateServiceOrderDto.identifiedProblemId
+        ? { connect: { id: updateServiceOrderDto.identifiedProblemId } }
+        : { disconnect: true };
+    }
+
+    return updateData;
+  }
+
+  /**
+   * Prepara dados de atualização de custos e status
+   */
+  private prepareCostsAndStatusUpdateData(
+    updateServiceOrderDto: UpdateServiceOrderDto,
+    totalCost: number,
+  ): Partial<Prisma.ServiceOrderUpdateInput> {
+    const updateData: Partial<Prisma.ServiceOrderUpdateInput> = {};
+
+    if (updateServiceOrderDto.status !== undefined) {
+      updateData.status = updateServiceOrderDto.status;
+    }
+
+    if (updateServiceOrderDto.appointmentDate !== undefined) {
+      updateData.appointmentDate = updateServiceOrderDto.appointmentDate
+        ? new Date(updateServiceOrderDto.appointmentDate)
+        : null;
+    }
+
+    if (updateServiceOrderDto.estimatedHours !== undefined) {
+      updateData.estimatedHours = updateServiceOrderDto.estimatedHours || null;
+    }
+
+    if (updateServiceOrderDto.laborCost !== undefined) {
+      updateData.laborCost = updateServiceOrderDto.laborCost || null;
+    }
+
+    if (updateServiceOrderDto.partsCost !== undefined) {
+      updateData.partsCost = updateServiceOrderDto.partsCost || null;
+    }
+
+    if (updateServiceOrderDto.discount !== undefined) {
+      updateData.discount = updateServiceOrderDto.discount;
+    }
+
+    if (totalCost > 0) {
+      updateData.totalCost = totalCost;
+    }
+
+    return updateData;
+  }
+
+  /**
+   * Prepara dados de atualização de notas e recomendações
+   */
+  private prepareNotesUpdateData(
+    updateServiceOrderDto: UpdateServiceOrderDto,
+  ): Partial<Prisma.ServiceOrderUpdateInput> {
+    const updateData: Partial<Prisma.ServiceOrderUpdateInput> = {};
+
+    if (updateServiceOrderDto.notes !== undefined) {
+      updateData.inspectionNotes = updateServiceOrderDto.notes?.trim() || null;
+    }
+
+    if (updateServiceOrderDto.diagnosticNotes !== undefined) {
+      updateData.diagnosticNotes =
+        updateServiceOrderDto.diagnosticNotes?.trim() || null;
+    }
+
+    if (updateServiceOrderDto.recommendations !== undefined) {
+      updateData.recommendations =
+        updateServiceOrderDto.recommendations?.trim() || null;
+    }
+
+    return updateData;
+  }
+
+  /**
+   * Prepara dados de atualização da OS
+   */
+  private prepareServiceOrderUpdateData(
+    updateServiceOrderDto: UpdateServiceOrderDto,
+    totalCost: number,
+  ): Prisma.ServiceOrderUpdateInput {
+    const updateData: Prisma.ServiceOrderUpdateInput = {};
+
+    // Cliente
+    if (updateServiceOrderDto.customerId !== undefined) {
+      if (updateServiceOrderDto.customerId) {
+        updateData.customer = {
+          connect: { id: updateServiceOrderDto.customerId },
+        };
+      } else {
+        updateData.customer = { disconnect: true };
+      }
+    }
+
+    // Mecânico
+    if (updateServiceOrderDto.technicianId !== undefined) {
+      if (updateServiceOrderDto.technicianId) {
+        updateData.technician = {
+          connect: { id: updateServiceOrderDto.technicianId },
+        };
+      } else {
+        updateData.technician = { disconnect: true };
+      }
+    }
+
+    // Veículo
+    Object.assign(updateData, this.prepareVehicleUpdateData(updateServiceOrderDto));
+
+    // Custos e status
+    Object.assign(
+      updateData,
+      this.prepareCostsAndStatusUpdateData(updateServiceOrderDto, totalCost),
+    );
+
+    // Problemas
+    Object.assign(updateData, this.prepareProblemsUpdateData(updateServiceOrderDto));
+
+    // Notas
+    Object.assign(updateData, this.prepareNotesUpdateData(updateServiceOrderDto));
+
+    return updateData;
+  }
+
+  /**
+   * Valida checklists obrigatórios antes de finalizar
+   */
+  private async validateChecklistsBeforeCompletion(
+    tenantId: string,
+    serviceOrderId: string,
+  ): Promise<void> {
+    try {
+      const checklists = await this.checklistsService.findAll(tenantId, {
+        entityType: ChecklistEntityType.SERVICE_ORDER,
+        entityId: serviceOrderId,
+        page: 1,
+        limit: 100,
+      });
+
+      // Verificar checklists pré-serviço e pós-serviço
+      const preServiceChecklist = checklists.data.find(
+        (c) => c.checklistType === ChecklistType.PRE_SERVICE,
+      );
+      const postServiceChecklist = checklists.data.find(
+        (c) => c.checklistType === ChecklistType.POST_SERVICE,
+      );
+
+      if (preServiceChecklist) {
+        const isValid = await this.checklistsService.validate(
+          tenantId,
+          preServiceChecklist.id,
+        );
+        if (!isValid) {
+          throw new BadRequestException(
+            'Não é possível finalizar a ordem de serviço. O checklist pré-serviço não está completo. Todos os itens obrigatórios devem ser concluídos.',
+          );
+        }
+      }
+
+      if (postServiceChecklist) {
+        const isValid = await this.checklistsService.validate(
+          tenantId,
+          postServiceChecklist.id,
+        );
+        if (!isValid) {
+          throw new BadRequestException(
+            'Não é possível finalizar a ordem de serviço. O checklist pós-serviço não está completo. Todos os itens obrigatórios devem ser concluídos.',
+          );
+        }
+      }
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      this.logger.warn(`Erro ao validar checklists: ${getErrorMessage(error)}`);
+      // Não falha a finalização se houver erro na validação de checklists
+      // (pode não haver checklists configurados)
+    }
+  }
+
+  /**
+   * Finaliza uso do elevador se houver uso ativo
+   */
+  private async finalizeElevatorUsageIfActive(
+    tenantId: string,
+    serviceOrderId: string,
+    serviceOrderNumber: string,
+  ): Promise<void> {
+    const activeUsage = await this.prisma.elevatorUsage.findFirst({
+      where: {
+        serviceOrderId,
+        endTime: null,
+      },
+    });
+
+    if (!activeUsage) {
+      return;
+    }
+
+    try {
+      await this.elevatorsService.endUsage(tenantId, activeUsage.elevatorId, {
+        usageId: activeUsage.id,
+        notes: `OS ${serviceOrderNumber} finalizada`,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Não foi possível finalizar uso do elevador: ${getErrorMessage(error)}`,
+      );
+      // Não falha a finalização da OS se o elevador falhar
+    }
+  }
+
+  /**
    * Cria uma nova ordem de serviço
    */
   async create(
@@ -61,90 +455,37 @@ export class ServiceOrdersService {
     createServiceOrderDto: CreateServiceOrderDto,
   ): Promise<ServiceOrderResponseDto> {
     try {
-      // Validar cliente se fornecido
-      if (createServiceOrderDto.customerId) {
-        const customer = await this.prisma.customer.findFirst({
-          where: {
-            id: createServiceOrderDto.customerId,
-            tenantId,
-          },
-        });
-
-        if (!customer) {
-          throw new NotFoundException('Cliente não encontrado');
-        }
-      }
-
-      // Validar mecânico se fornecido
-      if (createServiceOrderDto.technicianId) {
-        const technician = await this.prisma.user.findFirst({
-          where: {
-            id: createServiceOrderDto.technicianId,
-            tenantId,
-            role: { in: ['mechanic', 'admin', 'manager'] },
-          },
-        });
-
-        if (!technician) {
-          throw new NotFoundException('Mecânico não encontrado');
-        }
-      }
+      // Validar cliente e mecânico se fornecidos
+      await this.validateCustomerIfProvided(
+        tenantId,
+        createServiceOrderDto.customerId,
+      );
+      await this.validateTechnicianIfProvided(
+        tenantId,
+        createServiceOrderDto.technicianId,
+      );
 
       // Gerar número único
       const number = await this.generateOrderNumber(tenantId);
 
-      // Calcular custo total se fornecido
-      const totalCost =
-        (createServiceOrderDto.laborCost || 0) +
-        (createServiceOrderDto.partsCost || 0) -
-        (createServiceOrderDto.discount || 0);
+      // Calcular custo total
+      const totalCost = this.calculateTotalCost(
+        createServiceOrderDto.laborCost,
+        createServiceOrderDto.partsCost,
+        createServiceOrderDto.discount,
+      );
+
+      // Preparar dados de criação
+      const createData = this.prepareServiceOrderCreateData(
+        tenantId,
+        number,
+        createServiceOrderDto,
+        totalCost,
+      );
 
       // Criar OS
       const serviceOrder = await this.prisma.serviceOrder.create({
-        data: {
-          tenantId,
-          number,
-          customerId: createServiceOrderDto.customerId,
-          vehicleVin: createServiceOrderDto.vehicleVin?.toUpperCase().trim(),
-          vehiclePlaca: createServiceOrderDto.vehiclePlaca
-            ?.toUpperCase()
-            .trim(),
-          vehicleMake: createServiceOrderDto.vehicleMake?.trim(),
-          vehicleModel: createServiceOrderDto.vehicleModel?.trim(),
-          vehicleYear: createServiceOrderDto.vehicleYear,
-          vehicleMileage: createServiceOrderDto.vehicleMileage,
-          technicianId: createServiceOrderDto.technicianId,
-          status: createServiceOrderDto.status || ServiceOrderStatus.SCHEDULED,
-          appointmentDate: createServiceOrderDto.appointmentDate
-            ? new Date(createServiceOrderDto.appointmentDate)
-            : null,
-          estimatedHours: createServiceOrderDto.estimatedHours
-            ? createServiceOrderDto.estimatedHours
-            : null,
-          laborCost: createServiceOrderDto.laborCost || null,
-          partsCost: createServiceOrderDto.partsCost || null,
-          totalCost: totalCost > 0 ? totalCost : null,
-          discount: createServiceOrderDto.discount || 0,
-          // Problema relatado pelo cliente
-          reportedProblemCategory:
-            createServiceOrderDto.reportedProblemCategory || null,
-          reportedProblemDescription:
-            createServiceOrderDto.reportedProblemDescription || null,
-          reportedProblemSymptoms:
-            createServiceOrderDto.reportedProblemSymptoms || [],
-          // Problema identificado pelo mecânico
-          identifiedProblemCategory:
-            createServiceOrderDto.identifiedProblemCategory || null,
-          identifiedProblemDescription:
-            createServiceOrderDto.identifiedProblemDescription || null,
-          identifiedProblemId:
-            createServiceOrderDto.identifiedProblemId || null,
-          // Observações e diagnóstico
-          inspectionNotes: createServiceOrderDto.notes || null,
-          diagnosticNotes: createServiceOrderDto.diagnosticNotes || null,
-          // Recomendações
-          recommendations: createServiceOrderDto.recommendations || null,
-        },
+        data: createData,
         include: {
           customer: {
             select: {
@@ -553,36 +894,17 @@ export class ServiceOrdersService {
         throw new NotFoundException('Ordem de serviço não encontrada');
       }
 
-      // Validar cliente se fornecido
-      if (updateServiceOrderDto.customerId) {
-        const customer = await this.prisma.customer.findFirst({
-          where: {
-            id: updateServiceOrderDto.customerId,
-            tenantId,
-          },
-        });
+      // Validar cliente e mecânico se fornecidos
+      await this.validateCustomerIfProvided(
+        tenantId,
+        updateServiceOrderDto.customerId,
+      );
+      await this.validateTechnicianIfProvided(
+        tenantId,
+        updateServiceOrderDto.technicianId,
+      );
 
-        if (!customer) {
-          throw new NotFoundException('Cliente não encontrado');
-        }
-      }
-
-      // Validar mecânico se fornecido
-      if (updateServiceOrderDto.technicianId) {
-        const technician = await this.prisma.user.findFirst({
-          where: {
-            id: updateServiceOrderDto.technicianId,
-            tenantId,
-            role: { in: ['mechanic', 'admin', 'manager'] },
-          },
-        });
-
-        if (!technician) {
-          throw new NotFoundException('Mecânico não encontrado');
-        }
-      }
-
-      // Calcular custo total se valores foram atualizados
+      // Calcular custo total
       const laborCost =
         updateServiceOrderDto.laborCost ??
         existingOrder.laborCost?.toNumber() ??
@@ -595,138 +917,13 @@ export class ServiceOrdersService {
         updateServiceOrderDto.discount ??
         existingOrder.discount?.toNumber() ??
         0;
-
-      const totalCost = laborCost + partsCost - discount;
+      const totalCost = this.calculateTotalCost(laborCost, partsCost, discount);
 
       // Preparar dados de atualização
-      const updateData: Prisma.ServiceOrderUpdateInput = {};
-
-      if (updateServiceOrderDto.customerId !== undefined) {
-        if (updateServiceOrderDto.customerId) {
-          updateData.customer = {
-            connect: { id: updateServiceOrderDto.customerId },
-          };
-        } else {
-          updateData.customer = { disconnect: true };
-        }
-      }
-
-      if (updateServiceOrderDto.vehicleVin !== undefined) {
-        updateData.vehicleVin = updateServiceOrderDto.vehicleVin
-          ? updateServiceOrderDto.vehicleVin.toUpperCase().trim()
-          : null;
-      }
-
-      if (updateServiceOrderDto.vehiclePlaca !== undefined) {
-        updateData.vehiclePlaca = updateServiceOrderDto.vehiclePlaca
-          ? updateServiceOrderDto.vehiclePlaca.toUpperCase().trim()
-          : null;
-      }
-
-      if (updateServiceOrderDto.vehicleMake !== undefined) {
-        updateData.vehicleMake =
-          updateServiceOrderDto.vehicleMake?.trim() || null;
-      }
-
-      if (updateServiceOrderDto.vehicleModel !== undefined) {
-        updateData.vehicleModel =
-          updateServiceOrderDto.vehicleModel?.trim() || null;
-      }
-
-      if (updateServiceOrderDto.vehicleYear !== undefined) {
-        updateData.vehicleYear = updateServiceOrderDto.vehicleYear || null;
-      }
-
-      if (updateServiceOrderDto.vehicleMileage !== undefined) {
-        updateData.vehicleMileage =
-          updateServiceOrderDto.vehicleMileage || null;
-      }
-
-      if (updateServiceOrderDto.technicianId !== undefined) {
-        if (updateServiceOrderDto.technicianId) {
-          updateData.technician = {
-            connect: { id: updateServiceOrderDto.technicianId },
-          };
-        } else {
-          updateData.technician = { disconnect: true };
-        }
-      }
-
-      if (updateServiceOrderDto.status !== undefined) {
-        updateData.status = updateServiceOrderDto.status;
-      }
-
-      if (updateServiceOrderDto.appointmentDate !== undefined) {
-        updateData.appointmentDate = updateServiceOrderDto.appointmentDate
-          ? new Date(updateServiceOrderDto.appointmentDate)
-          : null;
-      }
-
-      if (updateServiceOrderDto.estimatedHours !== undefined) {
-        updateData.estimatedHours =
-          updateServiceOrderDto.estimatedHours || null;
-      }
-
-      if (updateServiceOrderDto.laborCost !== undefined) {
-        updateData.laborCost = updateServiceOrderDto.laborCost || null;
-      }
-
-      if (updateServiceOrderDto.partsCost !== undefined) {
-        updateData.partsCost = updateServiceOrderDto.partsCost || null;
-      }
-
-      if (updateServiceOrderDto.discount !== undefined) {
-        updateData.discount = updateServiceOrderDto.discount;
-      }
-
-      if (totalCost > 0) {
-        updateData.totalCost = totalCost;
-      }
-
-      // Problema relatado pelo cliente
-      if (updateServiceOrderDto.reportedProblemCategory !== undefined) {
-        updateData.reportedProblemCategory =
-          updateServiceOrderDto.reportedProblemCategory || null;
-      }
-      if (updateServiceOrderDto.reportedProblemDescription !== undefined) {
-        updateData.reportedProblemDescription =
-          updateServiceOrderDto.reportedProblemDescription?.trim() || null;
-      }
-      if (updateServiceOrderDto.reportedProblemSymptoms !== undefined) {
-        updateData.reportedProblemSymptoms =
-          updateServiceOrderDto.reportedProblemSymptoms || [];
-      }
-
-      // Problema identificado pelo mecânico
-      if (updateServiceOrderDto.identifiedProblemCategory !== undefined) {
-        updateData.identifiedProblemCategory =
-          updateServiceOrderDto.identifiedProblemCategory || null;
-      }
-      if (updateServiceOrderDto.identifiedProblemDescription !== undefined) {
-        updateData.identifiedProblemDescription =
-          updateServiceOrderDto.identifiedProblemDescription?.trim() || null;
-      }
-      if (updateServiceOrderDto.identifiedProblemId !== undefined) {
-        updateData.identifiedProblem = updateServiceOrderDto.identifiedProblemId
-          ? { connect: { id: updateServiceOrderDto.identifiedProblemId } }
-          : { disconnect: true };
-      }
-
-      // Observações e diagnóstico
-      if (updateServiceOrderDto.notes !== undefined) {
-        updateData.inspectionNotes =
-          updateServiceOrderDto.notes?.trim() || null;
-      }
-      if (updateServiceOrderDto.diagnosticNotes !== undefined) {
-        updateData.diagnosticNotes =
-          updateServiceOrderDto.diagnosticNotes?.trim() || null;
-      }
-
-      // Recomendações
-      if (updateServiceOrderDto.recommendations !== undefined) {
-        updateData.recommendations =
-          updateServiceOrderDto.recommendations?.trim() || null;
-      }
+      const updateData = this.prepareServiceOrderUpdateData(
+        updateServiceOrderDto,
+        totalCost,
+      );
 
       // Atualizar OS
       const updatedOrder = await this.prisma.serviceOrder.update({
@@ -953,78 +1150,14 @@ export class ServiceOrdersService {
     }
 
     // Validar checklists obrigatórios antes de finalizar
-    try {
-      const checklists = await this.checklistsService.findAll(tenantId, {
-        entityType: ChecklistEntityType.SERVICE_ORDER,
-        entityId: id,
-        page: 1,
-        limit: 100,
-      });
-
-      // Verificar checklists pré-serviço e pós-serviço
-      const preServiceChecklist = checklists.data.find(
-        (c) => c.checklistType === ChecklistType.PRE_SERVICE,
-      );
-      const postServiceChecklist = checklists.data.find(
-        (c) => c.checklistType === ChecklistType.POST_SERVICE,
-      );
-
-      if (preServiceChecklist) {
-        const isValid = await this.checklistsService.validate(
-          tenantId,
-          preServiceChecklist.id,
-        );
-        if (!isValid) {
-          throw new BadRequestException(
-            'Não é possível finalizar a ordem de serviço. O checklist pré-serviço não está completo. Todos os itens obrigatórios devem ser concluídos.',
-          );
-        }
-      }
-
-      if (postServiceChecklist) {
-        const isValid = await this.checklistsService.validate(
-          tenantId,
-          postServiceChecklist.id,
-        );
-        if (!isValid) {
-          throw new BadRequestException(
-            'Não é possível finalizar a ordem de serviço. O checklist pós-serviço não está completo. Todos os itens obrigatórios devem ser concluídos.',
-          );
-        }
-      }
-    } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
-        throw error;
-      }
-      this.logger.warn(`Erro ao validar checklists: ${getErrorMessage(error)}`);
-      // Não falha a finalização se houver erro na validação de checklists
-      // (pode não haver checklists configurados)
-    }
+    await this.validateChecklistsBeforeCompletion(tenantId, id);
 
     // Finalizar uso do elevador se houver
-    const activeUsage = await this.prisma.elevatorUsage.findFirst({
-      where: {
-        serviceOrderId: id,
-        endTime: null,
-      },
-    });
-
-    if (activeUsage) {
-      try {
-        await this.elevatorsService.endUsage(tenantId, activeUsage.elevatorId, {
-          usageId: activeUsage.id,
-          notes: `OS ${serviceOrder.number} finalizada`,
-        });
-      } catch (error) {
-        this.logger.warn(
-          `Não foi possível finalizar uso do elevador: ${getErrorMessage(error)}`,
-        );
-        // Não falha a finalização da OS se o elevador falhar
-      }
-    }
+    await this.finalizeElevatorUsageIfActive(
+      tenantId,
+      id,
+      serviceOrder.number,
+    );
 
     // Atualizar status, data de conclusão e notas finais
     const updateData: Prisma.ServiceOrderUpdateInput = {
