@@ -323,8 +323,8 @@ export class VehicleQueryService {
       result.year =
         typeof yearValue === 'number'
           ? yearValue
-          : parseInt(String(yearValue), 10);
-      if (isNaN(result.year ?? 0)) {
+          : Number.parseInt(String(yearValue), 10);
+      if (Number.isNaN(result.year ?? 0)) {
         result.year = undefined;
       }
     }

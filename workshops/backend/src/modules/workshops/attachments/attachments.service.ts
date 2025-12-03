@@ -13,8 +13,8 @@ import {
 } from './dto';
 import { Prisma } from '@prisma/client';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
-import { join } from 'path';
-import { existsSync, unlinkSync } from 'fs';
+import { join } from 'node:path';
+import { existsSync, unlinkSync } from 'node:fs';
 
 @Injectable()
 export class AttachmentsService {
@@ -56,7 +56,7 @@ export class AttachmentsService {
       // Criar diretório do tenant se não existir
       const tenantDir = join(this.uploadsDir, tenantId);
       if (!existsSync(tenantDir)) {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         await fs.mkdir(tenantDir, { recursive: true });
       }
 

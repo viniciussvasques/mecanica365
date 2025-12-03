@@ -63,7 +63,7 @@ export class CreateElevatorDto {
   @Min(0.1, { message: 'Capacidade deve ser maior que 0' })
   @Transform(({ value }): number => {
     if (typeof value === 'string') {
-      return parseFloat(value);
+      return Number.parseFloat(value);
     }
     return value as number;
   })

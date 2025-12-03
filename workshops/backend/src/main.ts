@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
+import { join } from 'node:path';
 import { AppModule } from './app/app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 

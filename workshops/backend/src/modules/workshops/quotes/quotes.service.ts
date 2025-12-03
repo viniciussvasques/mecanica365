@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import {
   CreateQuoteDto,
   UpdateQuoteDto,
@@ -63,7 +63,7 @@ export class QuotesService {
       return 'ORC-001';
     }
 
-    const lastNumber = parseInt(lastQuote.number.replace('ORC-', ''), 10);
+    const lastNumber = Number.parseInt(lastQuote.number.replace('ORC-', ''), 10);
     const nextNumber = lastNumber + 1;
     return `ORC-${nextNumber.toString().padStart(3, '0')}`;
   }

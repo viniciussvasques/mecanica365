@@ -53,7 +53,7 @@ export class NotificationsController {
     @Query('limit') limit?: string,
   ) {
     const unread = unreadOnly === 'true';
-    const limitNum = limit ? parseInt(limit, 10) : 50;
+    const limitNum = limit ? Number.parseInt(limit, 10) : 50;
     return this.notificationsService.findByUser(
       tenantId,
       userId,

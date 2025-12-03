@@ -59,7 +59,7 @@ type DbSubscription = {
 @Injectable()
 export class OnboardingService {
   private readonly logger = new Logger(OnboardingService.name);
-  private stripe: Stripe;
+  private readonly stripe: Stripe;
 
   constructor(
     private readonly prisma: PrismaService,

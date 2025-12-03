@@ -74,7 +74,7 @@ export class AppointmentFiltersDto {
   @IsInt({ message: 'Página deve ser um número inteiro' })
   @IsOptional()
   @Min(1, { message: 'Página deve ser maior ou igual a 1' })
-  @Transform(({ value }): number => parseInt(value, 10))
+  @Transform(({ value }): number => Number.parseInt(value, 10))
   page?: number = 1;
 
   @ApiProperty({
@@ -86,6 +86,6 @@ export class AppointmentFiltersDto {
   @IsInt({ message: 'Itens por página deve ser um número inteiro' })
   @IsOptional()
   @Min(1, { message: 'Itens por página deve ser maior ou igual a 1' })
-  @Transform(({ value }): number => parseInt(value, 10))
+  @Transform(({ value }): number => Number.parseInt(value, 10))
   limit?: number = 10;
 }

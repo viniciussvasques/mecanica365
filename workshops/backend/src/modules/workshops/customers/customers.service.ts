@@ -640,7 +640,7 @@ export class CustomersService {
 
     // Valida primeiro dígito
     for (let i = 1; i <= 9; i++) {
-      sum += parseInt(cleanCpf.substring(i - 1, i)) * (11 - i);
+      sum += Number.parseInt(cleanCpf.substring(i - 1, i)) * (11 - i);
     }
 
     remainder = (sum * 10) % 11;
@@ -648,14 +648,14 @@ export class CustomersService {
       remainder = 0;
     }
 
-    if (remainder !== parseInt(cleanCpf.substring(9, 10))) {
+    if (remainder !== Number.parseInt(cleanCpf.substring(9, 10))) {
       return false;
     }
 
     // Valida segundo dígito
     sum = 0;
     for (let i = 1; i <= 10; i++) {
-      sum += parseInt(cleanCpf.substring(i - 1, i)) * (12 - i);
+      sum += Number.parseInt(cleanCpf.substring(i - 1, i)) * (12 - i);
     }
 
     remainder = (sum * 10) % 11;
@@ -663,7 +663,7 @@ export class CustomersService {
       remainder = 0;
     }
 
-    if (remainder !== parseInt(cleanCpf.substring(10, 11))) {
+    if (remainder !== Number.parseInt(cleanCpf.substring(10, 11))) {
       return false;
     }
 
@@ -696,14 +696,14 @@ export class CustomersService {
 
     // Valida primeiro dígito
     for (let i = length; i >= 1; i--) {
-      sum += parseInt(numbers.charAt(length - i)) * pos--;
+      sum += Number.parseInt(numbers.charAt(length - i)) * pos--;
       if (pos < 2) {
         pos = 9;
       }
     }
 
     let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    if (result !== parseInt(digits.charAt(0))) {
+    if (result !== Number.parseInt(digits.charAt(0))) {
       return false;
     }
 
@@ -714,14 +714,14 @@ export class CustomersService {
     pos = length - 7;
 
     for (let i = length; i >= 1; i--) {
-      sum += parseInt(numbers.charAt(length - i)) * pos--;
+      sum += Number.parseInt(numbers.charAt(length - i)) * pos--;
       if (pos < 2) {
         pos = 9;
       }
     }
 
     result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    if (result !== parseInt(digits.charAt(1))) {
+    if (result !== Number.parseInt(digits.charAt(1))) {
       return false;
     }
 

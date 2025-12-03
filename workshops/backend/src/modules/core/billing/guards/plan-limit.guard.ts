@@ -18,8 +18,8 @@ export enum LimitType {
 @Injectable()
 export class PlanLimitGuard implements CanActivate {
   constructor(
-    private reflector: Reflector,
-    private billingService: BillingService,
+    private readonly reflector: Reflector,
+    private readonly billingService: BillingService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

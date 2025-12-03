@@ -30,7 +30,7 @@ interface SmtpConfig {
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: Transporter;
+  private readonly transporter: Transporter;
   private readonly templatesService: EmailTemplatesService;
 
   constructor(private readonly configService: ConfigService) {
@@ -42,7 +42,7 @@ export class EmailService {
   private createTransporter(): Transporter {
     const smtpConfig: SmtpConfig = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
+      port: Number.parseInt(process.env.SMTP_PORT || '587', 10),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER,

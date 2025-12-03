@@ -406,20 +406,20 @@ export class TenantsService {
 
     // Validação do primeiro dígito verificador
     for (let i = 1; i <= 9; i++) {
-      sum += parseInt(cleanCPF.substring(i - 1, i)) * (11 - i);
+      sum += Number.parseInt(cleanCPF.substring(i - 1, i)) * (11 - i);
     }
     remainder = (sum * 10) % 11;
     if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(cleanCPF.substring(9, 10))) return false;
+    if (remainder !== Number.parseInt(cleanCPF.substring(9, 10))) return false;
 
     // Validação do segundo dígito verificador
     sum = 0;
     for (let i = 1; i <= 10; i++) {
-      sum += parseInt(cleanCPF.substring(i - 1, i)) * (12 - i);
+      sum += Number.parseInt(cleanCPF.substring(i - 1, i)) * (12 - i);
     }
     remainder = (sum * 10) % 11;
     if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(cleanCPF.substring(10, 11))) return false;
+    if (remainder !== Number.parseInt(cleanCPF.substring(10, 11))) return false;
 
     return true;
   }
@@ -446,12 +446,12 @@ export class TenantsService {
     let pos = length - 7;
 
     for (let i = length; i >= 1; i--) {
-      sum += parseInt(numbers.charAt(length - i)) * pos--;
+      sum += Number.parseInt(numbers.charAt(length - i)) * pos--;
       if (pos < 2) pos = 9;
     }
 
     let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    if (result !== parseInt(digits.charAt(0))) return false;
+    if (result !== Number.parseInt(digits.charAt(0))) return false;
 
     length = length + 1;
     numbers = cleanCNPJ.substring(0, length);
@@ -459,12 +459,12 @@ export class TenantsService {
     pos = length - 7;
 
     for (let i = length; i >= 1; i--) {
-      sum += parseInt(numbers.charAt(length - i)) * pos--;
+      sum += Number.parseInt(numbers.charAt(length - i)) * pos--;
       if (pos < 2) pos = 9;
     }
 
     result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    if (result !== parseInt(digits.charAt(1))) return false;
+    if (result !== Number.parseInt(digits.charAt(1))) return false;
 
     return true;
   }

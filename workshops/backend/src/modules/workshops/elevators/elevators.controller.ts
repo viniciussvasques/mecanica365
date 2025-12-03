@@ -207,8 +207,8 @@ export class ElevatorsController {
     return this.elevatorsService.getUsageHistory(tenantId, id, {
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
-      page: page ? parseInt(page, 10) : undefined,
-      limit: limit ? parseInt(limit, 10) : undefined,
+      page: page ? Number.parseInt(page, 10) : undefined,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
     });
   }
 

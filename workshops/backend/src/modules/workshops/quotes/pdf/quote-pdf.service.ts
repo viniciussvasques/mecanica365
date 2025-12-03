@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { QuoteResponseDto } from '../dto';
 import { WorkshopSettings } from '@prisma/client';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 @Injectable()
 export class QuotePdfService {

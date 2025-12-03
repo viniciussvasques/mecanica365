@@ -14,8 +14,8 @@ interface JwtPayload {
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private configService: ConfigService,
-    private prisma: PrismaService,
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {
     const secret = configService.get<string>('jwt.secret');
     if (!secret) {

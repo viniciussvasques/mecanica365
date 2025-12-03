@@ -20,16 +20,16 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
 import { FindTenantByEmailDto } from './dto/find-tenant-by-email.dto';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-    private configService: ConfigService,
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async login(loginDto: LoginDto, tenantId: string): Promise<LoginResponseDto> {
@@ -94,7 +94,7 @@ export class AuthService {
       const refreshExpiresIn =
         this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
       const days = refreshExpiresIn.includes('d')
-        ? parseInt(refreshExpiresIn)
+        ? Number.parseInt(refreshExpiresIn)
         : 7;
       expiresAt.setDate(expiresAt.getDate() + days);
 
@@ -205,7 +205,7 @@ export class AuthService {
       const refreshExpiresIn =
         this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
       const days = refreshExpiresIn.includes('d')
-        ? parseInt(refreshExpiresIn)
+        ? Number.parseInt(refreshExpiresIn)
         : 7;
       expiresAt.setDate(expiresAt.getDate() + days);
 

@@ -20,7 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname } from 'node:path';
 import { WorkshopSettingsService } from './workshop-settings.service';
 import {
   CreateWorkshopSettingsDto,
