@@ -89,7 +89,6 @@ export class WorkshopSettingsController {
   @Post('upload-logo')
   @Roles('admin', 'manager')
   @UseInterceptors(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     FileInterceptor('file', {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       storage: diskStorage({
