@@ -1410,6 +1410,22 @@ export class QuotesService {
     vehicleId: string | null,
     quoteNumber: string,
   ): Promise<void> {
+    return this.reserveElevatorForApproval(
+      tenantId,
+      elevatorId,
+      serviceOrderId,
+      vehicleId,
+      quoteNumber,
+    );
+  }
+
+  private async reserveElevatorForApproval(
+    tenantId: string,
+    elevatorId: string,
+    serviceOrderId: string,
+    vehicleId: string | null,
+    quoteNumber: string,
+  ): Promise<void> {
     try {
       await this.elevatorsService.reserve(tenantId, elevatorId, {
         serviceOrderId,
@@ -1694,7 +1710,7 @@ export class QuotesService {
           userId: receptionist.id,
           type: NotificationType.QUOTE_REJECTED,
           title: '❌ Orçamento Rejeitado pelo Cliente',
-          message: `Orçamento ${quote.number} foi rejeitado pelo cliente${reason ? `: ${reason}` : ''}`,
+          message: this.formatRejectionMessage(quote.number, reason),
           data: {
             quoteId: quote.id,
             quoteNumber: quote.number,
@@ -3109,26 +3125,6 @@ export class QuotesService {
     );
   }
 
-  private async reserveElevatorForApproval(
-    tenantId: string,
-    elevatorId: string,
-    serviceOrderId: string,
-    vehicleId: string | null,
-    quoteNumber: string,
-  ): Promise<void> {
-    try {
-      await this.elevatorsService.reserve(tenantId, elevatorId, {
-        serviceOrderId,
-        vehicleId: vehicleId || undefined,
-        notes: `Reservado para ${quoteNumber} (aprovado)`,
-      });
-    } catch (error) {
-      this.logger.warn(
-        `Não foi possível reservar elevador: ${getErrorMessage(error)}`,
-      );
-    }
-  }
-
   private async createAutomaticAppointment(
     tenantId: string,
     quote: {
@@ -3319,12 +3315,7 @@ export class QuotesService {
       // Recomendações
       recommendations: quote.recommendations || undefined,
       // Tempo estimado de serviço
-      estimatedHours: quote.estimatedHours
-        ? typeof quote.estimatedHours === 'object' &&
-          'toNumber' in quote.estimatedHours
-          ? quote.estimatedHours.toNumber()
-          : undefined
-        : undefined,
+      estimatedHours: this.extractEstimatedHours(quote.estimatedHours),
       // Atribuição
       assignedMechanicId: quote.assignedMechanicId || undefined,
       assignedAt: quote.assignedAt || undefined,
@@ -3563,5 +3554,26 @@ export class QuotesService {
     this.logger.log(`Mecânico ${mechanicId} pegou o orçamento ${quote.number}`);
 
     return this.toResponseDto(updatedQuote);
+  }
+
+  private extractEstimatedHours(
+    estimatedHours: unknown,
+  ): number | undefined {
+    if (!estimatedHours) {
+      return undefined;
+    }
+    if (
+      typeof estimatedHours === 'object' &&
+      estimatedHours !== null &&
+      'toNumber' in estimatedHours
+    ) {
+      return (estimatedHours as { toNumber: () => number }).toNumber();
+    }
+    return undefined;
+  }
+
+  private formatRejectionMessage(quoteNumber: string, reason?: string): string {
+    const baseMessage = `Orçamento ${quoteNumber} foi rejeitado pelo cliente`;
+    return reason ? `${baseMessage}: ${reason}` : baseMessage;
   }
 }

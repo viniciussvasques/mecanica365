@@ -9,6 +9,20 @@ import { tap } from 'rxjs/operators';
 import { AuditService } from '../audit.service';
 import { CreateAuditLogDto, AuditAction } from '../dto';
 
+interface AuditContext {
+  context: ExecutionContext;
+  action: AuditAction;
+  resourceType: string | undefined;
+  resourceId: string | undefined;
+  body: unknown;
+  method: string;
+  url: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  user: any;
+  ipAddress: string;
+  userAgent: string;
+}
+
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
   constructor(private readonly auditService: AuditService) {}
@@ -58,7 +72,7 @@ export class AuditInterceptor implements NestInterceptor {
         next: () => {
           // Criar log de auditoria de forma assíncrona (não bloquear a resposta)
 
-          this.logAudit(
+          this.logAudit({
             context,
             action,
             resourceType,
@@ -69,7 +83,7 @@ export class AuditInterceptor implements NestInterceptor {
             user,
             ipAddress,
             userAgent,
-          ).catch((error: unknown) => {
+          }).catch((error: unknown) => {
             // Não falhar a requisição se o log falhar
             console.error('Erro ao criar log de auditoria:', error);
           });
@@ -78,16 +92,18 @@ export class AuditInterceptor implements NestInterceptor {
           // Log de erros também
 
           this.logError(
-            context,
-            action,
-            resourceType,
-            resourceId,
-            body,
-            method,
-            url,
-            user,
-            ipAddress,
-            userAgent,
+            {
+              context,
+              action,
+              resourceType,
+              resourceId,
+              body,
+              method,
+              url,
+              user,
+              ipAddress,
+              userAgent,
+            },
             error,
           ).catch((logError: unknown) => {
             console.error('Erro ao criar log de erro:', logError);
@@ -97,44 +113,31 @@ export class AuditInterceptor implements NestInterceptor {
     );
   }
 
-  private async logAudit(
-    context: ExecutionContext,
-    action: AuditAction,
-    resourceType: string | undefined,
-    resourceId: string | undefined,
-    body: unknown,
-    method: string,
-    url: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    user: any,
-    ipAddress: string,
-    userAgent: string,
-  ): Promise<void> {
+  private async logAudit(auditContext: AuditContext): Promise<void> {
     try {
-      const response = context.switchToHttp().getResponse();
+      const response = auditContext.context.switchToHttp().getResponse();
 
       const statusCode =
         (response as { statusCode?: number })?.statusCode || 200;
 
       const dto: CreateAuditLogDto = {
-        action,
-        resourceType,
-        resourceId,
-        changes: this.sanitizeChanges(body),
+        action: auditContext.action,
+        resourceType: auditContext.resourceType,
+        resourceId: auditContext.resourceId,
+        changes: this.sanitizeChanges(auditContext.body),
         metadata: {
-          method,
-          url,
+          method: auditContext.method,
+          url: auditContext.url,
           statusCode,
         },
       };
 
       await this.auditService.create(
-        (user as { tenantId?: string })?.tenantId || null,
-
-        (user as { id?: string })?.id || null,
+        (auditContext.user as { tenantId?: string })?.tenantId || null,
+        (auditContext.user as { id?: string })?.id || null,
         dto,
-        ipAddress,
-        userAgent,
+        auditContext.ipAddress,
+        auditContext.userAgent,
       );
     } catch (error) {
       // Não falhar a requisição se o log falhar
@@ -143,17 +146,7 @@ export class AuditInterceptor implements NestInterceptor {
   }
 
   private async logError(
-    context: ExecutionContext,
-    action: AuditAction,
-    resourceType: string | undefined,
-    resourceId: string | undefined,
-    body: unknown,
-    method: string,
-    url: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    user: any,
-    ipAddress: string,
-    userAgent: string,
+    auditContext: AuditContext,
     error: unknown,
   ): Promise<void> {
     try {
@@ -163,25 +156,24 @@ export class AuditInterceptor implements NestInterceptor {
       const statusCode = (error as { status?: number })?.status || 500;
 
       const dto: CreateAuditLogDto = {
-        action,
-        resourceType,
-        resourceId,
-        changes: this.sanitizeChanges(body),
+        action: auditContext.action,
+        resourceType: auditContext.resourceType,
+        resourceId: auditContext.resourceId,
+        changes: this.sanitizeChanges(auditContext.body),
         metadata: {
-          method,
-          url,
+          method: auditContext.method,
+          url: auditContext.url,
           error: errorMessage,
           statusCode,
         },
       };
 
       await this.auditService.create(
-        (user as { tenantId?: string })?.tenantId || null,
-
-        (user as { id?: string })?.id || null,
+        (auditContext.user as { tenantId?: string })?.tenantId || null,
+        (auditContext.user as { id?: string })?.id || null,
         dto,
-        ipAddress,
-        userAgent,
+        auditContext.ipAddress,
+        auditContext.userAgent,
       );
     } catch (logError) {
       console.error('Erro ao criar log de erro:', logError);

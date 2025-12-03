@@ -887,7 +887,7 @@ export class AppointmentsService {
         },
       });
 
-      const slots = await this.generateAvailableSlots(
+      const slots = await this.generateAvailableSlots({
         targetDate,
         workStartHour,
         workEndHour,
@@ -896,8 +896,8 @@ export class AppointmentsService {
         appointments,
         serviceOrdersInProgress,
         tenantId,
-        getAvailableSlotsDto.elevatorId,
-      );
+        elevatorId: getAvailableSlotsDto.elevatorId,
+      });
 
       const hasAvailability = slots.some((slot) => slot.available);
 
@@ -1076,27 +1076,27 @@ export class AppointmentsService {
     return appointment;
   }
 
-  private async generateAvailableSlots(
-    targetDate: Date,
-    workStartHour: number,
-    workEndHour: number,
-    slotInterval: number,
-    duration: number,
+  private async generateAvailableSlots(params: {
+    targetDate: Date;
+    workStartHour: number;
+    workEndHour: number;
+    slotInterval: number;
+    duration: number;
     appointments: Array<{
       id: string;
       date: Date;
       duration: number;
       assignedToId: string | null;
-    }>,
+    }>;
     serviceOrdersInProgress: Array<{
       id: string;
       appointmentDate: Date | null;
       estimatedHours: unknown;
       technicianId: string | null;
-    }>,
-    tenantId: string,
-    elevatorId: string | undefined,
-  ): Promise<
+    }>;
+    tenantId: string;
+    elevatorId: string | undefined;
+  }): Promise<
     Array<{
       startTime: string;
       endTime: string;
@@ -1111,25 +1111,25 @@ export class AppointmentsService {
       reason?: string;
     }> = [];
 
-    for (let hour = workStartHour; hour < workEndHour; hour++) {
-      for (let minute = 0; minute < 60; minute += slotInterval) {
-        const slotStart = new Date(targetDate);
+    for (let hour = params.workStartHour; hour < params.workEndHour; hour++) {
+      for (let minute = 0; minute < 60; minute += params.slotInterval) {
+        const slotStart = new Date(params.targetDate);
         slotStart.setHours(hour, minute, 0, 0);
         const slotEnd = new Date(slotStart);
-        slotEnd.setTime(slotStart.getTime() + duration * 60 * 1000);
+        slotEnd.setTime(slotStart.getTime() + params.duration * 60 * 1000);
 
-        if (!this.isSlotWithinWorkingHours(slotEnd, workEndHour)) {
+        if (!this.isSlotWithinWorkingHours(slotEnd, params.workEndHour)) {
           continue;
         }
 
         const conflict = await this.checkSlotConflicts(
           slotStart,
           slotEnd,
-          appointments,
-          serviceOrdersInProgress,
-          tenantId,
-          elevatorId,
-          duration,
+          params.appointments,
+          params.serviceOrdersInProgress,
+          params.tenantId,
+          params.elevatorId,
+          params.duration,
         );
 
         slots.push({

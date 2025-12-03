@@ -219,7 +219,7 @@ export class VehicleQueryService {
       }
 
       // APIs gratuitas não suportam RENAVAN
-      if (freeProviders.includes(apiProvider)) {
+      if (freeProviders.has(apiProvider)) {
         this.logger.warn(
           'Consulta por RENAVAN não suportada pela API gratuita. Use uma API paga.',
         );

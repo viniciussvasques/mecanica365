@@ -358,18 +358,7 @@ export class EmailTemplatesService {
         </table>
       </div>
       
-      ${
-        data.invoiceUrl || data.receiptUrl
-          ? `
-      <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0066cc;">
-        <p style="margin: 0; color: #004085;">
-          ${data.invoiceUrl ? `<strong>📄 Visualizar Fatura:</strong> <a href="${data.invoiceUrl}" style="color: #0066cc;">Clique aqui</a><br>` : ''}
-          ${data.receiptUrl ? `<strong>🧾 Recibo:</strong> <a href="${data.receiptUrl}" style="color: #0066cc;">Baixar recibo</a>` : ''}
-        </p>
-      </div>
-      `
-          : ''
-      }
+      ${this.renderInvoiceReceiptSection(data)}
       
       <p style="font-size: 16px; color: #555; margin: 20px 0;">
         Continue aproveitando todos os recursos do Mecânica365!
@@ -606,5 +595,30 @@ Se você tiver dúvidas, entre em contato com nosso suporte.
 
 © ${new Date().getFullYear()} Mecânica365. Todos os direitos reservados.
     `.trim();
+  }
+
+  private renderInvoiceReceiptSection(data: {
+    invoiceUrl?: string;
+    receiptUrl?: string;
+  }): string {
+    if (!data.invoiceUrl && !data.receiptUrl) {
+      return '';
+    }
+
+    const invoiceLink = data.invoiceUrl
+      ? `<strong>📄 Visualizar Fatura:</strong> <a href="${data.invoiceUrl}" style="color: #0066cc;">Clique aqui</a><br>`
+      : '';
+    const receiptLink = data.receiptUrl
+      ? `<strong>🧾 Recibo:</strong> <a href="${data.receiptUrl}" style="color: #0066cc;">Baixar recibo</a>`
+      : '';
+
+    return `
+      <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0066cc;">
+        <p style="margin: 0; color: #004085;">
+          ${invoiceLink}
+          ${receiptLink}
+        </p>
+      </div>
+      `;
   }
 }
