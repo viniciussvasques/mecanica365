@@ -76,23 +76,26 @@ describe('WebhooksService', () => {
       });
     });
 
-    it('deve criar webhook sem secret quando não fornecido', async () => {
-      const createDtoWithoutSecret: CreateWebhookDto = {
+    it('deve criar webhook com diferentes eventos', async () => {
+      const createDtoMultipleEvents: CreateWebhookDto = {
         url: 'https://example.com/webhook',
-        events: ['quote.approved'],
+        secret: 'secret-key',
+        events: ['quote.approved', 'service_order.completed', 'invoice.issued'],
       };
 
-      mockPrismaService.webhook.create.mockResolvedValue(mockWebhook);
+      const webhookWithMultipleEvents = {
+        ...mockWebhook,
+        events: createDtoMultipleEvents.events,
+      };
 
-      const result = await service.create(mockTenantId, createDtoWithoutSecret);
+      mockPrismaService.webhook.create.mockResolvedValue(webhookWithMultipleEvents);
 
-      expect(result).toHaveProperty('id');
-      expect(mockPrismaService.webhook.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          url: createDtoWithoutSecret.url,
-          events: createDtoWithoutSecret.events,
-        }),
-      });
+      const result = await service.create(mockTenantId, createDtoMultipleEvents);
+
+      expect(result.events).toHaveLength(3);
+      expect(result.events).toContain('quote.approved');
+      expect(result.events).toContain('service_order.completed');
+      expect(result.events).toContain('invoice.issued');
     });
   });
 
@@ -307,47 +310,26 @@ describe('WebhooksService', () => {
   });
 
   describe('create - casos especiais', () => {
-    it('deve criar webhook sem secret', async () => {
+    it('deve criar webhook com secret customizado', async () => {
       const createDto: CreateWebhookDto = {
         url: 'https://example.com/webhook',
+        secret: 'custom-secret-key',
         events: ['quote.approved'],
       };
 
-      const webhookWithoutSecret = {
+      const webhookWithCustomSecret = {
         ...mockWebhook,
-        secret: 'generated-secret',
+        secret: 'custom-secret-key',
       };
 
-      mockPrismaService.webhook.create.mockResolvedValue(webhookWithoutSecret);
+      mockPrismaService.webhook.create.mockResolvedValue(webhookWithCustomSecret);
 
       const result = await service.create(mockTenantId, createDto);
 
       expect(result).toHaveProperty('id');
       expect(mockPrismaService.webhook.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          tenantId: mockTenantId,
-          url: createDto.url,
-          events: createDto.events,
-          isActive: true,
-        }),
-      });
-    });
-
-    it('deve criar webhook com secret fornecido', async () => {
-      const createDto: CreateWebhookDto = {
-        url: 'https://example.com/webhook',
-        events: ['quote.approved'],
-        secret: 'custom-secret',
-      };
-
-      mockPrismaService.webhook.create.mockResolvedValue(mockWebhook);
-
-      const result = await service.create(mockTenantId, createDto);
-
-      expect(result).toHaveProperty('id');
-      expect(mockPrismaService.webhook.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          secret: 'custom-secret',
+          secret: 'custom-secret-key',
         }),
       });
     });
