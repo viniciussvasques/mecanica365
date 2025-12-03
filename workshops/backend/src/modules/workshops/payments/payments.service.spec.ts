@@ -95,14 +95,10 @@ describe('PaymentsService', () => {
       mockPrismaService.payment.findMany.mockResolvedValueOnce([]);
 
       // Mock: criar pagamento
-      mockPrismaService.payment.create.mockResolvedValue(mockPayment);
+      mockPrismaService.payment.create.mockResolvedValueOnce(mockPayment);
 
       // Mock: atualizar status da fatura (não será chamado pois status não é COMPLETED)
-      mockPrismaService.invoice.findFirst.mockResolvedValueOnce({
-        id: mockInvoiceId,
-        total: new Decimal(1000.0),
-        payments: [],
-      });
+      // Este mock não é necessário pois o status não é COMPLETED
 
       const result = await service.create(mockTenantId, createPaymentDto);
 
@@ -115,7 +111,7 @@ describe('PaymentsService', () => {
     it('deve lançar erro se fatura não encontrada', async () => {
       // Mock: fatura não encontrada
       mockPrismaService.invoice.findFirst.mockResolvedValueOnce(null);
-      // Mock: payment.findMany retorna vazio para não quebrar no reduce
+      // Mock: payment.findMany não será chamado pois a fatura não existe
       mockPrismaService.payment.findMany.mockResolvedValueOnce([]);
 
       await expect(

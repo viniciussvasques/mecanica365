@@ -201,6 +201,12 @@ describe('InvoicingService', () => {
         id: mockCustomerId,
         name: 'Cliente Teste',
       });
+      // Mock: serviceOrder existe (para não falhar antes)
+      mockPrismaService.serviceOrder.findFirst.mockResolvedValueOnce({
+        id: mockServiceOrderId,
+      });
+      // Mock: não existe fatura para esta OS
+      mockPrismaService.invoice.findFirst.mockResolvedValueOnce(null);
 
       await expect(
         service.create(mockTenantId, dtoWithoutItems),

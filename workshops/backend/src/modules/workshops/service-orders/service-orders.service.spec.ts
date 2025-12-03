@@ -3,6 +3,9 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { ServiceOrdersService } from './service-orders.service';
 import { PrismaService } from '@database/prisma.service';
 import { ElevatorsService } from '../elevators/elevators.service';
+import { ChecklistsService } from '../checklists/checklists.service';
+import { AttachmentsService } from '../attachments/attachments.service';
+import { NotificationsService } from '@core/notifications/notifications.service';
 import { CreateServiceOrderDto, ServiceOrderStatus } from './dto';
 
 describe('ServiceOrdersService', () => {
@@ -93,6 +96,26 @@ describe('ServiceOrdersService', () => {
     endUsage: jest.fn(),
   };
 
+  const mockChecklistsService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockAttachmentsService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockNotificationsService = {
+    create: jest.fn(),
+    notifyAllMechanics: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -104,6 +127,18 @@ describe('ServiceOrdersService', () => {
         {
           provide: ElevatorsService,
           useValue: mockElevatorsService,
+        },
+        {
+          provide: ChecklistsService,
+          useValue: mockChecklistsService,
+        },
+        {
+          provide: AttachmentsService,
+          useValue: mockAttachmentsService,
+        },
+        {
+          provide: NotificationsService,
+          useValue: mockNotificationsService,
         },
       ],
     }).compile();

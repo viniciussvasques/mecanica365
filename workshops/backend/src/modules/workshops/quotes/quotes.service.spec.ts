@@ -4,6 +4,10 @@ import { QuotesService } from './quotes.service';
 import { PrismaService } from '@database/prisma.service';
 import { ElevatorsService } from '../elevators/elevators.service';
 import { ServiceOrdersService } from '../service-orders/service-orders.service';
+import { AppointmentsService } from '../appointments/appointments.service';
+import { ChecklistsService } from '../checklists/checklists.service';
+import { AttachmentsService } from '../attachments/attachments.service';
+import { NotificationsService } from '@core/notifications/notifications.service';
 import { QuotePdfService } from './pdf/quote-pdf.service';
 import { CreateQuoteDto, QuoteStatus, QuoteItemType } from './dto';
 
@@ -85,6 +89,7 @@ describe('QuotesService', () => {
   const mockPrismaService = {
     quote: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -102,6 +107,12 @@ describe('QuotesService', () => {
     },
     elevator: {
       findFirst: jest.fn(),
+    },
+    workshopSettings: {
+      findUnique: jest.fn(),
+    },
+    user: {
+      findMany: jest.fn(),
     },
     $transaction: jest.fn((callback: unknown) => {
       if (Array.isArray(callback)) {
@@ -123,6 +134,23 @@ describe('QuotesService', () => {
     create: jest.fn(),
   };
 
+  const mockAppointmentsService = {
+    create: jest.fn(),
+  };
+
+  const mockChecklistsService = {
+    create: jest.fn(),
+  };
+
+  const mockAttachmentsService = {
+    create: jest.fn(),
+  };
+
+  const mockNotificationsService = {
+    create: jest.fn(),
+    notifyAllMechanics: jest.fn(),
+  };
+
   const mockQuotePdfService = {
     generatePdf: jest.fn(),
   };
@@ -142,6 +170,22 @@ describe('QuotesService', () => {
         {
           provide: ServiceOrdersService,
           useValue: mockServiceOrdersService,
+        },
+        {
+          provide: AppointmentsService,
+          useValue: mockAppointmentsService,
+        },
+        {
+          provide: ChecklistsService,
+          useValue: mockChecklistsService,
+        },
+        {
+          provide: AttachmentsService,
+          useValue: mockAttachmentsService,
+        },
+        {
+          provide: NotificationsService,
+          useValue: mockNotificationsService,
         },
         {
           provide: QuotePdfService,
@@ -238,6 +282,7 @@ describe('QuotesService', () => {
         customerId: 'customer-id',
         vehicleId: 'vehicle-id',
         items: [],
+        status: QuoteStatus.SENT, // Status diferente de DRAFT para validar itens
       };
 
       // Mockar validações anteriores para que o erro de itens seja o primeiro
