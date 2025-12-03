@@ -75,6 +75,25 @@ describe('WebhooksService', () => {
         },
       });
     });
+
+    it('deve criar webhook sem secret quando não fornecido', async () => {
+      const createDtoWithoutSecret: CreateWebhookDto = {
+        url: 'https://example.com/webhook',
+        events: ['quote.approved'],
+      };
+
+      mockPrismaService.webhook.create.mockResolvedValue(mockWebhook);
+
+      const result = await service.create(mockTenantId, createDtoWithoutSecret);
+
+      expect(result).toHaveProperty('id');
+      expect(mockPrismaService.webhook.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          url: createDtoWithoutSecret.url,
+          events: createDtoWithoutSecret.events,
+        }),
+      });
+    });
   });
 
   describe('findAll', () => {
@@ -140,6 +159,237 @@ describe('WebhooksService', () => {
       expect(mockPrismaService.webhook.delete).toHaveBeenCalledWith({
         where: { id: 'webhook-id' },
       });
+    });
+
+    it('deve lançar erro se webhook não encontrado ao remover', async () => {
+      mockPrismaService.webhook.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.remove(mockTenantId, 'non-existent'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('trigger', () => {
+    it('deve disparar webhook para evento específico', async () => {
+      mockPrismaService.webhook.findMany.mockResolvedValue([mockWebhook]);
+      mockPrismaService.webhookAttempt.create.mockResolvedValue({});
+      mockPrismaService.webhook.update.mockResolvedValue(mockWebhook);
+
+      const payload = { quoteId: 'quote-123', status: 'approved' };
+
+      await service.trigger(mockTenantId, 'quote.approved', payload);
+
+      expect(mockPrismaService.webhook.findMany).toHaveBeenCalledWith({
+        where: {
+          tenantId: mockTenantId,
+          isActive: true,
+          events: {
+            has: 'quote.approved',
+          },
+        },
+      });
+    });
+
+    it('deve não disparar webhook se nenhum encontrado', async () => {
+      mockPrismaService.webhook.findMany.mockResolvedValue([]);
+
+      const payload = { quoteId: 'quote-123' };
+
+      await service.trigger(mockTenantId, 'quote.approved', payload);
+
+      expect(mockPrismaService.webhookAttempt.create).not.toHaveBeenCalled();
+    });
+
+    it('deve lidar com erros ao disparar webhook sem interromper fluxo', async () => {
+      mockPrismaService.webhook.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      const payload = { quoteId: 'quote-123' };
+
+      // Não deve lançar erro
+      await expect(
+        service.trigger(mockTenantId, 'quote.approved', payload),
+      ).resolves.toBeUndefined();
+    });
+
+    it('deve disparar múltiplos webhooks para o mesmo evento', async () => {
+      const webhook1 = { ...mockWebhook, id: 'webhook-1' };
+      const webhook2 = { ...mockWebhook, id: 'webhook-2' };
+
+      mockPrismaService.webhook.findMany.mockResolvedValue([
+        webhook1,
+        webhook2,
+      ]);
+      mockPrismaService.webhookAttempt.create.mockResolvedValue({});
+      mockPrismaService.webhook.update.mockResolvedValue(mockWebhook);
+
+      const payload = { quoteId: 'quote-123' };
+
+      await service.trigger(mockTenantId, 'quote.approved', payload);
+
+      expect(mockPrismaService.webhookAttempt.create).toHaveBeenCalledTimes(2);
+      expect(mockPrismaService.webhook.update).toHaveBeenCalledTimes(2);
+    });
+
+    it('deve registrar tentativa falha quando sendWebhook falha', async () => {
+      mockPrismaService.webhook.findMany.mockResolvedValue([mockWebhook]);
+      mockPrismaService.webhookAttempt.create
+        .mockRejectedValueOnce(new Error('Database error'))
+        .mockResolvedValueOnce({});
+
+      const payload = { quoteId: 'quote-123' };
+
+      await service.trigger(mockTenantId, 'quote.approved', payload);
+
+      expect(mockPrismaService.webhookAttempt.create).toHaveBeenCalledTimes(2);
+      expect(mockPrismaService.webhookAttempt.create).toHaveBeenLastCalledWith({
+        data: expect.objectContaining({
+          status: 'failed',
+          error: expect.any(String),
+        }),
+      });
+    });
+  });
+
+  describe('error handling', () => {
+    it('deve lidar com erros ao criar webhook', async () => {
+      const createDto: CreateWebhookDto = {
+        url: 'https://example.com/webhook',
+        events: ['quote.approved'],
+      };
+
+      mockPrismaService.webhook.create.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.create(mockTenantId, createDto)).rejects.toThrow(
+        'Database error',
+      );
+    });
+
+    it('deve lidar com erros ao listar webhooks', async () => {
+      mockPrismaService.webhook.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.findAll(mockTenantId)).rejects.toThrow(
+        'Database error',
+      );
+    });
+
+    it('deve lidar com erros ao atualizar webhook', async () => {
+      const updateDto: UpdateWebhookDto = {
+        url: 'https://new-url.com/webhook',
+      };
+
+      mockPrismaService.webhook.findFirst.mockResolvedValue(mockWebhook);
+      mockPrismaService.webhook.update.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(
+        service.update(mockTenantId, 'webhook-id', updateDto),
+      ).rejects.toThrow('Database error');
+    });
+
+    it('deve lidar com erros ao remover webhook', async () => {
+      mockPrismaService.webhook.findFirst.mockResolvedValue(mockWebhook);
+      mockPrismaService.webhook.delete.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.remove(mockTenantId, 'webhook-id')).rejects.toThrow(
+        'Database error',
+      );
+    });
+  });
+
+  describe('create - casos especiais', () => {
+    it('deve criar webhook sem secret', async () => {
+      const createDto: CreateWebhookDto = {
+        url: 'https://example.com/webhook',
+        events: ['quote.approved'],
+      };
+
+      const webhookWithoutSecret = {
+        ...mockWebhook,
+        secret: 'generated-secret',
+      };
+
+      mockPrismaService.webhook.create.mockResolvedValue(webhookWithoutSecret);
+
+      const result = await service.create(mockTenantId, createDto);
+
+      expect(result).toHaveProperty('id');
+      expect(mockPrismaService.webhook.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          tenantId: mockTenantId,
+          url: createDto.url,
+          events: createDto.events,
+          isActive: true,
+        }),
+      });
+    });
+
+    it('deve criar webhook com secret fornecido', async () => {
+      const createDto: CreateWebhookDto = {
+        url: 'https://example.com/webhook',
+        events: ['quote.approved'],
+        secret: 'custom-secret',
+      };
+
+      mockPrismaService.webhook.create.mockResolvedValue(mockWebhook);
+
+      const result = await service.create(mockTenantId, createDto);
+
+      expect(result).toHaveProperty('id');
+      expect(mockPrismaService.webhook.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          secret: 'custom-secret',
+        }),
+      });
+    });
+  });
+
+  describe('update - casos especiais', () => {
+    it('deve atualizar apenas campos fornecidos', async () => {
+      const updateDto: UpdateWebhookDto = {
+        isActive: false,
+      };
+
+      mockPrismaService.webhook.findFirst.mockResolvedValue(mockWebhook);
+      mockPrismaService.webhook.update.mockResolvedValue({
+        ...mockWebhook,
+        isActive: false,
+      });
+
+      const result = await service.update(
+        mockTenantId,
+        'webhook-id',
+        updateDto,
+      );
+
+      expect(result.isActive).toBe(false);
+      expect(mockPrismaService.webhook.update).toHaveBeenCalledWith({
+        where: { id: 'webhook-id' },
+        data: expect.objectContaining({
+          isActive: false,
+        }),
+      });
+    });
+
+    it('deve lançar erro se webhook não encontrado ao atualizar', async () => {
+      const updateDto: UpdateWebhookDto = {
+        url: 'https://new-url.com/webhook',
+      };
+
+      mockPrismaService.webhook.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.update(mockTenantId, 'non-existent', updateDto),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
