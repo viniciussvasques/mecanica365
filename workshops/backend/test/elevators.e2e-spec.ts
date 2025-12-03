@@ -119,7 +119,7 @@ describe('ElevatorsController (e2e)', () => {
         });
 
       // Tentar criar com mesmo número
-      return request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/elevators')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('X-Tenant-Id', testTenantId)
@@ -129,10 +129,13 @@ describe('ElevatorsController (e2e)', () => {
           capacity: 4.0,
         })
         .expect(409);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
 
-    it('deve retornar 400 quando dados inválidos', () => {
-      return request(app.getHttpServer())
+    it('deve retornar 400 quando dados inválidos', async () => {
+      const response = await request(app.getHttpServer())
         .post('/api/elevators')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('X-Tenant-Id', testTenantId)
@@ -142,6 +145,9 @@ describe('ElevatorsController (e2e)', () => {
           capacity: -1, // Capacidade negativa
         })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(Array.isArray(response.body.message) || typeof response.body.message === 'string').toBe(true);
     });
   });
 
@@ -239,12 +245,15 @@ describe('ElevatorsController (e2e)', () => {
         });
     });
 
-    it('deve retornar 404 quando elevador não existe', () => {
-      return request(app.getHttpServer())
+    it('deve retornar 404 quando elevador não existe', async () => {
+      const response = await request(app.getHttpServer())
         .get('/api/elevators/non-existent-id')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('X-Tenant-Id', testTenantId)
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
   });
 
@@ -281,8 +290,8 @@ describe('ElevatorsController (e2e)', () => {
         });
     });
 
-    it('deve retornar 404 quando elevador não existe', () => {
-      return request(app.getHttpServer())
+    it('deve retornar 404 quando elevador não existe', async () => {
+      const response = await request(app.getHttpServer())
         .patch('/api/elevators/non-existent-id')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('X-Tenant-Id', testTenantId)
@@ -290,6 +299,9 @@ describe('ElevatorsController (e2e)', () => {
           name: 'Test',
         })
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
   });
 
@@ -310,20 +322,25 @@ describe('ElevatorsController (e2e)', () => {
       elevatorId = elevator.id;
     });
 
-    it('deve remover elevador com sucesso', () => {
-      return request(app.getHttpServer())
+    it('deve remover elevador com sucesso', async () => {
+      const response = await request(app.getHttpServer())
         .delete(`/api/elevators/${elevatorId}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .set('X-Tenant-Id', testTenantId)
         .expect(204);
+
+      expect(response.body).toEqual({});
     });
 
-    it('deve retornar 404 quando elevador não existe', () => {
-      return request(app.getHttpServer())
+    it('deve retornar 404 quando elevador não existe', async () => {
+      const response = await request(app.getHttpServer())
         .delete('/api/elevators/non-existent-id')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('X-Tenant-Id', testTenantId)
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
   });
 });

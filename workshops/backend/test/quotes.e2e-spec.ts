@@ -129,8 +129,8 @@ describe('QuotesController (e2e)', () => {
         });
     });
 
-    it('deve retornar erro 400 se não houver itens', () => {
-      return request(app.getHttpServer())
+    it('deve retornar erro 400 se não houver itens', async () => {
+      const response = await request(app.getHttpServer())
         .post('/api/quotes')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('X-Tenant-Id', tenantId)
@@ -140,6 +140,9 @@ describe('QuotesController (e2e)', () => {
           items: [],
         })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(Array.isArray(response.body.message) || typeof response.body.message === 'string').toBe(true);
     });
   });
 
@@ -171,12 +174,15 @@ describe('QuotesController (e2e)', () => {
         });
     });
 
-    it('deve retornar 404 se orçamento não existir', () => {
-      return request(app.getHttpServer())
+    it('deve retornar 404 se orçamento não existir', async () => {
+      const response = await request(app.getHttpServer())
         .get('/api/quotes/non-existent-id')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('X-Tenant-Id', tenantId)
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
   });
 
