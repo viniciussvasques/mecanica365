@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   GearIcon,
   CarIcon,
@@ -51,7 +51,11 @@ export function Sidebar({ onToggle }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
@@ -126,11 +130,25 @@ export function Sidebar({ onToggle }: SidebarProps) {
     // Carregar role inicial
     loadUserRole();
     
+    // Carregar informações do usuário
+    const loadUserInfo = () => {
+      if (typeof window !== 'undefined') {
+        const userName = localStorage.getItem('userName') || 'Usuário';
+        const userEmail = localStorage.getItem('userEmail') || 'usuario@oficina.com';
+        setUser({ name: userName, email: userEmail });
+      }
+    };
+    
+    loadUserInfo();
+    
     // Listener para mudanças no localStorage (caso o role seja atualizado em outra aba)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'userRole') {
         console.log('[Sidebar] Role mudou no localStorage:', e.newValue);
         setUserRole(e.newValue);
+      }
+      if (e.key === 'userName' || e.key === 'userEmail') {
+        loadUserInfo();
       }
     };
     
@@ -169,6 +187,34 @@ export function Sidebar({ onToggle }: SidebarProps) {
       return () => clearInterval(interval);
     }
   }, [userRole]);
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
+
+  // Função de logout
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('subdomain');
+    router.push('/login');
+  };
 
   // Filtrar itens do menu baseado no role
   const menuItems = allMenuItems.filter((item) => {
@@ -293,22 +339,113 @@ export function Sidebar({ onToggle }: SidebarProps) {
         })}
       </nav>
 
-      {/* Footer */}
+      {/* Footer - Avatar com Menu */}
       <div className="p-4 border-t border-[#2A3038]">
         {!collapsed && (
-          <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-[#2A3038]/50">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00E0B8] to-[#3ABFF8] flex items-center justify-center">
-              <span className="text-sm font-bold text-[#0F1115]">U</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#D0D6DE] truncate">Usuário</p>
-              <p className="text-xs text-[#7E8691] truncate">admin@oficina.com</p>
-            </div>
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg bg-[#2A3038]/50 hover:bg-[#2A3038] transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00E0B8] to-[#3ABFF8] flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-bold text-[#0F1115]">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-medium text-[#D0D6DE] truncate">
+                  {user?.name || 'Usuário'}
+                </p>
+                <p className="text-xs text-[#7E8691] truncate">
+                  {user?.email || 'usuario@oficina.com'}
+                </p>
+              </div>
+              <svg
+                className={`w-4 h-4 text-[#7E8691] transition-transform ${
+                  showUserMenu ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            
+            {/* Dropdown Menu */}
+            {showUserMenu && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#1A1E23] border border-[#2A3038] rounded-lg shadow-xl overflow-hidden z-50">
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-3 text-left text-sm text-[#D0D6DE] hover:bg-[#2A3038] transition-colors flex items-center space-x-2"
+                >
+                  <svg
+                    className="w-4 h-4 text-[#FF4E3D]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
+                  </svg>
+                  <span className="text-[#FF4E3D]">Sair</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
         {collapsed && (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00E0B8] to-[#3ABFF8] flex items-center justify-center mx-auto">
-            <span className="text-sm font-bold text-[#0F1115]">U</span>
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00E0B8] to-[#3ABFF8] flex items-center justify-center mx-auto hover:ring-2 hover:ring-[#00E0B8] transition-all"
+            >
+              <span className="text-sm font-bold text-[#0F1115]">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            </button>
+            
+            {/* Dropdown Menu para collapsed */}
+            {showUserMenu && (
+              <div className="absolute bottom-full left-0 mb-2 bg-[#1A1E23] border border-[#2A3038] rounded-lg shadow-xl overflow-hidden z-50 min-w-[150px]">
+                <div className="px-4 py-3 border-b border-[#2A3038]">
+                  <p className="text-sm font-medium text-[#D0D6DE] truncate">
+                    {user?.name || 'Usuário'}
+                  </p>
+                  <p className="text-xs text-[#7E8691] truncate">
+                    {user?.email || 'usuario@oficina.com'}
+                  </p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-3 text-left text-sm text-[#D0D6DE] hover:bg-[#2A3038] transition-colors flex items-center space-x-2"
+                >
+                  <svg
+                    className="w-4 h-4 text-[#FF4E3D]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
+                  </svg>
+                  <span className="text-[#FF4E3D]">Sair</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
