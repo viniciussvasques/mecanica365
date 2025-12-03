@@ -1520,7 +1520,9 @@ export class ServiceOrdersService {
     const toNumber = (value: unknown): number => {
       if (value == null) return 0;
       if (typeof value === 'number') return value;
-      const result = toNumberUtil(value as { toNumber: () => number } | number | null | undefined);
+      const result = toNumberUtil(
+        value as { toNumber: () => number } | number | null | undefined,
+      );
       return result ?? 0;
     };
 
