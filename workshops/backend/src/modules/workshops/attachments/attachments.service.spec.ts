@@ -3,6 +3,18 @@ import { AttachmentsService } from './attachments.service';
 import { PrismaService } from '@database/prisma.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateAttachmentDto, AttachmentType } from './dto';
+
+// Mock fs modules antes de importar
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  unlinkSync: jest.fn(),
+}));
+
+jest.mock('fs/promises', () => ({
+  mkdir: jest.fn(),
+  writeFile: jest.fn(),
+}));
+
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 
@@ -51,23 +63,6 @@ describe('AttachmentsService', () => {
     },
   };
 
-  let mkdirSpy: jest.SpyInstance;
-  let writeFileSpy: jest.SpyInstance;
-  let existsSyncSpy: jest.SpyInstance;
-  let unlinkSyncSpy: jest.SpyInstance;
-
-  beforeAll(() => {
-    // Criar spies uma vez no beforeAll
-    mkdirSpy = jest.spyOn(fsPromises, 'mkdir');
-    writeFileSpy = jest.spyOn(fsPromises, 'writeFile');
-    existsSyncSpy = jest.spyOn(fs, 'existsSync');
-    unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
-  });
-
-  afterAll(() => {
-    // Restaurar spies apenas no final
-    jest.restoreAllMocks();
-  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -99,9 +94,9 @@ describe('AttachmentsService', () => {
       mockPrismaService.attachment.create.mockResolvedValue(mockAttachment);
 
       // Mock fs/promises
-      mkdirSpy.mockResolvedValue(undefined);
-      writeFileSpy.mockResolvedValue(undefined);
-      existsSyncSpy.mockReturnValue(false);
+      (fsPromises.mkdir as jest.Mock).mockResolvedValue(undefined);
+      (fsPromises.writeFile as jest.Mock).mockResolvedValue(undefined);
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       const result = await service.create(mockTenantId, createDto, mockFile);
 
@@ -282,8 +277,8 @@ describe('AttachmentsService', () => {
     it('deve remover um anexo com sucesso', async () => {
       mockPrismaService.attachment.findFirst.mockResolvedValue(mockAttachment);
       mockPrismaService.attachment.delete.mockResolvedValue(mockAttachment);
-      existsSyncSpy.mockReturnValue(true);
-      unlinkSyncSpy.mockImplementation(() => {});
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.unlinkSync as jest.Mock).mockImplementation(() => {});
 
       await service.remove(mockTenantId, mockAttachmentId);
 
@@ -303,18 +298,18 @@ describe('AttachmentsService', () => {
     it('deve remover arquivo físico se existir', async () => {
       mockPrismaService.attachment.findFirst.mockResolvedValue(mockAttachment);
       mockPrismaService.attachment.delete.mockResolvedValue(mockAttachment);
-      existsSyncSpy.mockReturnValue(true);
-      unlinkSyncSpy.mockImplementation(() => {});
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.unlinkSync as jest.Mock).mockImplementation(() => {});
 
       await service.remove(mockTenantId, mockAttachmentId);
 
-      expect(unlinkSyncSpy).toHaveBeenCalled();
+      expect(fs.unlinkSync).toHaveBeenCalled();
     });
 
     it('não deve falhar se arquivo físico não existir', async () => {
       mockPrismaService.attachment.findFirst.mockResolvedValue(mockAttachment);
       mockPrismaService.attachment.delete.mockResolvedValue(mockAttachment);
-      existsSyncSpy.mockReturnValue(false);
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       await expect(
         service.remove(mockTenantId, mockAttachmentId),
