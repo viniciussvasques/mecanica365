@@ -5,18 +5,18 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateAttachmentDto, AttachmentType } from './dto';
 
 // Mock fs modules antes de importar
-jest.mock('fs', () => ({
+jest.mock('node:fs', () => ({
   existsSync: jest.fn(),
   unlinkSync: jest.fn(),
 }));
 
-jest.mock('fs/promises', () => ({
+jest.mock('node:fs/promises', () => ({
   mkdir: jest.fn(),
   writeFile: jest.fn(),
 }));
 
-import * as fs from 'fs';
-import * as fsPromises from 'fs/promises';
+import * as fs from 'node:fs';
+import * as fsPromises from 'node:fs/promises';
 
 describe('AttachmentsService', () => {
   let service: AttachmentsService;

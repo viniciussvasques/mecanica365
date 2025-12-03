@@ -78,6 +78,11 @@ describe('OnboardingService', () => {
       get: jest.fn(),
     };
 
+    // Configurar STRIPE_SECRET_KEY antes de criar o módulo
+    if (!process.env.STRIPE_SECRET_KEY) {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_mock';
+    }
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OnboardingService,
@@ -197,19 +202,29 @@ describe('OnboardingService', () => {
     };
 
     it('deve lançar erro se Stripe não estiver configurado', async () => {
-      process.env.STRIPE_SECRET_KEY = '';
-      const mockConfigService = {
-        get: jest.fn(),
-      };
-      const serviceWithoutStripe = new OnboardingService(
-        prismaService,
-        tenantsService,
-        billingService,
-        usersService,
-        emailService,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        mockConfigService as any as ConfigService,
-      );
+      // Salvar o valor original
+      const originalKey = process.env.STRIPE_SECRET_KEY;
+      delete process.env.STRIPE_SECRET_KEY;
+      
+      // Criar um novo módulo sem Stripe configurado
+      const moduleWithoutStripe: TestingModule = await Test.createTestingModule({
+        providers: [
+          OnboardingService,
+          { provide: PrismaService, useValue: prismaService },
+          { provide: TenantsService, useValue: tenantsService },
+          { provide: BillingService, useValue: billingService },
+          { provide: UsersService, useValue: usersService },
+          { provide: EmailService, useValue: emailService },
+          { provide: ConfigService, useValue: { get: jest.fn() } },
+        ],
+      }).compile();
+      
+      const serviceWithoutStripe = moduleWithoutStripe.get<OnboardingService>(OnboardingService);
+      
+      // Restaurar o valor original
+      if (originalKey) {
+        process.env.STRIPE_SECRET_KEY = originalKey;
+      }
 
       (prismaService.tenant.findUnique as jest.Mock).mockResolvedValue(
         mockTenant as unknown,
