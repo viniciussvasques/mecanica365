@@ -91,6 +91,7 @@ export class WorkshopSettingsController {
   @UseInterceptors(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     FileInterceptor('file', {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       storage: diskStorage({
         destination: './uploads/logos',
         filename: (
