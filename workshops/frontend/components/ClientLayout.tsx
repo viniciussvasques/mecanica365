@@ -12,7 +12,7 @@ import {
 import { notificationsApi } from '@/lib/api/notifications';
 
 interface ClientLayoutProps {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 }
 
 // Rotas que não devem ter sidebar e header
@@ -48,7 +48,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
 
     // Carregar informações do usuário
     const loadUserInfo = () => {
-      if (typeof window !== 'undefined') {
+      if (globalThis.window !== undefined) {
         const userName = localStorage.getItem('userName') || 'Usuário';
         const userEmail = localStorage.getItem('userEmail') || 'usuario@oficina.com';
         const userRole = localStorage.getItem('userRole') || 'admin';
@@ -112,63 +112,6 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     router.push('/login');
   };
 
-  // Funções disponíveis por role
-  const getAvailableFeatures = () => {
-    if (!user) return [];
-    
-    const role = user.role;
-    const features: Array<{ label: string; href: string }> = [];
-
-    switch (role) {
-      case 'admin':
-      case 'manager':
-        features.push(
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Clientes', href: '/customers' },
-          { label: 'Ordens de Serviço', href: '/service-orders' },
-          { label: 'Orçamentos', href: '/quotes' },
-          { label: 'Agendamentos', href: '/appointments' },
-          { label: 'Veículos', href: '/vehicles' },
-          { label: 'Elevadores', href: '/elevators' },
-          { label: 'Usuários', href: '/users' },
-          { label: 'Configurações', href: '/settings' }
-        );
-        break;
-      case 'mechanic':
-        features.push(
-          { label: 'Meu Dashboard', href: '/mechanic/dashboard' },
-          { label: 'Meus Orçamentos', href: '/mechanic/quotes' },
-          { label: 'Ordens de Serviço', href: '/service-orders' },
-          { label: 'Agendamentos', href: '/appointments' },
-          { label: 'Elevadores', href: '/elevators' },
-          { label: 'Notificações', href: '/mechanic/notifications' }
-        );
-        break;
-      case 'receptionist':
-        features.push(
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Clientes', href: '/customers' },
-          { label: 'Ordens de Serviço', href: '/service-orders' },
-          { label: 'Orçamentos', href: '/quotes' },
-          { label: 'Agendamentos', href: '/appointments' },
-          { label: 'Veículos', href: '/vehicles' },
-          { label: 'Elevadores', href: '/elevators' }
-        );
-        break;
-      case 'accountant':
-        features.push(
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Ordens de Serviço', href: '/service-orders' },
-          { label: 'Orçamentos', href: '/quotes' }
-        );
-        break;
-    }
-
-    return features;
-  };
-
-  const availableFeatures = getAvailableFeatures();
-  const isActive = (href: string) => pathname?.startsWith(href);
 
   // Durante SSR, não renderizar
   if (!mounted) {
@@ -230,6 +173,17 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                   <span className="text-[#00E0B8]">Elevador 3</span> ocupado / <span className="text-[#00E0B8]">2</span> livres
                 </span>
               </div>
+            )}
+
+            {/* Configurações (apenas para admin/manager) */}
+            {(user?.role === 'admin' || user?.role === 'manager') && (
+              <Link
+                href="/settings"
+                className="p-2 text-[#7E8691] hover:text-[#00E0B8] transition-colors"
+                title="Configurações"
+              >
+                <GearIcon size={20} />
+              </Link>
             )}
 
             {/* Notificações */}
@@ -303,46 +257,8 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                       <p className="text-xs text-[#00E0B8] mt-1 capitalize">{user?.role || 'admin'}</p>
                     </div>
 
-                    {/* Funções Disponíveis */}
-                    {availableFeatures.length > 0 && (
-                      <div className="p-2 border-b border-[#2A3038]">
-                        <p className="text-xs font-semibold text-[#7E8691] uppercase px-2 py-1 mb-2">
-                          Acesso Rápido
-                        </p>
-                        <div className="space-y-1 max-h-64 overflow-y-auto">
-                          {availableFeatures.map((feature) => (
-                            <Link
-                              key={feature.href}
-                              href={feature.href}
-                              onClick={() => setShowUserMenu(false)}
-                              className={`
-                                block px-3 py-2 rounded-lg text-sm transition-colors
-                                ${
-                                  isActive(feature.href)
-                                    ? 'bg-[#00E0B8]/20 text-[#00E0B8]'
-                                    : 'text-[#D0D6DE] hover:bg-[#2A3038]'
-                                }
-                              `}
-                            >
-                              {feature.label}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Configurações e Logout */}
+                    {/* Logout */}
                     <div className="p-2">
-                      {(user?.role === 'admin' || user?.role === 'manager') && (
-                        <Link
-                          href="/settings"
-                          onClick={() => setShowUserMenu(false)}
-                          className="block px-3 py-2 rounded-lg text-sm text-[#D0D6DE] hover:bg-[#2A3038] transition-colors flex items-center space-x-2 mb-1"
-                        >
-                          <GearIcon className="w-4 h-4" />
-                          <span>Configurações</span>
-                        </Link>
-                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full px-3 py-2 rounded-lg text-sm text-[#FF4E3D] hover:bg-[#2A3038] transition-colors flex items-center space-x-2"
