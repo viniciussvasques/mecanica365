@@ -56,14 +56,21 @@ if ($WithCoverage) {
     Write-Host ""
 }
 
+# Verificar se a rede existe, se não, usar a rede do docker-compose
+$networkName = "mecanica365-workshops-network"
+$networkExists = docker network ls --format "{{.Name}}" | Select-String -Pattern "^$networkName$"
+if (-not $networkExists) {
+    $networkName = "mecanica365-workshops_mecanica365-workshops-network"
+}
+
 # Construir comando Docker
 $dockerArgs = @(
     "run", "--rm",
-    "--network", "mecanica365-workshops-network",
+    "--network", $networkName,
     "-v", "${PWD}:/usr/src",
     "-w", "/usr/src",
     "sonarsource/sonar-scanner-cli:latest",
-    "-Dsonar.host.url=http://sonarqube:9000",
+    "-Dsonar.host.url=http://mecanica365-workshops-sonarqube:9000",
     "-Dsonar.login=$Token"
 )
 
