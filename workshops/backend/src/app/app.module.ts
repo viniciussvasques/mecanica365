@@ -30,6 +30,7 @@ import { ReportsModule } from '../modules/workshops/reports/reports.module';
 import { SuppliersModule } from '../modules/workshops/suppliers/suppliers.module';
 import { WebhooksModule } from '../modules/shared/webhooks/webhooks.module';
 import { JobsModule } from '../modules/shared/jobs/jobs.module';
+import { RateLimitingModule } from '../modules/shared/rate-limiting/rate-limiting.module';
 import { IntegrationsModule } from '../modules/shared/integrations/integrations.module';
 import { AutomationsModule } from '../modules/shared/automations/automations.module';
 import { TenantResolverMiddleware } from '../common/middleware/tenant-resolver.middleware';
@@ -70,6 +71,7 @@ import appConfig from '../config/app.config';
     SuppliersModule,
     WebhooksModule,
     JobsModule,
+    RateLimitingModule,
     IntegrationsModule,
     AutomationsModule,
     // Módulos adicionais serão adicionados conforme necessário
