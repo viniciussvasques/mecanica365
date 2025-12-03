@@ -3319,13 +3319,7 @@ export class QuotesService {
       // Atribuição
       assignedMechanicId: quote.assignedMechanicId || undefined,
       assignedAt: quote.assignedAt || undefined,
-      assignedMechanic: quote.assignedMechanic
-        ? {
-            id: quote.assignedMechanic.id,
-            name: quote.assignedMechanic.name,
-            email: quote.assignedMechanic.email,
-          }
-        : undefined,
+      assignedMechanic: this.extractAssignedMechanic(quote.assignedMechanic),
       items: quote.items.map((item) => ({
         id: item.id,
         type: item.type as QuoteItemType,
@@ -3575,5 +3569,18 @@ export class QuotesService {
   private formatRejectionMessage(quoteNumber: string, reason?: string): string {
     const baseMessage = `Orçamento ${quoteNumber} foi rejeitado pelo cliente`;
     return reason ? `${baseMessage}: ${reason}` : baseMessage;
+  }
+
+  private extractAssignedMechanic(
+    assignedMechanic: { id: string; name: string; email: string } | null | undefined,
+  ): { id: string; name: string; email: string } | undefined {
+    if (!assignedMechanic) {
+      return undefined;
+    }
+    return {
+      id: assignedMechanic.id,
+      name: assignedMechanic.name,
+      email: assignedMechanic.email,
+    };
   }
 }
