@@ -147,11 +147,13 @@ describe('UsersController (e2e)', () => {
   });
 
   it('/api/users/:id (DELETE) - should soft delete a user', async () => {
-    await request(app.getHttpServer() as App)
+    const response = await request(app.getHttpServer() as App)
       .delete(`/api/users/${testUserId}`)
       .set('Host', 'e2e-users.localhost:3001')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(204);
+
+    expect(response.body).toEqual({});
 
     // Verify user is inactive
     const user = await prisma.user.findUnique({
@@ -161,7 +163,7 @@ describe('UsersController (e2e)', () => {
   });
 
   it('/api/users (POST) - should reject duplicate email', async () => {
-    await request(app.getHttpServer() as App)
+    const response = await request(app.getHttpServer() as App)
       .post('/api/users')
       .set('Host', 'e2e-users.localhost:3001')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -172,5 +174,8 @@ describe('UsersController (e2e)', () => {
         role: 'technician',
       })
       .expect(409);
+
+    expect(response.body).toHaveProperty('message');
+    expect(response.body.message).toBeTruthy();
   });
 });

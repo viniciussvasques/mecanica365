@@ -67,30 +67,47 @@ sonar.login=${SONAR_TOKEN}
 
 ## 📊 Executar Análise
 
-### Análise Completa (com cobertura)
+### ⚡ Método Rápido (Recomendado)
 
-```bash
-npm run sonar:local
+O projeto usa **SonarScanner via Docker**, não precisa instalar nada!
+
+**1. Configure o token:**
+```powershell
+$env:SONAR_TOKEN="seu-token-aqui"
+```
+
+**2. Execute análise com cobertura:**
+```powershell
+npm run sonar:with-coverage
 ```
 
 Este comando:
 1. Executa os testes com cobertura
 2. Gera relatório LCOV
-3. Envia análise para o SonarQube
+3. Envia análise para o SonarQube via Docker
 
-### Apenas Análise (sem testes)
+### Outros Comandos
 
-```bash
+**Apenas Análise (sem testes):**
+```powershell
 npm run sonar
 ```
 
-### Análise com Quality Gate
-
-```bash
+**Análise com Quality Gate (bloqueia se falhar):**
+```powershell
 npm run sonar:check
 ```
 
-Este comando aguarda o Quality Gate e falha se não passar.
+**Via Script Direto:**
+```powershell
+.\scripts\sonar-scanner.ps1 -Token "seu-token" -WithCoverage
+```
+
+### 📋 Requisitos
+
+- ✅ Docker instalado e rodando
+- ✅ SonarQube rodando (`docker-compose up -d sonarqube`)
+- ✅ Token configurado (`$env:SONAR_TOKEN`)
 
 ## 📈 Métricas Analisadas
 
@@ -175,40 +192,54 @@ Isso remove todos os dados do SonarQube!
 
 ### GitHub Actions
 
-Crie `.github/workflows/sonar.yml`:
+✅ **Workflows já configurados!**
 
-```yaml
-name: SonarQube Analysis
+O projeto já possui workflows GitHub Actions configurados:
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+1. **`.github/workflows/ci.yml`** - CI básico (lint, build, testes)
+2. **`.github/workflows/sonarqube.yml`** - Análise SonarQube com Quality Gate
 
-jobs:
-  sonar:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run tests with coverage
-        run: npm run test:cov
-      
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-```
+### Configurar Secrets no GitHub
+
+Para que os workflows funcionem, configure os seguintes secrets no GitHub:
+
+1. Acesse: **Settings** → **Secrets and variables** → **Actions**
+2. Adicione os seguintes secrets:
+
+   - **`SONAR_TOKEN`**: Token do SonarQube (gerado no SonarQube)
+   - **`SONAR_HOST_URL`**: URL do servidor SonarQube (ex: `https://sonarqube.example.com` ou `http://localhost:9000` para testes locais)
+
+### Como Gerar Token para CI/CD
+
+1. Acesse o SonarQube: http://localhost:9000
+2. Vá em: **My Account** → **Security** → **Generate Tokens**
+3. Dê um nome (ex: `github-actions`)
+4. **COPIE O TOKEN** e adicione como secret `SONAR_TOKEN` no GitHub
+
+### Workflows Disponíveis
+
+**CI Workflow** (`.github/workflows/ci.yml`):
+- ✅ Executa lint
+- ✅ Executa build
+- ✅ Executa testes unitários
+- ✅ Executa testes E2E
+
+**SonarQube Workflow** (`.github/workflows/sonarqube.yml`):
+- ✅ Executa lint
+- ✅ Executa build
+- ✅ Executa testes com cobertura
+- ✅ Envia análise para SonarQube
+- ✅ Verifica Quality Gate
+- ✅ Bloqueia merge se Quality Gate falhar
+
+### Executar Workflows Manualmente
+
+Você pode executar os workflows manualmente:
+
+1. Vá em: **Actions** → **SonarQube Analysis** (ou **CI**)
+2. Clique em **"Run workflow"**
+3. Selecione a branch
+4. Clique em **"Run workflow"**
 
 ### GitLab CI
 
@@ -286,4 +317,6 @@ Gere um novo token no SonarQube:
 ---
 
 **Última atualização:** 02/12/2025
+
+
 

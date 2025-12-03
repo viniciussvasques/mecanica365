@@ -79,10 +79,13 @@ describe('OnboardingController (e2e)', () => {
         plan: TenantPlan.WORKSHOPS_STARTER,
       };
 
-      await request(app.getHttpServer() as App)
+      const response = await request(app.getHttpServer() as App)
         .post('/api/onboarding/register')
         .send(invalidData)
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(Array.isArray(response.body.message) || typeof response.body.message === 'string').toBe(true);
     });
 
     it('deve retornar tenant existente se já houver pendente', async () => {
@@ -199,7 +202,7 @@ describe('OnboardingController (e2e)', () => {
       const originalKey = process.env.STRIPE_SECRET_KEY;
       delete process.env.STRIPE_SECRET_KEY;
 
-      await request(app.getHttpServer() as App)
+      const response = await request(app.getHttpServer() as App)
         .post('/api/onboarding/checkout')
         .send({
           tenantId: checkoutTenantId,
@@ -208,13 +211,16 @@ describe('OnboardingController (e2e)', () => {
         })
         .expect(400);
 
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
+
       if (originalKey) {
         process.env.STRIPE_SECRET_KEY = originalKey;
       }
     });
 
     it('deve retornar erro 400 se tenant não for encontrado', async () => {
-      await request(app.getHttpServer() as App)
+      const response = await request(app.getHttpServer() as App)
         .post('/api/onboarding/checkout')
         .send({
           tenantId: 'non-existent-id',
@@ -222,6 +228,9 @@ describe('OnboardingController (e2e)', () => {
           billingCycle: BillingCycle.MONTHLY,
         })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
   });
 });

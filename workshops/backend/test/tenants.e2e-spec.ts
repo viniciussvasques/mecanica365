@@ -190,7 +190,7 @@ describe('TenantsController (e2e)', () => {
   });
 
   it('/api/tenants (POST) - should reject duplicate CNPJ', async () => {
-    await request(app.getHttpServer() as App)
+    const response = await request(app.getHttpServer() as App)
       .post('/api/tenants')
       .send({
         name: 'Duplicate CNPJ',
@@ -200,5 +200,8 @@ describe('TenantsController (e2e)', () => {
         plan: 'workshops_starter',
       })
       .expect(409);
+
+    expect(response.body).toHaveProperty('message');
+    expect(response.body.message).toBeTruthy();
   });
 });

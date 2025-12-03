@@ -100,7 +100,7 @@ describe('AuthController (e2e)', () => {
     });
 
     it('deve retornar 401 com credenciais inválidas', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/login')
         .set('X-Tenant-Subdomain', 'test-tenant')
         .send({
@@ -108,10 +108,13 @@ describe('AuthController (e2e)', () => {
           password: 'wrongPassword',
         })
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
 
     it('deve retornar 400 com dados inválidos', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/login')
         .set('X-Tenant-Subdomain', 'test-tenant')
         .send({
@@ -119,6 +122,9 @@ describe('AuthController (e2e)', () => {
           password: '123',
         })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(Array.isArray(response.body.message) || typeof response.body.message === 'string').toBe(true);
     });
   });
 
@@ -136,14 +142,22 @@ describe('AuthController (e2e)', () => {
     });
 
     it('deve retornar 401 sem token', async () => {
-      await request(app.getHttpServer()).get('/api/auth/profile').expect(401);
+      const response = await request(app.getHttpServer())
+        .get('/api/auth/profile')
+        .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
 
     it('deve retornar 401 com token inválido', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get('/api/auth/profile')
         .set('Authorization', 'Bearer invalid-token')
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
   });
 
@@ -170,26 +184,32 @@ describe('AuthController (e2e)', () => {
     });
 
     it('deve retornar 401 com refresh token inválido', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/refresh')
         .send({
           refreshToken: 'invalid-refresh-token',
         })
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
 
     it('deve retornar 400 sem refresh token', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/refresh')
         .send({})
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(Array.isArray(response.body.message) || typeof response.body.message === 'string').toBe(true);
     });
   });
 
   describe('/api/auth/change-password (PATCH)', () => {
     it('deve alterar senha com sucesso', async () => {
       const newPassword = 'NewPassword123';
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .patch('/api/auth/change-password')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
@@ -199,12 +219,14 @@ describe('AuthController (e2e)', () => {
         })
         .expect(204);
 
+      expect(response.body).toEqual({});
+
       // Atualizar senha de teste para próximos testes
       testUserPassword = newPassword;
     });
 
     it('deve retornar 400 quando senhas não coincidem', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .patch('/api/auth/change-password')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
@@ -213,10 +235,13 @@ describe('AuthController (e2e)', () => {
           confirmPassword: 'DifferentPassword123',
         })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(Array.isArray(response.body.message) || typeof response.body.message === 'string').toBe(true);
     });
 
     it('deve retornar 401 quando senha atual está incorreta', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .patch('/api/auth/change-password')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
@@ -225,10 +250,13 @@ describe('AuthController (e2e)', () => {
           confirmPassword: 'NewPassword123',
         })
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
 
     it('deve retornar 401 sem token', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .patch('/api/auth/change-password')
         .send({
           currentPassword: testUserPassword,
@@ -236,27 +264,35 @@ describe('AuthController (e2e)', () => {
           confirmPassword: 'NewPassword123',
         })
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
   });
 
   describe('/api/auth/logout (POST)', () => {
     it('deve fazer logout com sucesso', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/logout')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           refreshToken,
         })
         .expect(204);
+
+      expect(response.body).toEqual({});
     });
 
     it('deve retornar 401 sem token', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/logout')
         .send({
           refreshToken,
         })
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBeTruthy();
     });
   });
 });
