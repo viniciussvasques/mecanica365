@@ -230,10 +230,9 @@ describe('SuppliersService', () => {
       mockPrismaService.supplier.findFirst.mockResolvedValue(mockSupplier);
       mockPrismaService.part.count.mockResolvedValue(5);
 
-      await expect(
-        service.remove(mockTenantId, 'supplier-id'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.remove(mockTenantId, 'supplier-id')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });
-

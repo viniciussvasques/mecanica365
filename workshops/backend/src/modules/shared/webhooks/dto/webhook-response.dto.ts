@@ -25,4 +25,3 @@ export class WebhookResponseDto {
   @ApiProperty({ description: 'Data de atualização' })
   updatedAt: Date;
 }
-

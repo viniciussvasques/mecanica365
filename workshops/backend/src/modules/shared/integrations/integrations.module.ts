@@ -1,22 +1,23 @@
 import { Module } from '@nestjs/common';
+import { IntegrationsService } from './integrations.service';
+import { IntegrationsController } from './integrations.controller';
+import { PrismaModule } from '@database/prisma.module';
 
 /**
  * IntegrationsModule - Módulo para integrações externas
- * 
- * Funcionalidades planejadas:
- * - Integração com RENAVAN
- * - Integração com APIs de VIN
- * - Integração com CEP
- * - APIs de terceiros
- * 
- * TODO: Implementar quando necessário
- * Por enquanto, módulo vazio para manter estrutura
+ *
+ * Permite configurar integrações via painel admin:
+ * - RENAVAN
+ * - APIs de VIN
+ * - CEP
+ * - APIs customizadas
+ *
+ * TODO: Criar schema Prisma para Integration quando necessário
  */
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  imports: [PrismaModule],
+  controllers: [IntegrationsController],
+  providers: [IntegrationsService],
+  exports: [IntegrationsService],
 })
 export class IntegrationsModule {}
-

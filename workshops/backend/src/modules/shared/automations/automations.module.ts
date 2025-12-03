@@ -1,22 +1,22 @@
 import { Module } from '@nestjs/common';
+import { AutomationsService } from './automations.service';
+import { AutomationsController } from './automations.controller';
+import { PrismaModule } from '@database/prisma.module';
 
 /**
  * AutomationsModule - Módulo para automações
- * 
- * Funcionalidades planejadas:
- * - Regras de negócio customizáveis
- * - Workflows automatizados
- * - Triggers e ações
- * - Automações de email/SMS
- * 
- * TODO: Implementar quando necessário
- * Por enquanto, módulo vazio para manter estrutura
+ *
+ * Permite configurar regras de negócio e workflows via painel admin:
+ * - Triggers (eventos que disparam automações)
+ * - Ações (o que fazer quando trigger é disparado)
+ * - Condições (quando executar)
+ *
+ * TODO: Criar schema Prisma para Automation quando necessário
  */
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  imports: [PrismaModule],
+  controllers: [AutomationsController],
+  providers: [AutomationsService],
+  exports: [AutomationsService],
 })
 export class AutomationsModule {}
-

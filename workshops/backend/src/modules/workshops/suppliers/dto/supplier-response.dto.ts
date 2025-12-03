@@ -47,4 +47,3 @@ export class SupplierResponseDto {
   @ApiProperty({ description: 'Data de atualização' })
   updatedAt: Date;
 }
-

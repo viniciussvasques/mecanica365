@@ -44,4 +44,3 @@ export class SupplierFiltersDto {
   @Type(() => Number)
   limit?: number;
 }
-

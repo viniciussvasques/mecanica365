@@ -17,11 +17,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { WebhooksService } from './webhooks.service';
-import {
-  CreateWebhookDto,
-  UpdateWebhookDto,
-  WebhookResponseDto,
-} from './dto';
+import { CreateWebhookDto, UpdateWebhookDto, WebhookResponseDto } from './dto';
 import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
 import { TenantGuard } from '@common/guards/tenant.guard';
 import { Roles } from '@core/auth/decorators/roles.decorator';
@@ -102,4 +98,3 @@ export class WebhooksController {
     return this.webhooksService.remove(tenantId, id);
   }
 }
-

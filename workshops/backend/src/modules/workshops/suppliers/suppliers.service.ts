@@ -93,7 +93,9 @@ export class SuppliersService {
           ],
         }),
         ...(filters.isActive !== undefined && { isActive: filters.isActive }),
-        ...(filters.city && { city: { contains: filters.city, mode: 'insensitive' } }),
+        ...(filters.city && {
+          city: { contains: filters.city, mode: 'insensitive' },
+        }),
         ...(filters.state && { state: filters.state }),
         ...(filters.startDate &&
           filters.endDate && {
@@ -133,10 +135,7 @@ export class SuppliersService {
   /**
    * Busca fornecedor por ID
    */
-  async findOne(
-    tenantId: string,
-    id: string,
-  ): Promise<SupplierResponseDto> {
+  async findOne(tenantId: string, id: string): Promise<SupplierResponseDto> {
     try {
       const supplier = await this.prisma.supplier.findFirst({
         where: {
@@ -331,4 +330,3 @@ export class SuppliersService {
     };
   }
 }
-

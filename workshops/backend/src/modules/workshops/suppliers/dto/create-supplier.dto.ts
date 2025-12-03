@@ -82,4 +82,3 @@ export class CreateSupplierDto {
   @IsBoolean()
   isActive?: boolean;
 }
-

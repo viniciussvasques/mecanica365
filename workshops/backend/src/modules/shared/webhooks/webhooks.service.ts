@@ -5,11 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
-import {
-  CreateWebhookDto,
-  UpdateWebhookDto,
-  WebhookResponseDto,
-} from './dto';
+import { CreateWebhookDto, UpdateWebhookDto, WebhookResponseDto } from './dto';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
 
 @Injectable()
@@ -69,10 +65,7 @@ export class WebhooksService {
   /**
    * Busca webhook por ID
    */
-  async findOne(
-    tenantId: string,
-    id: string,
-  ): Promise<WebhookResponseDto> {
+  async findOne(tenantId: string, id: string): Promise<WebhookResponseDto> {
     try {
       const webhook = await this.prisma.webhook.findFirst({
         where: {
@@ -284,4 +277,3 @@ export class WebhooksService {
     };
   }
 }
-

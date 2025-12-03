@@ -10,4 +10,3 @@ import { PrismaModule } from '@database/prisma.module';
   exports: [SuppliersService],
 })
 export class SuppliersModule {}
-

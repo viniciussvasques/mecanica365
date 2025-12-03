@@ -60,10 +60,7 @@ export class SuppliersController {
     description: 'Lista de fornecedores',
     type: [SupplierResponseDto],
   })
-  findAll(
-    @TenantId() tenantId: string,
-    @Query() filters: SupplierFiltersDto,
-  ) {
+  findAll(@TenantId() tenantId: string, @Query() filters: SupplierFiltersDto) {
     return this.suppliersService.findAll(tenantId, filters);
   }
 
@@ -107,4 +104,3 @@ export class SuppliersController {
     return this.suppliersService.remove(tenantId, id);
   }
 }
-
