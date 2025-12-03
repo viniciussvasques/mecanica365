@@ -1,0 +1,46 @@
+# SonarQube Ignore File
+# Arquivos e pastas a serem ignorados na análise
+
+# Dependências
+node_modules/
+package-lock.json
+
+# Build
+dist/
+build/
+*.js.map
+
+# Cobertura
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+logs/
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads
+uploads/
+
+# Prisma
+prisma/migrations/
+
+# Testes (já cobertos por sonar-project.properties)
+# **/*.spec.ts
+# **/*.e2e-spec.ts
+

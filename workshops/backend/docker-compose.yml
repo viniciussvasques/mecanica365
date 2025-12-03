@@ -87,6 +87,62 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  sonarqube:
+    image: sonarqube:community
+    container_name: mecanica365-workshops-sonarqube
+    restart: unless-stopped
+    ports:
+      - "${SONAR_PORT:-9000}:9000"
+    environment:
+      - SONAR_JDBC_URL=jdbc:postgresql://sonarqube_db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    depends_on:
+      sonarqube_db:
+        condition: service_healthy
+    volumes:
+      - mecanica365_workshops_sonarqube_data:/opt/sonarqube/data
+      - mecanica365_workshops_sonarqube_extensions:/opt/sonarqube/extensions
+      - mecanica365_workshops_sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - mecanica365-workshops-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9000/api/system/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  sonarqube_db:
+    image: postgres:13-alpine
+    container_name: mecanica365-workshops-sonarqube-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+      - mecanica365_workshops_sonarqube_db_data:/var/lib/postgresql/data
+    networks:
+      - mecanica365-workshops-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar -d sonar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   backend:
     build:
       context: .
@@ -151,6 +207,14 @@ volumes:
   mecanica365_workshops_postgres_data:
     driver: local
   mecanica365_workshops_redis_data:
+    driver: local
+  mecanica365_workshops_sonarqube_data:
+    driver: local
+  mecanica365_workshops_sonarqube_extensions:
+    driver: local
+  mecanica365_workshops_sonarqube_logs:
+    driver: local
+  mecanica365_workshops_sonarqube_db_data:
     driver: local
 
 networks:
