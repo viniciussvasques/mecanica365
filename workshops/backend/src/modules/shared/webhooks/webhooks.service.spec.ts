@@ -260,6 +260,7 @@ describe('WebhooksService', () => {
     it('deve lidar com erros ao criar webhook', async () => {
       const createDto: CreateWebhookDto = {
         url: 'https://example.com/webhook',
+        secret: 'secret-key',
         events: ['quote.approved'],
       };
 
