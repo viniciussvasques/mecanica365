@@ -199,6 +199,18 @@ export class WorkshopSettingsService {
     updateDto: UpdateWorkshopSettingsDto,
   ): Prisma.WorkshopSettingsUpdateInput {
     return {
+      ...this.prepareBrandingFields(updateDto),
+      ...this.prepareContactFields(updateDto),
+      ...this.prepareAddressFields(updateDto),
+      ...this.prepareSocialMediaFields(updateDto),
+      ...this.prepareQuoteSettingsFields(updateDto),
+    };
+  }
+
+  private prepareBrandingFields(
+    updateDto: UpdateWorkshopSettingsDto,
+  ): Partial<Prisma.WorkshopSettingsUpdateInput> {
+    return {
       ...(updateDto.displayName !== undefined && {
         displayName: updateDto.displayName,
       }),
@@ -212,11 +224,25 @@ export class WorkshopSettingsService {
       ...(updateDto.accentColor !== undefined && {
         accentColor: updateDto.accentColor,
       }),
+    };
+  }
+
+  private prepareContactFields(
+    updateDto: UpdateWorkshopSettingsDto,
+  ): Partial<Prisma.WorkshopSettingsUpdateInput> {
+    return {
       ...(updateDto.phone !== undefined && { phone: updateDto.phone }),
       ...(updateDto.email !== undefined && { email: updateDto.email }),
       ...(updateDto.whatsapp !== undefined && {
         whatsapp: updateDto.whatsapp,
       }),
+    };
+  }
+
+  private prepareAddressFields(
+    updateDto: UpdateWorkshopSettingsDto,
+  ): Partial<Prisma.WorkshopSettingsUpdateInput> {
+    return {
       ...(updateDto.address !== undefined && { address: updateDto.address }),
       ...(updateDto.city !== undefined && { city: updateDto.city }),
       ...(updateDto.state !== undefined && { state: updateDto.state }),
@@ -226,6 +252,13 @@ export class WorkshopSettingsService {
       ...(updateDto.country !== undefined && {
         country: updateDto.country,
       }),
+    };
+  }
+
+  private prepareSocialMediaFields(
+    updateDto: UpdateWorkshopSettingsDto,
+  ): Partial<Prisma.WorkshopSettingsUpdateInput> {
+    return {
       ...(updateDto.website !== undefined && {
         website: updateDto.website,
       }),
@@ -238,6 +271,13 @@ export class WorkshopSettingsService {
       ...(updateDto.linkedin !== undefined && {
         linkedin: updateDto.linkedin,
       }),
+    };
+  }
+
+  private prepareQuoteSettingsFields(
+    updateDto: UpdateWorkshopSettingsDto,
+  ): Partial<Prisma.WorkshopSettingsUpdateInput> {
+    return {
       ...(updateDto.showLogoOnQuotes !== undefined && {
         showLogoOnQuotes: updateDto.showLogoOnQuotes,
       }),

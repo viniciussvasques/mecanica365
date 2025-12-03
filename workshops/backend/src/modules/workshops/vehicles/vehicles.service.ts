@@ -733,6 +733,22 @@ export class VehiclesService {
   ): Promise<Prisma.CustomerVehicleUpdateInput> {
     const updateData: Prisma.CustomerVehicleUpdateInput = {};
 
+    this.applyVehicleIdentifierFields(updateData, updateVehicleDto);
+    this.applyVehicleBasicFields(updateData, updateVehicleDto);
+    await this.applyVehicleCustomerFields(
+      updateData,
+      updateVehicleDto,
+      existingVehicle,
+      id,
+    );
+
+    return updateData;
+  }
+
+  private applyVehicleIdentifierFields(
+    updateData: Prisma.CustomerVehicleUpdateInput,
+    updateVehicleDto: UpdateVehicleDto,
+  ): void {
     if (updateVehicleDto.vin !== undefined) {
       updateData.vin = updateVehicleDto.vin
         ? updateVehicleDto.vin.toUpperCase().trim()
@@ -749,7 +765,12 @@ export class VehiclesService {
         ? updateVehicleDto.placa.toUpperCase().trim()
         : null;
     }
+  }
 
+  private applyVehicleBasicFields(
+    updateData: Prisma.CustomerVehicleUpdateInput,
+    updateVehicleDto: UpdateVehicleDto,
+  ): void {
     if (updateVehicleDto.make !== undefined) {
       updateData.make = updateVehicleDto.make?.trim() || null;
     }
@@ -773,7 +794,16 @@ export class VehiclesService {
     if (updateVehicleDto.isDefault !== undefined) {
       updateData.isDefault = updateVehicleDto.isDefault;
     }
+  }
 
+  private async applyVehicleCustomerFields(
+    updateData: Prisma.CustomerVehicleUpdateInput,
+    updateVehicleDto: UpdateVehicleDto,
+    existingVehicle: Prisma.CustomerVehicleGetPayload<{
+      include: { customer: true };
+    }>,
+    id: string,
+  ): Promise<void> {
     if (
       updateVehicleDto.customerId &&
       updateVehicleDto.customerId !== existingVehicle.customerId
@@ -794,8 +824,6 @@ export class VehiclesService {
         updateData.isDefault = true;
       }
     }
-
-    return updateData;
   }
 
   /**

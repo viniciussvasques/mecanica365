@@ -420,169 +420,6 @@ export class QuotesService {
         updateQuoteDto,
       );
 
-      if (updateQuoteDto.customerId !== undefined) {
-        if (updateQuoteDto.customerId) {
-          updateData.customer = { connect: { id: updateQuoteDto.customerId } };
-        } else {
-          updateData.customer = { disconnect: true };
-        }
-      }
-
-      if (updateQuoteDto.vehicleId !== undefined) {
-        if (updateQuoteDto.vehicleId) {
-          updateData.vehicle = { connect: { id: updateQuoteDto.vehicleId } };
-        } else {
-          updateData.vehicle = { disconnect: true };
-        }
-      }
-
-      if (updateQuoteDto.elevatorId !== undefined) {
-        if (updateQuoteDto.elevatorId) {
-          updateData.elevator = { connect: { id: updateQuoteDto.elevatorId } };
-        } else {
-          updateData.elevator = { disconnect: true };
-        }
-      }
-
-      if (updateQuoteDto.status !== undefined) {
-        updateData.status = updateQuoteDto.status;
-      }
-
-      if (updateQuoteDto.laborCost !== undefined) {
-        updateData.laborCost = updateQuoteDto.laborCost || null;
-      }
-
-      if (updateQuoteDto.partsCost !== undefined) {
-        updateData.partsCost = updateQuoteDto.partsCost || null;
-      }
-
-      if (updateQuoteDto.discount !== undefined) {
-        updateData.discount = updateQuoteDto.discount;
-      }
-
-      if (updateQuoteDto.taxAmount !== undefined) {
-        updateData.taxAmount = updateQuoteDto.taxAmount;
-      }
-
-      if (updateQuoteDto.validUntil !== undefined) {
-        updateData.validUntil = updateQuoteDto.validUntil
-          ? new Date(updateQuoteDto.validUntil)
-          : null;
-      }
-
-      // Problema relatado pelo cliente
-      if (updateQuoteDto.reportedProblemCategory !== undefined) {
-        updateData.reportedProblemCategory =
-          updateQuoteDto.reportedProblemCategory || null;
-      }
-      if (updateQuoteDto.reportedProblemDescription !== undefined) {
-        updateData.reportedProblemDescription =
-          updateQuoteDto.reportedProblemDescription?.trim() || null;
-      }
-      if (updateQuoteDto.reportedProblemSymptoms !== undefined) {
-        updateData.reportedProblemSymptoms =
-          updateQuoteDto.reportedProblemSymptoms || [];
-      }
-
-      // Problema identificado pelo mecânico
-      if (updateQuoteDto.identifiedProblemCategory !== undefined) {
-        updateData.identifiedProblemCategory =
-          updateQuoteDto.identifiedProblemCategory || null;
-      }
-      if (updateQuoteDto.identifiedProblemDescription !== undefined) {
-        updateData.identifiedProblemDescription =
-          updateQuoteDto.identifiedProblemDescription?.trim() || null;
-      }
-      if (updateQuoteDto.identifiedProblemId !== undefined) {
-        if (updateQuoteDto.identifiedProblemId) {
-          updateData.identifiedProblem = {
-            connect: { id: updateQuoteDto.identifiedProblemId },
-          };
-        } else {
-          updateData.identifiedProblem = { disconnect: true };
-        }
-      }
-
-      // Diagnóstico e observações
-      if (updateQuoteDto.diagnosticNotes !== undefined) {
-        updateData.diagnosticNotes =
-          updateQuoteDto.diagnosticNotes?.trim() || null;
-      }
-      if (updateQuoteDto.inspectionNotes !== undefined) {
-        updateData.inspectionNotes =
-          updateQuoteDto.inspectionNotes?.trim() || null;
-      }
-      if (updateQuoteDto.inspectionPhotos !== undefined) {
-        updateData.inspectionPhotos = updateQuoteDto.inspectionPhotos || [];
-      }
-
-      // Recomendações
-      if (updateQuoteDto.recommendations !== undefined) {
-        updateData.recommendations =
-          updateQuoteDto.recommendations?.trim() || null;
-      }
-
-      if (updateQuoteDto.inspectionPhotos !== undefined) {
-        updateData.inspectionPhotos = updateQuoteDto.inspectionPhotos;
-      }
-
-      // Atualizar itens se fornecido
-      if (updateQuoteDto.items && updateQuoteDto.items.length > 0) {
-        // Deletar itens antigos
-        await this.prisma.quoteItem.deleteMany({
-          where: { quoteId: id },
-        });
-
-        // Criar novos itens
-        updateData.items = {
-          create: updateQuoteDto.items.map((item) => ({
-            type: item.type,
-            serviceId: item.serviceId || null,
-            partId: item.partId || null,
-            name: item.name,
-            description: item.description || null,
-            quantity: item.quantity,
-            unitCost: item.unitCost,
-            totalCost: item.unitCost * item.quantity,
-            hours: item.hours || null,
-          })),
-        };
-
-        // Recalcular total
-        const itemsTotal = updateQuoteDto.items.reduce(
-          (sum, item) => sum + item.unitCost * item.quantity,
-          0,
-        );
-        const laborCost =
-          updateQuoteDto.laborCost ?? existingQuote.laborCost?.toNumber() ?? 0;
-        const partsCost =
-          updateQuoteDto.partsCost ?? existingQuote.partsCost?.toNumber() ?? 0;
-        const discount =
-          updateQuoteDto.discount ?? existingQuote.discount?.toNumber() ?? 0;
-        const taxAmount =
-          updateQuoteDto.taxAmount ?? existingQuote.taxAmount?.toNumber() ?? 0;
-
-        updateData.totalCost =
-          itemsTotal + laborCost + partsCost - discount + taxAmount;
-      } else {
-        // Recalcular total apenas se custos mudaram
-        const laborCost =
-          updateQuoteDto.laborCost ?? existingQuote.laborCost?.toNumber() ?? 0;
-        const partsCost =
-          updateQuoteDto.partsCost ?? existingQuote.partsCost?.toNumber() ?? 0;
-        const discount =
-          updateQuoteDto.discount ?? existingQuote.discount?.toNumber() ?? 0;
-        const taxAmount =
-          updateQuoteDto.taxAmount ?? existingQuote.taxAmount?.toNumber() ?? 0;
-        const itemsTotal = existingQuote.items.reduce(
-          (sum, item) => sum + item.totalCost.toNumber(),
-          0,
-        );
-
-        updateData.totalCost =
-          itemsTotal + laborCost + partsCost - discount + taxAmount;
-      }
-
       const updatedQuote = await this.updateQuoteWithData(id, updateData);
       this.logger.log(`Orçamento atualizado: ${updatedQuote.number}`);
       return this.toResponseDto(updatedQuote);
@@ -841,6 +678,50 @@ export class QuotesService {
     id: string,
     completeDiagnosisDto: CompleteDiagnosisDto,
   ): Promise<QuoteResponseDto> {
+    const quote = await this.findQuoteForDiagnosis(tenantId, id);
+    this.validateQuoteForDiagnosis(quote);
+
+    const updateData = this.prepareDiagnosisUpdateData(completeDiagnosisDto);
+
+    const updatedQuote = await this.prisma.quote.update({
+      where: { id },
+      data: updateData,
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+          },
+        },
+        vehicle: {
+          select: {
+            id: true,
+            placa: true,
+            make: true,
+            model: true,
+            year: true,
+          },
+        },
+        items: true,
+      },
+    });
+
+    this.logger.log(`Diagnóstico concluído para orçamento: ${updatedQuote.number}`);
+    return this.toResponseDto(updatedQuote);
+  }
+
+  private async findQuoteForDiagnosis(
+    tenantId: string,
+    id: string,
+  ): Promise<Prisma.QuoteGetPayload<{
+    include: {
+      customer: { select: { id: true; name: true; phone: true; email: true } };
+      vehicle: { select: { id: true; placa: true; make: true; model: true; year: true } };
+      items: true;
+    };
+  }>> {
     const quote = await this.prisma.quote.findFirst({
       where: {
         id,
@@ -872,19 +753,44 @@ export class QuotesService {
       throw new NotFoundException('Orçamento não encontrado');
     }
 
-    // Validar que o status é AWAITING_DIAGNOSIS
+    return quote;
+  }
+
+  private validateQuoteForDiagnosis(
+    quote: Prisma.QuoteGetPayload<{
+      include: {
+        customer: { select: { id: true; name: true; phone: true; email: true } };
+        vehicle: { select: { id: true; placa: true; make: true; model: true; year: true } };
+        items: true;
+      };
+    }>,
+  ): void {
     const quoteStatus = quote.status as QuoteStatus;
     if (quoteStatus !== QuoteStatus.AWAITING_DIAGNOSIS) {
       throw new BadRequestException(
         'Apenas orçamentos aguardando diagnóstico podem ter o diagnóstico concluído',
       );
     }
+  }
 
-    // Preparar dados de atualização
+  private prepareDiagnosisUpdateData(
+    completeDiagnosisDto: CompleteDiagnosisDto,
+  ): Prisma.QuoteUpdateInput {
     const updateData: Prisma.QuoteUpdateInput = {
       status: QuoteStatus.DIAGNOSED,
     };
 
+    this.applyDiagnosisProblemFields(updateData, completeDiagnosisDto);
+    this.applyDiagnosisRecommendations(updateData, completeDiagnosisDto);
+    this.applyDiagnosisEstimatedHours(updateData, completeDiagnosisDto);
+
+    return updateData;
+  }
+
+  private applyDiagnosisProblemFields(
+    updateData: Prisma.QuoteUpdateInput,
+    completeDiagnosisDto: CompleteDiagnosisDto,
+  ): void {
     if (completeDiagnosisDto.identifiedProblemCategory !== undefined) {
       updateData.identifiedProblemCategory =
         completeDiagnosisDto.identifiedProblemCategory || null;
@@ -896,15 +802,16 @@ export class QuotesService {
     }
 
     if (completeDiagnosisDto.identifiedProblemId !== undefined) {
-      if (completeDiagnosisDto.identifiedProblemId) {
-        updateData.identifiedProblem = {
-          connect: { id: completeDiagnosisDto.identifiedProblemId },
-        };
-      } else {
-        updateData.identifiedProblem = { disconnect: true };
-      }
+      updateData.identifiedProblem = completeDiagnosisDto.identifiedProblemId
+        ? { connect: { id: completeDiagnosisDto.identifiedProblemId } }
+        : { disconnect: true };
     }
+  }
 
+  private applyDiagnosisRecommendations(
+    updateData: Prisma.QuoteUpdateInput,
+    completeDiagnosisDto: CompleteDiagnosisDto,
+  ): void {
     if (completeDiagnosisDto.recommendations !== undefined) {
       updateData.recommendations =
         completeDiagnosisDto.recommendations?.trim() || null;
@@ -914,7 +821,12 @@ export class QuotesService {
       updateData.diagnosticNotes =
         completeDiagnosisDto.diagnosticNotes?.trim() || null;
     }
+  }
 
+  private applyDiagnosisEstimatedHours(
+    updateData: Prisma.QuoteUpdateInput,
+    completeDiagnosisDto: CompleteDiagnosisDto,
+  ): void {
     if (completeDiagnosisDto.estimatedHours !== undefined) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (updateData as any).estimatedHours =
@@ -923,101 +835,6 @@ export class QuotesService {
           ? new Decimal(completeDiagnosisDto.estimatedHours)
           : null;
     }
-
-    // Atualizar orçamento
-    const updatedQuote = await this.prisma.quote.update({
-      where: { id },
-      data: updateData,
-      include: {
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            email: true,
-          },
-        },
-        vehicle: {
-          select: {
-            id: true,
-            placa: true,
-            make: true,
-            model: true,
-            year: true,
-          },
-        },
-        elevator: {
-          select: {
-            id: true,
-            name: true,
-            number: true,
-            status: true,
-          },
-        },
-        assignedMechanic: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        items: true,
-      },
-    });
-
-    // Notificar atendentes sobre diagnóstico concluído
-    // Buscar todos os receptionists ativos do tenant e notificar cada um
-    try {
-      const receptionists = await this.prisma.user.findMany({
-        where: {
-          tenantId,
-          role: 'receptionist',
-          isActive: true,
-        },
-        select: { id: true },
-      });
-
-      // Notificar cada receptionist individualmente
-      for (const receptionist of receptionists) {
-        await this.notificationsService.create({
-          tenantId,
-          userId: receptionist.id,
-          type: NotificationType.QUOTE_DIAGNOSIS_COMPLETED,
-          title: '🔔 Diagnóstico Concluído',
-          message: `Orçamento ${quote.number} foi diagnosticado e está pronto para preenchimento`,
-          data: {
-            quoteId: id,
-            quoteNumber: quote.number,
-            mechanicId: quote.assignedMechanicId,
-          },
-        });
-      }
-
-      // Se não houver receptionists, criar notificação geral (fallback)
-      if (receptionists.length === 0) {
-        await this.notificationsService.create({
-          tenantId,
-          type: NotificationType.QUOTE_DIAGNOSIS_COMPLETED,
-          title: '🔔 Diagnóstico Concluído',
-          message: `Orçamento ${quote.number} foi diagnosticado e está pronto para preenchimento`,
-          data: {
-            quoteId: id,
-            quoteNumber: quote.number,
-            mechanicId: quote.assignedMechanicId,
-          },
-        });
-      }
-    } catch (notificationError) {
-      this.logger.warn(
-        `Erro ao criar notificações para receptionists: ${getErrorMessage(notificationError)}`,
-      );
-    }
-
-    this.logger.log(
-      `Diagnóstico do orçamento ${quote.number} concluído pelo mecânico`,
-    );
-
-    return this.toResponseDto(updatedQuote);
   }
 
   /**
@@ -2681,6 +2498,17 @@ export class QuotesService {
   ): Prisma.QuoteUpdateInput {
     const updateData: Prisma.QuoteUpdateInput = {};
 
+    this.applyRelationFields(updateData, updateQuoteDto);
+    this.applyStatusAndCostFields(updateData, updateQuoteDto);
+    this.applyDateFields(updateData, updateQuoteDto);
+
+    return updateData;
+  }
+
+  private applyRelationFields(
+    updateData: Prisma.QuoteUpdateInput,
+    updateQuoteDto: UpdateQuoteDto,
+  ): void {
     if (updateQuoteDto.customerId !== undefined) {
       updateData.customer = updateQuoteDto.customerId
         ? { connect: { id: updateQuoteDto.customerId } }
@@ -2698,7 +2526,12 @@ export class QuotesService {
         ? { connect: { id: updateQuoteDto.elevatorId } }
         : { disconnect: true };
     }
+  }
 
+  private applyStatusAndCostFields(
+    updateData: Prisma.QuoteUpdateInput,
+    updateQuoteDto: UpdateQuoteDto,
+  ): void {
     if (updateQuoteDto.status !== undefined) {
       updateData.status = updateQuoteDto.status;
     }
@@ -2718,14 +2551,17 @@ export class QuotesService {
     if (updateQuoteDto.taxAmount !== undefined) {
       updateData.taxAmount = updateQuoteDto.taxAmount;
     }
+  }
 
+  private applyDateFields(
+    updateData: Prisma.QuoteUpdateInput,
+    updateQuoteDto: UpdateQuoteDto,
+  ): void {
     if (updateQuoteDto.validUntil !== undefined) {
       updateData.validUntil = updateQuoteDto.validUntil
         ? new Date(updateQuoteDto.validUntil)
         : null;
     }
-
-    return updateData;
   }
 
   private prepareProblemFields(
