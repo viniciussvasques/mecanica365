@@ -254,81 +254,15 @@ export class PartsService {
     updatePartDto: UpdatePartDto,
   ): Promise<PartResponseDto> {
     try {
-      // Verificar se a peça existe
-      const existingPart = await this.prisma.part.findFirst({
-        where: {
-          id,
-          tenantId,
-        },
-      });
+      const existingPart = await this.findPartByIdAndTenant(id, tenantId);
+      await this.validatePartNumberUniqueness(
+        tenantId,
+        id,
+        updatePartDto.partNumber,
+        existingPart.partNumber,
+      );
 
-      if (!existingPart) {
-        throw new NotFoundException('Peça não encontrada');
-      }
-
-      // Verificar se partNumber já existe em outra peça
-      if (
-        updatePartDto.partNumber &&
-        updatePartDto.partNumber !== existingPart.partNumber
-      ) {
-        const duplicatePart = await this.prisma.part.findFirst({
-          where: {
-            tenantId,
-            partNumber: updatePartDto.partNumber,
-            id: { not: id },
-          },
-        });
-
-        if (duplicatePart) {
-          throw new BadRequestException(
-            'Já existe uma peça cadastrada com este número',
-          );
-        }
-      }
-
-      // Preparar dados de atualização
-      const updateData: Prisma.PartUpdateInput = {};
-
-      if (updatePartDto.partNumber !== undefined) {
-        updateData.partNumber = updatePartDto.partNumber?.trim() || null;
-      }
-      if (updatePartDto.name !== undefined) {
-        updateData.name = updatePartDto.name.trim();
-      }
-      if (updatePartDto.description !== undefined) {
-        updateData.description = updatePartDto.description?.trim() || null;
-      }
-      if (updatePartDto.category !== undefined) {
-        updateData.category = updatePartDto.category?.trim() || null;
-      }
-      if (updatePartDto.brand !== undefined) {
-        updateData.brand = updatePartDto.brand?.trim() || null;
-      }
-      if (updatePartDto.supplierId !== undefined) {
-        if (updatePartDto.supplierId) {
-          updateData.supplier = { connect: { id: updatePartDto.supplierId } };
-        } else {
-          updateData.supplier = { disconnect: true };
-        }
-      }
-      if (updatePartDto.quantity !== undefined) {
-        updateData.quantity = updatePartDto.quantity;
-      }
-      if (updatePartDto.minQuantity !== undefined) {
-        updateData.minQuantity = updatePartDto.minQuantity;
-      }
-      if (updatePartDto.costPrice !== undefined) {
-        updateData.costPrice = new Decimal(updatePartDto.costPrice);
-      }
-      if (updatePartDto.sellPrice !== undefined) {
-        updateData.sellPrice = new Decimal(updatePartDto.sellPrice);
-      }
-      if (updatePartDto.location !== undefined) {
-        updateData.location = updatePartDto.location?.trim() || null;
-      }
-      if (updatePartDto.isActive !== undefined) {
-        updateData.isActive = updatePartDto.isActive;
-      }
+      const updateData = this.preparePartUpdateData(updatePartDto);
 
       // Atualizar peça
       const updatedPart = await this.prisma.part.update({
@@ -417,6 +351,96 @@ export class PartsService {
       );
       throw new BadRequestException('Erro ao remover peça');
     }
+  }
+
+  private async findPartByIdAndTenant(
+    id: string,
+    tenantId: string,
+  ): Promise<Prisma.PartGetPayload<Record<string, never>>> {
+    const existingPart = await this.prisma.part.findFirst({
+      where: {
+        id,
+        tenantId,
+      },
+    });
+
+    if (!existingPart) {
+      throw new NotFoundException('Peça não encontrada');
+    }
+
+    return existingPart;
+  }
+
+  private async validatePartNumberUniqueness(
+    tenantId: string,
+    id: string,
+    newPartNumber: string | undefined,
+    currentPartNumber: string | null,
+  ): Promise<void> {
+    if (!newPartNumber || newPartNumber === currentPartNumber) {
+      return;
+    }
+
+    const duplicatePart = await this.prisma.part.findFirst({
+      where: {
+        tenantId,
+        partNumber: newPartNumber,
+        id: { not: id },
+      },
+    });
+
+    if (duplicatePart) {
+      throw new BadRequestException(
+        'Já existe uma peça cadastrada com este número',
+      );
+    }
+  }
+
+  private preparePartUpdateData(
+    updatePartDto: UpdatePartDto,
+  ): Prisma.PartUpdateInput {
+    const updateData: Prisma.PartUpdateInput = {};
+
+    if (updatePartDto.partNumber !== undefined) {
+      updateData.partNumber = updatePartDto.partNumber?.trim() || null;
+    }
+    if (updatePartDto.name !== undefined) {
+      updateData.name = updatePartDto.name.trim();
+    }
+    if (updatePartDto.description !== undefined) {
+      updateData.description = updatePartDto.description?.trim() || null;
+    }
+    if (updatePartDto.category !== undefined) {
+      updateData.category = updatePartDto.category?.trim() || null;
+    }
+    if (updatePartDto.brand !== undefined) {
+      updateData.brand = updatePartDto.brand?.trim() || null;
+    }
+    if (updatePartDto.supplierId !== undefined) {
+      updateData.supplier = updatePartDto.supplierId
+        ? { connect: { id: updatePartDto.supplierId } }
+        : { disconnect: true };
+    }
+    if (updatePartDto.quantity !== undefined) {
+      updateData.quantity = updatePartDto.quantity;
+    }
+    if (updatePartDto.minQuantity !== undefined) {
+      updateData.minQuantity = updatePartDto.minQuantity;
+    }
+    if (updatePartDto.costPrice !== undefined) {
+      updateData.costPrice = new Decimal(updatePartDto.costPrice);
+    }
+    if (updatePartDto.sellPrice !== undefined) {
+      updateData.sellPrice = new Decimal(updatePartDto.sellPrice);
+    }
+    if (updatePartDto.location !== undefined) {
+      updateData.location = updatePartDto.location?.trim() || null;
+    }
+    if (updatePartDto.isActive !== undefined) {
+      updateData.isActive = updatePartDto.isActive;
+    }
+
+    return updateData;
   }
 
   /**

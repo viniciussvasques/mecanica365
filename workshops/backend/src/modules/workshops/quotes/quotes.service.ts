@@ -97,134 +97,17 @@ export class QuotesService {
     createQuoteDto: CreateQuoteDto,
   ): Promise<QuoteResponseDto> {
     try {
-      // Validar cliente se fornecido
-      if (createQuoteDto.customerId) {
-        const customer = await this.prisma.customer.findFirst({
-          where: {
-            id: createQuoteDto.customerId,
-            tenantId,
-          },
-        });
+      await this.validateQuoteRelations(tenantId, createQuoteDto);
+      this.validateQuoteItems(createQuoteDto);
 
-        if (!customer) {
-          throw new NotFoundException('Cliente não encontrado');
-        }
-      }
-
-      // Validar veículo se fornecido
-      if (createQuoteDto.vehicleId) {
-        const vehicle = await this.prisma.customerVehicle.findFirst({
-          where: {
-            id: createQuoteDto.vehicleId,
-            customer: { tenantId },
-          },
-        });
-
-        if (!vehicle) {
-          throw new NotFoundException('Veículo não encontrado');
-        }
-      }
-
-      // Validar elevador se fornecido
-      if (createQuoteDto.elevatorId) {
-        const elevator = await this.prisma.elevator.findFirst({
-          where: {
-            id: createQuoteDto.elevatorId,
-            tenantId,
-          },
-        });
-
-        if (!elevator) {
-          throw new NotFoundException('Elevador não encontrado');
-        }
-      }
-
-      // Validar itens - só é obrigatório se não for rascunho
-      const status: QuoteStatus = createQuoteDto.status || QuoteStatus.DRAFT;
-      const isDraft = status === QuoteStatus.DRAFT;
-      if (
-        !isDraft &&
-        (!createQuoteDto.items || createQuoteDto.items.length === 0)
-      ) {
-        throw new BadRequestException('Orçamento deve ter pelo menos um item');
-      }
-
-      // Calcular custos
-      const items = createQuoteDto.items || [];
-      const laborCost = createQuoteDto.laborCost || 0;
-      const partsCost = createQuoteDto.partsCost || 0;
-      const discount = createQuoteDto.discount || 0;
-      const taxAmount = createQuoteDto.taxAmount || 0;
-
-      const totalCost = this.calculateTotalCost(
-        items,
-        laborCost,
-        partsCost,
-        discount,
-        taxAmount,
-      );
-
-      // Gerar número único
+      const totalCost = this.calculateQuoteTotalCost(createQuoteDto);
       const number = await this.generateQuoteNumber(tenantId);
-
-      // Preparar dados de criação
-      const createData: Prisma.QuoteCreateInput = {
-        tenant: { connect: { id: tenantId } },
+      const createData = this.prepareQuoteCreateData(
+        tenantId,
+        createQuoteDto,
         number,
-        customer: createQuoteDto.customerId
-          ? { connect: { id: createQuoteDto.customerId } }
-          : undefined,
-        vehicle: createQuoteDto.vehicleId
-          ? { connect: { id: createQuoteDto.vehicleId } }
-          : undefined,
-        elevator: createQuoteDto.elevatorId
-          ? { connect: { id: createQuoteDto.elevatorId } }
-          : undefined,
-        status: createQuoteDto.status || QuoteStatus.DRAFT,
-        laborCost: laborCost > 0 ? laborCost : null,
-        partsCost: partsCost > 0 ? partsCost : null,
         totalCost,
-        discount,
-        taxAmount,
-        validUntil: createQuoteDto.validUntil
-          ? new Date(createQuoteDto.validUntil)
-          : null,
-        // Problema relatado pelo cliente
-        reportedProblemCategory: createQuoteDto.reportedProblemCategory || null,
-        reportedProblemDescription:
-          createQuoteDto.reportedProblemDescription || null,
-        reportedProblemSymptoms: createQuoteDto.reportedProblemSymptoms || [],
-        // Problema identificado pelo mecânico
-        identifiedProblemCategory:
-          createQuoteDto.identifiedProblemCategory || null,
-        identifiedProblemDescription:
-          createQuoteDto.identifiedProblemDescription || null,
-        identifiedProblem: createQuoteDto.identifiedProblemId
-          ? { connect: { id: createQuoteDto.identifiedProblemId } }
-          : undefined,
-        // Diagnóstico e observações
-        diagnosticNotes: createQuoteDto.diagnosticNotes || null,
-        inspectionNotes: createQuoteDto.inspectionNotes || null,
-        inspectionPhotos: createQuoteDto.inspectionPhotos || [],
-        // Recomendações
-        recommendations: createQuoteDto.recommendations || null,
-        items:
-          items.length > 0
-            ? {
-                create: items.map((item) => ({
-                  type: item.type,
-                  serviceId: item.serviceId || null,
-                  partId: item.partId || null,
-                  name: item.name,
-                  description: item.description || null,
-                  quantity: item.quantity,
-                  unitCost: item.unitCost,
-                  totalCost: item.unitCost * item.quantity,
-                  hours: item.hours || null,
-                })),
-              }
-            : undefined,
-      };
+      );
 
       // Criar orçamento com itens
       const quote = await this.prisma.quote.create({
@@ -528,55 +411,14 @@ export class QuotesService {
     updateQuoteDto: UpdateQuoteDto,
   ): Promise<QuoteResponseDto> {
     try {
-      const existingQuote = await this.prisma.quote.findFirst({
-        where: {
-          id,
-          tenantId,
-        },
-        include: { items: true },
-      });
+      const existingQuote = await this.findQuoteByIdAndTenant(id, tenantId);
+      this.validateQuoteUpdateStatus(existingQuote, updateQuoteDto);
 
-      if (!existingQuote) {
-        throw new NotFoundException('Orçamento não encontrado');
-      }
-
-      // Não permitir atualizar orçamento já convertido
-      const existingQuoteStatus = existingQuote.status as QuoteStatus;
-      if (existingQuoteStatus === QuoteStatus.CONVERTED) {
-        throw new BadRequestException(
-          'Não é possível atualizar um orçamento já convertido em OS',
-        );
-      }
-
-      // Bloquear edição de itens/valores se status for DRAFT ou AWAITING_DIAGNOSIS
-      const currentStatus = existingQuote.status as QuoteStatus;
-      const isBlockedStatus =
-        currentStatus === QuoteStatus.DRAFT ||
-        currentStatus === QuoteStatus.AWAITING_DIAGNOSIS;
-
-      if (isBlockedStatus) {
-        // Não permitir adicionar/editar itens antes do diagnóstico
-        if (updateQuoteDto.items && updateQuoteDto.items.length > 0) {
-          throw new BadRequestException(
-            'Não é possível adicionar itens antes do diagnóstico do mecânico. Envie o orçamento para diagnóstico primeiro.',
-          );
-        }
-
-        // Não permitir editar custos antes do diagnóstico
-        if (
-          updateQuoteDto.laborCost !== undefined ||
-          updateQuoteDto.partsCost !== undefined ||
-          updateQuoteDto.discount !== undefined ||
-          updateQuoteDto.taxAmount !== undefined
-        ) {
-          throw new BadRequestException(
-            'Não é possível editar custos antes do diagnóstico do mecânico. Envie o orçamento para diagnóstico primeiro.',
-          );
-        }
-      }
-
-      // Preparar dados de atualização
-      const updateData: Prisma.QuoteUpdateInput = {};
+      const updateData = await this.prepareQuoteUpdateData(
+        id,
+        existingQuote,
+        updateQuoteDto,
+      );
 
       if (updateQuoteDto.customerId !== undefined) {
         if (updateQuoteDto.customerId) {
@@ -741,49 +583,8 @@ export class QuotesService {
           itemsTotal + laborCost + partsCost - discount + taxAmount;
       }
 
-      // Atualizar orçamento
-      const updatedQuote = await this.prisma.quote.update({
-        where: { id },
-        data: updateData,
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              email: true,
-            },
-          },
-          vehicle: {
-            select: {
-              id: true,
-              placa: true,
-              make: true,
-              model: true,
-              year: true,
-            },
-          },
-          elevator: {
-            select: {
-              id: true,
-              name: true,
-              number: true,
-              status: true,
-            },
-          },
-          assignedMechanic: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-          items: true,
-        },
-      });
-
+      const updatedQuote = await this.updateQuoteWithData(id, updateData);
       this.logger.log(`Orçamento atualizado: ${updatedQuote.number}`);
-
       return this.toResponseDto(updatedQuote);
     } catch (error) {
       if (
@@ -808,237 +609,39 @@ export class QuotesService {
     approveQuoteDto: ApproveQuoteDto,
   ): Promise<{ quote: QuoteResponseDto; serviceOrder: unknown }> {
     try {
-      const quote = await this.prisma.quote.findFirst({
-        where: {
-          id,
-          tenantId,
-        },
-        include: {
-          customer: true,
-          vehicle: true,
-          assignedMechanic: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-          items: true,
-        },
-      });
+      const quote = await this.findQuoteForApproval(id, tenantId);
+      this.validateQuoteForApproval(quote);
 
-      if (!quote) {
-        throw new NotFoundException('Orçamento não encontrado');
-      }
-
-      const quoteStatus = quote.status as QuoteStatus;
-      if (quoteStatus === QuoteStatus.CONVERTED) {
-        throw new BadRequestException('Orçamento já foi convertido em OS');
-      }
-
-      if (quoteStatus === QuoteStatus.REJECTED) {
-        throw new BadRequestException(
-          'Não é possível aprovar um orçamento rejeitado',
-        );
-      }
-
-      if (quoteStatus === QuoteStatus.EXPIRED) {
-        throw new BadRequestException(
-          'Não é possível aprovar um orçamento expirado',
-        );
-      }
-
-      // Buscar estimatedHours separadamente
-      const quoteWithEstimatedHours = await this.prisma.quote.findUnique({
-        where: { id },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        select: { estimatedHours: true } as any, // Cast necessário pois Prisma não reconhece o campo no tipo
-      });
-
-      // Usar elevador do approveDto ou do quote
       const elevatorId = approveQuoteDto.elevatorId || quote.elevatorId;
-
-      // Criar Service Order a partir do orçamento
-      const createServiceOrderData: {
-        customerId?: string;
-        vehiclePlaca?: string;
-        vehicleMake?: string;
-        vehicleModel?: string;
-        vehicleYear?: number;
-        vehicleMileage?: number;
-        status: ServiceOrderStatus;
-        elevatorId?: string;
-        estimatedHours?: number;
-        laborCost?: number;
-        partsCost?: number;
-        discount?: number;
-        notes?: string;
-      } = {
-        status: ServiceOrderStatus.SCHEDULED,
-      };
-
-      if (quote.customerId) {
-        createServiceOrderData.customerId = quote.customerId;
-      }
-
-      if (quote.vehicle) {
-        if (quote.vehicle.placa) {
-          createServiceOrderData.vehiclePlaca = quote.vehicle.placa;
-        }
-        if (quote.vehicle.make) {
-          createServiceOrderData.vehicleMake = quote.vehicle.make;
-        }
-        if (quote.vehicle.model) {
-          createServiceOrderData.vehicleModel = quote.vehicle.model;
-        }
-        if (quote.vehicle.year) {
-          createServiceOrderData.vehicleYear = quote.vehicle.year;
-        }
-        if (quote.vehicle.mileage) {
-          createServiceOrderData.vehicleMileage = quote.vehicle.mileage;
-        }
-      }
-
-      if (elevatorId) {
-        createServiceOrderData.elevatorId = elevatorId;
-      }
-
-      // Usar tempo estimado do diagnóstico se existir, senão calcular dos itens
-      if (
-        quoteWithEstimatedHours?.estimatedHours &&
-        typeof quoteWithEstimatedHours.estimatedHours === 'object' &&
-        'toNumber' in quoteWithEstimatedHours.estimatedHours
-      ) {
-        const estimatedHours = quoteWithEstimatedHours.estimatedHours as {
-          toNumber: () => number;
-        };
-        createServiceOrderData.estimatedHours = estimatedHours.toNumber();
-      } else {
-        const totalHours = quote.items
-          .filter((item) => item.hours)
-          .reduce((sum, item) => sum + (item.hours?.toNumber() || 0), 0);
-        if (totalHours > 0) {
-          createServiceOrderData.estimatedHours = totalHours;
-        }
-      }
-
-      if (quote.laborCost) {
-        createServiceOrderData.laborCost = quote.laborCost.toNumber();
-      }
-
-      if (quote.partsCost) {
-        createServiceOrderData.partsCost = quote.partsCost.toNumber();
-      }
-
-      if (quote.discount) {
-        createServiceOrderData.discount = quote.discount.toNumber();
-      }
-
-      if (quote.inspectionNotes) {
-        createServiceOrderData.notes = quote.inspectionNotes;
-      }
+      const createServiceOrderData = await this.prepareServiceOrderData(
+        quote,
+        elevatorId,
+        id,
+      );
 
       const serviceOrder = await this.serviceOrdersService.create(
         tenantId,
         createServiceOrderData,
       );
 
-      // Atualizar orçamento como aprovado e convertido
-      const updatedQuote = await this.prisma.quote.update({
-        where: { id },
-        data: {
-          status: QuoteStatus.ACCEPTED,
-          acceptedAt: new Date(),
-          customerSignature: approveQuoteDto.customerSignature || null,
-          convertedAt: new Date(),
-          convertedToServiceOrderId: serviceOrder.id,
-          serviceOrder: { connect: { id: serviceOrder.id } },
+      const updatedQuote = await this.updateQuoteAsApproved(
+        id,
+        serviceOrder.id,
+        approveQuoteDto.customerSignature,
+      );
+
+      await this.handlePostApprovalTasks(
+        tenantId,
+        elevatorId,
+        {
+          customerId: quote.customerId,
+          assignedMechanicId: quote.assignedMechanicId,
+          vehicleId: quote.vehicleId,
+          number: quote.number,
         },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              email: true,
-            },
-          },
-          vehicle: {
-            select: {
-              id: true,
-              placa: true,
-              make: true,
-              model: true,
-              year: true,
-            },
-          },
-          elevator: {
-            select: {
-              id: true,
-              name: true,
-              number: true,
-              status: true,
-            },
-          },
-          assignedMechanic: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-          items: true,
-        },
-      });
-
-      // Se elevador foi especificado, reservar
-      if (elevatorId) {
-        try {
-          await this.elevatorsService.reserve(tenantId, elevatorId, {
-            serviceOrderId: serviceOrder.id,
-            vehicleId: quote.vehicleId || undefined,
-            notes: `Reservado para ${quote.number} (aprovado)`,
-          });
-        } catch (error) {
-          this.logger.warn(
-            `Não foi possível reservar elevador: ${getErrorMessage(error)}`,
-          );
-        }
-      }
-
-      // Criar agendamento automaticamente
-      try {
-        // Usar data padrão: amanhã às 9h (UTC)
-        const appointmentDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        appointmentDate.setUTCHours(9, 0, 0, 0); // Usar UTC para evitar problemas de timezone
-
-        this.logger.log(
-          `Tentando criar agendamento para OS ${serviceOrder.number} na data: ${appointmentDate.toISOString()}`,
-        );
-
-        await this.appointmentsService.create(tenantId, {
-          customerId: quote.customerId || undefined,
-          serviceOrderId: serviceOrder.id,
-          assignedToId: quote.assignedMechanicId || undefined,
-          date: appointmentDate.toISOString(),
-          duration: createServiceOrderData.estimatedHours
-            ? Math.ceil(createServiceOrderData.estimatedHours * 60)
-            : 60,
-          serviceType: 'Serviço aprovado',
-          notes: `Agendamento automático para OS ${serviceOrder.number}`,
-          status: AppointmentStatus.SCHEDULED,
-        });
-
-        this.logger.log(
-          `✅ Agendamento criado automaticamente para OS ${serviceOrder.number}`,
-        );
-      } catch (error) {
-        this.logger.error(
-          `❌ Não foi possível criar agendamento automaticamente para OS ${serviceOrder.number}: ${getErrorMessage(error)}`,
-          getErrorStack(error),
-        );
-        // Não falha a aprovação se o agendamento não puder ser criado
-      }
+        serviceOrder,
+        createServiceOrderData.estimatedHours,
+      );
 
       this.logger.log(
         `Orçamento ${quote.number} aprovado e convertido em OS ${serviceOrder.number}`,
@@ -1642,6 +1245,68 @@ export class QuotesService {
     token: string,
     customerSignature: string,
   ): Promise<QuoteResponseDto> {
+    const quote = await this.findQuoteByPublicToken(token);
+    this.validateQuoteForPublicApproval(quote);
+
+    const serviceOrder = await this.createServiceOrderFromQuote(quote);
+    const updatedQuote = await this.updateQuoteAsApprovedByToken(
+      quote.id,
+      serviceOrder.id,
+      customerSignature,
+      quote.viewedAt,
+    );
+
+    await this.handlePostPublicApprovalTasks(quote, serviceOrder);
+
+    this.logger.log(
+      `Orçamento ${quote.number} aprovado digitalmente pelo cliente via token público e OS ${serviceOrder.number} criada automaticamente`,
+    );
+
+    return this.toResponseDto(updatedQuote);
+  }
+
+  private async findQuoteByPublicToken(
+    token: string,
+  ): Promise<
+    Prisma.QuoteGetPayload<{
+      include: {
+        customer: {
+          select: {
+            id: true;
+            name: true;
+            phone: true;
+            email: true;
+          };
+        };
+        vehicle: {
+          select: {
+            id: true;
+            placa: true;
+            make: true;
+            model: true;
+            year: true;
+            mileage: true;
+          };
+        };
+        elevator: {
+          select: {
+            id: true;
+            name: true;
+            number: true;
+            status: true;
+          };
+        };
+        assignedMechanic: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+          };
+        };
+        items: true;
+      };
+    }>
+  > {
     const quote = await this.prisma.quote.findFirst({
       where: {
         publicToken: token,
@@ -1691,7 +1356,16 @@ export class QuotesService {
       throw new NotFoundException('Token inválido ou expirado');
     }
 
-    // Validar status - permitir aprovar se foi enviado, visualizado ou diagnosticado
+    return quote;
+  }
+
+  private validateQuoteForPublicApproval(
+    quote: {
+      status: string;
+      acceptedAt: Date | null;
+      serviceOrderId: string | null;
+    },
+  ): void {
     const allowedStatuses = [
       QuoteStatus.SENT,
       QuoteStatus.VIEWED,
@@ -1703,42 +1377,68 @@ export class QuotesService {
       );
     }
 
-    // Verificar se já foi aprovado
     if (quote.acceptedAt || quote.serviceOrderId) {
       throw new BadRequestException(
         'Este orçamento já foi aprovado e convertido',
       );
     }
+  }
 
-    // Criar Service Order automaticamente
-    let serviceOrder;
+  private async createServiceOrderFromQuote(
+    quote: {
+      tenantId: string;
+      customerId: string | null;
+      vehicle: {
+        placa: string | null;
+        make: string | null;
+        model: string | null;
+        year: number | null;
+        mileage: number | null;
+      } | null;
+      elevatorId: string | null;
+      assignedMechanicId: string | null;
+      items: Array<{ hours: unknown }>;
+      laborCost: unknown;
+      partsCost: unknown;
+      discount: unknown;
+      inspectionNotes: string | null;
+      number: string;
+    },
+  ): Promise<{ id: string; number: string }> {
     try {
-      serviceOrder = await this.serviceOrdersService.create(quote.tenantId, {
-        customerId: quote.customerId || undefined,
-        vehiclePlaca: quote.vehicle?.placa ? quote.vehicle.placa : undefined,
-        vehicleMake: quote.vehicle?.make ? quote.vehicle.make : undefined,
-        vehicleModel: quote.vehicle?.model ? quote.vehicle.model : undefined,
-        vehicleYear: quote.vehicle?.year ? quote.vehicle.year : undefined,
-        vehicleMileage: quote.vehicle?.mileage
-          ? quote.vehicle.mileage
-          : undefined,
-        status: ServiceOrderStatus.SCHEDULED,
-        elevatorId: quote.elevatorId || undefined,
-        technicianId: quote.assignedMechanicId || undefined, // Atribuir ao mecânico se houver
-        estimatedHours:
-          quote.items
-            .filter((item) => item.hours)
-            .reduce((sum, item) => sum + (item.hours?.toNumber() || 0), 0) ||
-          undefined,
-        laborCost: quote.laborCost?.toNumber() || undefined,
-        partsCost: quote.partsCost?.toNumber() || undefined,
-        discount: quote.discount?.toNumber() || undefined,
-        notes: quote.inspectionNotes || undefined,
-      });
+      const serviceOrder = await this.serviceOrdersService.create(
+        quote.tenantId,
+        {
+          customerId: quote.customerId || undefined,
+          vehiclePlaca: quote.vehicle?.placa ? quote.vehicle.placa : undefined,
+          vehicleMake: quote.vehicle?.make ? quote.vehicle.make : undefined,
+          vehicleModel: quote.vehicle?.model ? quote.vehicle.model : undefined,
+          vehicleYear: quote.vehicle?.year ? quote.vehicle.year : undefined,
+          vehicleMileage: quote.vehicle?.mileage
+            ? quote.vehicle.mileage
+            : undefined,
+          status: ServiceOrderStatus.SCHEDULED,
+          elevatorId: quote.elevatorId || undefined,
+          technicianId: quote.assignedMechanicId || undefined,
+          estimatedHours:
+            quote.items
+              .filter((item) => item.hours)
+              .reduce((sum, item) => {
+                const hours = item.hours as { toNumber: () => number } | null;
+                return sum + (hours?.toNumber() || 0);
+              }, 0) || undefined,
+          laborCost: (quote.laborCost as { toNumber: () => number } | null)?.toNumber() || undefined,
+          partsCost: (quote.partsCost as { toNumber: () => number } | null)?.toNumber() || undefined,
+          discount: (quote.discount as { toNumber: () => number } | null)?.toNumber() || undefined,
+          notes: quote.inspectionNotes || undefined,
+        },
+      );
 
       this.logger.log(
         `Service Order ${serviceOrder.number} criada automaticamente para o orçamento ${quote.number}`,
       );
+
+      return serviceOrder;
     } catch (serviceOrderError) {
       this.logger.error(
         `Erro ao criar Service Order para orçamento ${quote.number}: ${getErrorMessage(serviceOrderError)}`,
@@ -1747,19 +1447,63 @@ export class QuotesService {
         'Erro ao criar ordem de serviço. Tente novamente ou entre em contato com a oficina.',
       );
     }
+  }
 
-    // Atualizar status para ACCEPTED e vincular Service Order
-    const updatedQuote = await this.prisma.quote.update({
-      where: { id: quote.id },
+  private async updateQuoteAsApprovedByToken(
+    quoteId: string,
+    serviceOrderId: string,
+    customerSignature: string,
+    viewedAt: Date | null,
+  ): Promise<
+    Prisma.QuoteGetPayload<{
+      include: {
+        customer: {
+          select: {
+            id: true;
+            name: true;
+            phone: true;
+            email: true;
+          };
+        };
+        vehicle: {
+          select: {
+            id: true;
+            placa: true;
+            make: true;
+            model: true;
+            year: true;
+          };
+        };
+        elevator: {
+          select: {
+            id: true;
+            name: true;
+            number: true;
+            status: true;
+          };
+        };
+        assignedMechanic: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+          };
+        };
+        items: true;
+      };
+    }>
+  > {
+    return await this.prisma.quote.update({
+      where: { id: quoteId },
       data: {
         status: QuoteStatus.ACCEPTED,
         acceptedAt: new Date(),
         customerSignature: customerSignature,
         approvalMethod: 'digital',
-        viewedAt: quote.viewedAt || new Date(),
-        serviceOrderId: serviceOrder.id,
+        viewedAt: viewedAt || new Date(),
+        serviceOrderId: serviceOrderId,
         convertedAt: new Date(),
-        convertedToServiceOrderId: serviceOrder.id,
+        convertedToServiceOrderId: serviceOrderId,
       },
       include: {
         customer: {
@@ -1797,50 +1541,97 @@ export class QuotesService {
         items: true,
       },
     });
+  }
 
-    // Se elevador foi especificado, reservar
+  private async handlePostPublicApprovalTasks(
+    quote: {
+      tenantId: string;
+      id: string;
+      elevatorId: string | null;
+      vehicleId: string | null;
+      customerId: string | null;
+      assignedMechanicId: string | null;
+      number: string;
+      items: Array<{ hours: unknown }>;
+    },
+    serviceOrder: { id: string; number: string },
+  ): Promise<void> {
     if (quote.elevatorId) {
-      try {
-        await this.elevatorsService.reserve(quote.tenantId, quote.elevatorId, {
-          serviceOrderId: serviceOrder.id,
-          vehicleId: quote.vehicleId || undefined,
-          notes: `Reservado para ${quote.number} (aprovado)`,
-        });
-      } catch (error) {
-        this.logger.warn(
-          `Não foi possível reservar elevador: ${getErrorMessage(error)}`,
-        );
-      }
+      await this.reserveElevatorForPublicApproval(
+        quote.tenantId,
+        quote.elevatorId,
+        serviceOrder.id,
+        quote.vehicleId,
+        quote.number,
+      );
     }
 
-    // Criar agendamento automaticamente
-    try {
-      // Usar data padrão: amanhã às 9h (UTC)
-      const appointmentDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      appointmentDate.setUTCHours(9, 0, 0, 0); // Usar UTC para evitar problemas de timezone
+    await this.createAppointmentForPublicApproval(quote, serviceOrder);
+    await this.notifyReceptionistsAboutPublicApproval(
+      {
+        tenantId: quote.tenantId,
+        id: quote.id,
+        number: quote.number,
+      },
+      serviceOrder,
+    );
+    await this.notifyMechanicsAboutPublicApproval(
+      {
+        tenantId: quote.tenantId,
+        id: quote.id,
+        number: quote.number,
+        assignedMechanicId: quote.assignedMechanicId,
+      },
+      serviceOrder,
+    );
+  }
 
-      this.logger.log(
-        `Tentando criar agendamento para OS ${serviceOrder.number} na data: ${appointmentDate.toISOString()}`,
+  private async reserveElevatorForPublicApproval(
+    tenantId: string,
+    elevatorId: string,
+    serviceOrderId: string,
+    vehicleId: string | null,
+    quoteNumber: string,
+  ): Promise<void> {
+    try {
+      await this.elevatorsService.reserve(tenantId, elevatorId, {
+        serviceOrderId,
+        vehicleId: vehicleId || undefined,
+        notes: `Reservado para ${quoteNumber} (aprovado)`,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Não foi possível reservar elevador: ${getErrorMessage(error)}`,
       );
+    }
+  }
+
+  private async createAppointmentForPublicApproval(
+    quote: {
+      tenantId: string;
+      customerId: string | null;
+      assignedMechanicId: string | null;
+      items: Array<{ hours: unknown }>;
+    },
+    serviceOrder: { id: string; number: string },
+  ): Promise<void> {
+    try {
+      const appointmentDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      appointmentDate.setUTCHours(9, 0, 0, 0);
+
+      const totalHours = quote.items
+        .filter((item) => item.hours)
+        .reduce((sum, item) => {
+          const hours = item.hours as { toNumber: () => number } | null;
+          return sum + (hours?.toNumber() || 0);
+        }, 0);
 
       await this.appointmentsService.create(quote.tenantId, {
         customerId: quote.customerId || undefined,
         serviceOrderId: serviceOrder.id,
         assignedToId: quote.assignedMechanicId || undefined,
         date: appointmentDate.toISOString(),
-        duration:
-          quote.items
-            .filter((item) => item.hours)
-            .reduce((sum, item) => sum + (item.hours?.toNumber() || 0), 0) > 0
-            ? Math.ceil(
-                quote.items
-                  .filter((item) => item.hours)
-                  .reduce(
-                    (sum, item) => sum + (item.hours?.toNumber() || 0),
-                    0,
-                  ) * 60,
-              )
-            : 60,
+        duration: totalHours > 0 ? Math.ceil(totalHours * 60) : 60,
         serviceType: 'Serviço aprovado',
         notes: `Agendamento automático para OS ${serviceOrder.number}`,
         status: AppointmentStatus.SCHEDULED,
@@ -1854,10 +1645,17 @@ export class QuotesService {
         `❌ Não foi possível criar agendamento automaticamente para OS ${serviceOrder.number}: ${getErrorMessage(error)}`,
         getErrorStack(error),
       );
-      // Não falha a aprovação se o agendamento não puder ser criado
     }
+  }
 
-    // Notificar atendentes sobre aprovação
+  private async notifyReceptionistsAboutPublicApproval(
+    quote: {
+      tenantId: string;
+      id: string;
+      number: string;
+    },
+    serviceOrder: { id: string; number: string },
+  ): Promise<void> {
     try {
       const receptionists = await this.prisma.user.findMany({
         where: {
@@ -1889,61 +1687,101 @@ export class QuotesService {
         `Erro ao criar notificação de aprovação: ${getErrorMessage(notificationError)}`,
       );
     }
+  }
 
-    // Notificar mecânico atribuído (se houver) sobre a nova OS
+  private async notifyMechanicsAboutPublicApproval(
+    quote: {
+      tenantId: string;
+      id: string;
+      number: string;
+      assignedMechanicId: string | null;
+    },
+    serviceOrder: { id: string; number: string },
+  ): Promise<void> {
     if (quote.assignedMechanicId) {
-      try {
-        await this.notificationsService.create({
+      await this.notifyAssignedMechanic(
+        {
           tenantId: quote.tenantId,
-          userId: quote.assignedMechanicId,
-          type: NotificationType.SERVICE_ORDER_STARTED,
-          title: '🛠️ Nova Ordem de Serviço Criada',
-          message: `Ordem de Serviço ${serviceOrder.number} foi criada a partir do orçamento ${quote.number} aprovado pelo cliente`,
-          data: {
-            serviceOrderId: serviceOrder.id,
-            serviceOrderNumber: serviceOrder.number,
-            quoteId: quote.id,
-            quoteNumber: quote.number,
-          },
-        });
-        this.logger.log(
-          `Notificação enviada ao mecânico ${quote.assignedMechanicId} sobre a OS ${serviceOrder.number}`,
-        );
-      } catch (notificationError) {
-        this.logger.warn(
-          `Erro ao notificar mecânico sobre OS: ${getErrorMessage(notificationError)}`,
-        );
-      }
+          id: quote.id,
+          number: quote.number,
+          assignedMechanicId: quote.assignedMechanicId,
+        },
+        serviceOrder,
+      );
     } else {
-      // Se não houver mecânico atribuído, notificar todos os mecânicos
-      try {
-        await this.notificationsService.notifyAllMechanics(
-          quote.tenantId,
-          NotificationType.SERVICE_ORDER_STARTED,
-          '🛠️ Nova Ordem de Serviço Disponível',
-          `Ordem de Serviço ${serviceOrder.number} foi criada a partir do orçamento ${quote.number} aprovado pelo cliente`,
-          {
-            serviceOrderId: serviceOrder.id,
-            serviceOrderNumber: serviceOrder.number,
-            quoteId: quote.id,
-            quoteNumber: quote.number,
-          },
-        );
-        this.logger.log(
-          `Notificação enviada a todos os mecânicos sobre a OS ${serviceOrder.number}`,
-        );
-      } catch (notificationError) {
-        this.logger.warn(
-          `Erro ao notificar mecânicos sobre OS: ${getErrorMessage(notificationError)}`,
-        );
-      }
+      await this.notifyAllMechanics(
+        {
+          tenantId: quote.tenantId,
+          id: quote.id,
+          number: quote.number,
+        },
+        serviceOrder,
+      );
     }
+  }
 
-    this.logger.log(
-      `Orçamento ${quote.number} aprovado digitalmente pelo cliente via token público e OS ${serviceOrder.number} criada automaticamente`,
-    );
+  private async notifyAssignedMechanic(
+    quote: {
+      tenantId: string;
+      id: string;
+      number: string;
+      assignedMechanicId: string;
+    },
+    serviceOrder: { id: string; number: string },
+  ): Promise<void> {
+    try {
+      await this.notificationsService.create({
+        tenantId: quote.tenantId,
+        userId: quote.assignedMechanicId,
+        type: NotificationType.SERVICE_ORDER_STARTED,
+        title: '🛠️ Nova Ordem de Serviço Criada',
+        message: `Ordem de Serviço ${serviceOrder.number} foi criada a partir do orçamento ${quote.number} aprovado pelo cliente`,
+        data: {
+          serviceOrderId: serviceOrder.id,
+          serviceOrderNumber: serviceOrder.number,
+          quoteId: quote.id,
+          quoteNumber: quote.number,
+        },
+      });
+      this.logger.log(
+        `Notificação enviada ao mecânico ${quote.assignedMechanicId} sobre a OS ${serviceOrder.number}`,
+      );
+    } catch (notificationError) {
+      this.logger.warn(
+        `Erro ao notificar mecânico sobre OS: ${getErrorMessage(notificationError)}`,
+      );
+    }
+  }
 
-    return this.toResponseDto(updatedQuote);
+  private async notifyAllMechanics(
+    quote: {
+      tenantId: string;
+      id: string;
+      number: string;
+    },
+    serviceOrder: { id: string; number: string },
+  ): Promise<void> {
+    try {
+      await this.notificationsService.notifyAllMechanics(
+        quote.tenantId,
+        NotificationType.SERVICE_ORDER_STARTED,
+        '🛠️ Nova Ordem de Serviço Disponível',
+        `Ordem de Serviço ${serviceOrder.number} foi criada a partir do orçamento ${quote.number} aprovado pelo cliente`,
+        {
+          serviceOrderId: serviceOrder.id,
+          serviceOrderNumber: serviceOrder.number,
+          quoteId: quote.id,
+          quoteNumber: quote.number,
+        },
+      );
+      this.logger.log(
+        `Notificação enviada a todos os mecânicos sobre a OS ${serviceOrder.number}`,
+      );
+    } catch (notificationError) {
+      this.logger.warn(
+        `Erro ao notificar mecânicos sobre OS: ${getErrorMessage(notificationError)}`,
+      );
+    }
   }
 
   /**
@@ -2608,6 +2446,891 @@ export class QuotesService {
     });
 
     return this.quotePdfService.generatePdf(quote, workshopSettings);
+  }
+
+  private async validateQuoteRelations(
+    tenantId: string,
+    createQuoteDto: CreateQuoteDto,
+  ): Promise<void> {
+    if (createQuoteDto.customerId) {
+      const customer = await this.prisma.customer.findFirst({
+        where: {
+          id: createQuoteDto.customerId,
+          tenantId,
+        },
+      });
+
+      if (!customer) {
+        throw new NotFoundException('Cliente não encontrado');
+      }
+    }
+
+    if (createQuoteDto.vehicleId) {
+      const vehicle = await this.prisma.customerVehicle.findFirst({
+        where: {
+          id: createQuoteDto.vehicleId,
+          customer: { tenantId },
+        },
+      });
+
+      if (!vehicle) {
+        throw new NotFoundException('Veículo não encontrado');
+      }
+    }
+
+    if (createQuoteDto.elevatorId) {
+      const elevator = await this.prisma.elevator.findFirst({
+        where: {
+          id: createQuoteDto.elevatorId,
+          tenantId,
+        },
+      });
+
+      if (!elevator) {
+        throw new NotFoundException('Elevador não encontrado');
+      }
+    }
+  }
+
+  private validateQuoteItems(createQuoteDto: CreateQuoteDto): void {
+    const status: QuoteStatus = createQuoteDto.status || QuoteStatus.DRAFT;
+    const isDraft = status === QuoteStatus.DRAFT;
+    if (
+      !isDraft &&
+      (!createQuoteDto.items || createQuoteDto.items.length === 0)
+    ) {
+      throw new BadRequestException('Orçamento deve ter pelo menos um item');
+    }
+  }
+
+  private calculateQuoteTotalCost(createQuoteDto: CreateQuoteDto): number {
+    const items = createQuoteDto.items || [];
+    const laborCost = createQuoteDto.laborCost || 0;
+    const partsCost = createQuoteDto.partsCost || 0;
+    const discount = createQuoteDto.discount || 0;
+    const taxAmount = createQuoteDto.taxAmount || 0;
+
+    return this.calculateTotalCost(
+      items,
+      laborCost,
+      partsCost,
+      discount,
+      taxAmount,
+    );
+  }
+
+  private prepareQuoteCreateData(
+    tenantId: string,
+    createQuoteDto: CreateQuoteDto,
+    number: string,
+    totalCost: number,
+  ): Prisma.QuoteCreateInput {
+    const items = createQuoteDto.items || [];
+    const laborCost = createQuoteDto.laborCost || 0;
+    const partsCost = createQuoteDto.partsCost || 0;
+    const discount = createQuoteDto.discount || 0;
+    const taxAmount = createQuoteDto.taxAmount || 0;
+
+    return {
+      tenant: { connect: { id: tenantId } },
+      number,
+      customer: createQuoteDto.customerId
+        ? { connect: { id: createQuoteDto.customerId } }
+        : undefined,
+      vehicle: createQuoteDto.vehicleId
+        ? { connect: { id: createQuoteDto.vehicleId } }
+        : undefined,
+      elevator: createQuoteDto.elevatorId
+        ? { connect: { id: createQuoteDto.elevatorId } }
+        : undefined,
+      status: createQuoteDto.status || QuoteStatus.DRAFT,
+      laborCost: laborCost > 0 ? laborCost : null,
+      partsCost: partsCost > 0 ? partsCost : null,
+      totalCost,
+      discount,
+      taxAmount,
+      validUntil: createQuoteDto.validUntil
+        ? new Date(createQuoteDto.validUntil)
+        : null,
+      reportedProblemCategory: createQuoteDto.reportedProblemCategory || null,
+      reportedProblemDescription:
+        createQuoteDto.reportedProblemDescription || null,
+      reportedProblemSymptoms: createQuoteDto.reportedProblemSymptoms || [],
+      identifiedProblemCategory:
+        createQuoteDto.identifiedProblemCategory || null,
+      identifiedProblemDescription:
+        createQuoteDto.identifiedProblemDescription || null,
+      identifiedProblem: createQuoteDto.identifiedProblemId
+        ? { connect: { id: createQuoteDto.identifiedProblemId } }
+        : undefined,
+      diagnosticNotes: createQuoteDto.diagnosticNotes || null,
+      inspectionNotes: createQuoteDto.inspectionNotes || null,
+      inspectionPhotos: createQuoteDto.inspectionPhotos || [],
+      recommendations: createQuoteDto.recommendations || null,
+      items:
+        items.length > 0
+          ? {
+              create: items.map((item) => ({
+                type: item.type,
+                serviceId: item.serviceId || null,
+                partId: item.partId || null,
+                name: item.name,
+                description: item.description || null,
+                quantity: item.quantity,
+                unitCost: item.unitCost,
+                totalCost: item.unitCost * item.quantity,
+                hours: item.hours || null,
+              })),
+            }
+          : undefined,
+    };
+  }
+
+  private async findQuoteByIdAndTenant(
+    id: string,
+    tenantId: string,
+  ): Promise<
+    Prisma.QuoteGetPayload<{
+      include: { items: true };
+    }>
+  > {
+    const existingQuote = await this.prisma.quote.findFirst({
+      where: {
+        id,
+        tenantId,
+      },
+      include: { items: true },
+    });
+
+    if (!existingQuote) {
+      throw new NotFoundException('Orçamento não encontrado');
+    }
+
+    return existingQuote;
+  }
+
+  private validateQuoteUpdateStatus(
+    existingQuote: Prisma.QuoteGetPayload<{
+      include: { items: true };
+    }>,
+    updateQuoteDto: UpdateQuoteDto,
+  ): void {
+    const existingQuoteStatus = existingQuote.status as QuoteStatus;
+    if (existingQuoteStatus === QuoteStatus.CONVERTED) {
+      throw new BadRequestException(
+        'Não é possível atualizar um orçamento já convertido em OS',
+      );
+    }
+
+    const currentStatus = existingQuote.status as QuoteStatus;
+    const isBlockedStatus =
+      currentStatus === QuoteStatus.DRAFT ||
+      currentStatus === QuoteStatus.AWAITING_DIAGNOSIS;
+
+    if (isBlockedStatus) {
+      if (updateQuoteDto.items && updateQuoteDto.items.length > 0) {
+        throw new BadRequestException(
+          'Não é possível adicionar itens antes do diagnóstico do mecânico. Envie o orçamento para diagnóstico primeiro.',
+        );
+      }
+
+      if (
+        updateQuoteDto.laborCost !== undefined ||
+        updateQuoteDto.partsCost !== undefined ||
+        updateQuoteDto.discount !== undefined ||
+        updateQuoteDto.taxAmount !== undefined
+      ) {
+        throw new BadRequestException(
+          'Não é possível editar custos antes do diagnóstico do mecânico. Envie o orçamento para diagnóstico primeiro.',
+        );
+      }
+    }
+  }
+
+  private async prepareQuoteUpdateData(
+    id: string,
+    existingQuote: Prisma.QuoteGetPayload<{
+      include: { items: true };
+    }>,
+    updateQuoteDto: UpdateQuoteDto,
+  ): Promise<Prisma.QuoteUpdateInput> {
+    const updateData = this.prepareBasicQuoteUpdateData(updateQuoteDto);
+    this.prepareProblemFields(updateData, updateQuoteDto);
+    this.prepareDiagnosticFields(updateData, updateQuoteDto);
+
+    if (updateQuoteDto.items && updateQuoteDto.items.length > 0) {
+      await this.updateQuoteItems(id, updateQuoteDto.items, updateData);
+      this.recalculateTotalWithNewItems(
+        updateData,
+        updateQuoteDto,
+        existingQuote,
+      );
+    } else {
+      this.recalculateTotalWithExistingItems(
+        updateData,
+        updateQuoteDto,
+        existingQuote,
+      );
+    }
+
+    return updateData;
+  }
+
+  private prepareBasicQuoteUpdateData(
+    updateQuoteDto: UpdateQuoteDto,
+  ): Prisma.QuoteUpdateInput {
+    const updateData: Prisma.QuoteUpdateInput = {};
+
+    if (updateQuoteDto.customerId !== undefined) {
+      updateData.customer = updateQuoteDto.customerId
+        ? { connect: { id: updateQuoteDto.customerId } }
+        : { disconnect: true };
+    }
+
+    if (updateQuoteDto.vehicleId !== undefined) {
+      updateData.vehicle = updateQuoteDto.vehicleId
+        ? { connect: { id: updateQuoteDto.vehicleId } }
+        : { disconnect: true };
+    }
+
+    if (updateQuoteDto.elevatorId !== undefined) {
+      updateData.elevator = updateQuoteDto.elevatorId
+        ? { connect: { id: updateQuoteDto.elevatorId } }
+        : { disconnect: true };
+    }
+
+    if (updateQuoteDto.status !== undefined) {
+      updateData.status = updateQuoteDto.status;
+    }
+
+    if (updateQuoteDto.laborCost !== undefined) {
+      updateData.laborCost = updateQuoteDto.laborCost || null;
+    }
+
+    if (updateQuoteDto.partsCost !== undefined) {
+      updateData.partsCost = updateQuoteDto.partsCost || null;
+    }
+
+    if (updateQuoteDto.discount !== undefined) {
+      updateData.discount = updateQuoteDto.discount;
+    }
+
+    if (updateQuoteDto.taxAmount !== undefined) {
+      updateData.taxAmount = updateQuoteDto.taxAmount;
+    }
+
+    if (updateQuoteDto.validUntil !== undefined) {
+      updateData.validUntil = updateQuoteDto.validUntil
+        ? new Date(updateQuoteDto.validUntil)
+        : null;
+    }
+
+    return updateData;
+  }
+
+  private prepareProblemFields(
+    updateData: Prisma.QuoteUpdateInput,
+    updateQuoteDto: UpdateQuoteDto,
+  ): void {
+    if (updateQuoteDto.reportedProblemCategory !== undefined) {
+      updateData.reportedProblemCategory =
+        updateQuoteDto.reportedProblemCategory || null;
+    }
+    if (updateQuoteDto.reportedProblemDescription !== undefined) {
+      updateData.reportedProblemDescription =
+        updateQuoteDto.reportedProblemDescription?.trim() || null;
+    }
+    if (updateQuoteDto.reportedProblemSymptoms !== undefined) {
+      updateData.reportedProblemSymptoms =
+        updateQuoteDto.reportedProblemSymptoms || [];
+    }
+
+    if (updateQuoteDto.identifiedProblemCategory !== undefined) {
+      updateData.identifiedProblemCategory =
+        updateQuoteDto.identifiedProblemCategory || null;
+    }
+    if (updateQuoteDto.identifiedProblemDescription !== undefined) {
+      updateData.identifiedProblemDescription =
+        updateQuoteDto.identifiedProblemDescription?.trim() || null;
+    }
+    if (updateQuoteDto.identifiedProblemId !== undefined) {
+      updateData.identifiedProblem = updateQuoteDto.identifiedProblemId
+        ? { connect: { id: updateQuoteDto.identifiedProblemId } }
+        : { disconnect: true };
+    }
+  }
+
+  private prepareDiagnosticFields(
+    updateData: Prisma.QuoteUpdateInput,
+    updateQuoteDto: UpdateQuoteDto,
+  ): void {
+    if (updateQuoteDto.diagnosticNotes !== undefined) {
+      updateData.diagnosticNotes = updateQuoteDto.diagnosticNotes?.trim() || null;
+    }
+    if (updateQuoteDto.inspectionNotes !== undefined) {
+      updateData.inspectionNotes =
+        updateQuoteDto.inspectionNotes?.trim() || null;
+    }
+    if (updateQuoteDto.inspectionPhotos !== undefined) {
+      updateData.inspectionPhotos = updateQuoteDto.inspectionPhotos || [];
+    }
+    if (updateQuoteDto.recommendations !== undefined) {
+      updateData.recommendations = updateQuoteDto.recommendations?.trim() || null;
+    }
+  }
+
+  private async updateQuoteItems(
+    id: string,
+    items: QuoteItemDto[],
+    updateData: Prisma.QuoteUpdateInput,
+  ): Promise<void> {
+    await this.prisma.quoteItem.deleteMany({
+      where: { quoteId: id },
+    });
+
+    updateData.items = {
+      create: items.map((item) => ({
+        type: item.type,
+        serviceId: item.serviceId || null,
+        partId: item.partId || null,
+        name: item.name,
+        description: item.description || null,
+        quantity: item.quantity,
+        unitCost: item.unitCost,
+        totalCost: item.unitCost * item.quantity,
+        hours: item.hours || null,
+      })),
+    };
+  }
+
+  private recalculateTotalWithNewItems(
+    updateData: Prisma.QuoteUpdateInput,
+    updateQuoteDto: UpdateQuoteDto,
+    existingQuote: Prisma.QuoteGetPayload<{
+      include: { items: true };
+    }>,
+  ): void {
+    const itemsTotal = (updateQuoteDto.items || []).reduce(
+      (sum, item) => sum + item.unitCost * item.quantity,
+      0,
+    );
+    const laborCost =
+      updateQuoteDto.laborCost ?? existingQuote.laborCost?.toNumber() ?? 0;
+    const partsCost =
+      updateQuoteDto.partsCost ?? existingQuote.partsCost?.toNumber() ?? 0;
+    const discount =
+      updateQuoteDto.discount ?? existingQuote.discount?.toNumber() ?? 0;
+    const taxAmount =
+      updateQuoteDto.taxAmount ?? existingQuote.taxAmount?.toNumber() ?? 0;
+
+    updateData.totalCost =
+      itemsTotal + laborCost + partsCost - discount + taxAmount;
+  }
+
+  private recalculateTotalWithExistingItems(
+    updateData: Prisma.QuoteUpdateInput,
+    updateQuoteDto: UpdateQuoteDto,
+    existingQuote: Prisma.QuoteGetPayload<{
+      include: { items: true };
+    }>,
+  ): void {
+    const laborCost =
+      updateQuoteDto.laborCost ?? existingQuote.laborCost?.toNumber() ?? 0;
+    const partsCost =
+      updateQuoteDto.partsCost ?? existingQuote.partsCost?.toNumber() ?? 0;
+    const discount =
+      updateQuoteDto.discount ?? existingQuote.discount?.toNumber() ?? 0;
+    const taxAmount =
+      updateQuoteDto.taxAmount ?? existingQuote.taxAmount?.toNumber() ?? 0;
+    const itemsTotal = existingQuote.items.reduce(
+      (sum, item) => sum + item.totalCost.toNumber(),
+      0,
+    );
+
+    updateData.totalCost =
+      itemsTotal + laborCost + partsCost - discount + taxAmount;
+  }
+
+  private async updateQuoteWithData(
+    id: string,
+    updateData: Prisma.QuoteUpdateInput,
+  ): Promise<
+    Prisma.QuoteGetPayload<{
+      include: {
+        customer: { select: { id: true; name: true; phone: true; email: true } };
+        vehicle: { select: { id: true; placa: true; make: true; model: true; year: true } };
+        elevator: { select: { id: true; name: true; number: true; status: true } };
+        assignedMechanic: { select: { id: true; name: true; email: true } };
+        items: true;
+      };
+    }>
+  > {
+    return await this.prisma.quote.update({
+      where: { id },
+      data: updateData,
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+          },
+        },
+        vehicle: {
+          select: {
+            id: true,
+            placa: true,
+            make: true,
+            model: true,
+            year: true,
+          },
+        },
+        elevator: {
+          select: {
+            id: true,
+            name: true,
+            number: true,
+            status: true,
+          },
+        },
+        assignedMechanic: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        items: true,
+      },
+    });
+  }
+
+  private async findQuoteForApproval(
+    id: string,
+    tenantId: string,
+  ): Promise<
+    Prisma.QuoteGetPayload<{
+      include: {
+        customer: true;
+        vehicle: true;
+        assignedMechanic: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+          };
+        };
+        items: true;
+      };
+    }>
+  > {
+    const quote = await this.prisma.quote.findFirst({
+      where: {
+        id,
+        tenantId,
+      },
+      include: {
+        customer: true,
+        vehicle: true,
+        assignedMechanic: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        items: true,
+      },
+    });
+
+    if (!quote) {
+      throw new NotFoundException('Orçamento não encontrado');
+    }
+
+    return quote;
+  }
+
+  private validateQuoteForApproval(
+    quote: Prisma.QuoteGetPayload<{
+      include: {
+        customer: true;
+        vehicle: true;
+        assignedMechanic: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+          };
+        };
+        items: true;
+      };
+    }>,
+  ): void {
+    const quoteStatus = quote.status as QuoteStatus;
+    if (quoteStatus === QuoteStatus.CONVERTED) {
+      throw new BadRequestException('Orçamento já foi convertido em OS');
+    }
+
+    if (quoteStatus === QuoteStatus.REJECTED) {
+      throw new BadRequestException(
+        'Não é possível aprovar um orçamento rejeitado',
+      );
+    }
+
+    if (quoteStatus === QuoteStatus.EXPIRED) {
+      throw new BadRequestException(
+        'Não é possível aprovar um orçamento expirado',
+      );
+    }
+  }
+
+  private async prepareServiceOrderData(
+    quote: Prisma.QuoteGetPayload<{
+      include: {
+        customer: true;
+        vehicle: true;
+        assignedMechanic: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+          };
+        };
+        items: true;
+      };
+    }>,
+    elevatorId: string | null | undefined,
+    quoteId: string,
+  ): Promise<{
+    customerId?: string;
+    vehiclePlaca?: string;
+    vehicleMake?: string;
+    vehicleModel?: string;
+    vehicleYear?: number;
+    vehicleMileage?: number;
+    status: ServiceOrderStatus;
+    elevatorId?: string;
+    estimatedHours?: number;
+    laborCost?: number;
+    partsCost?: number;
+    discount?: number;
+    notes?: string;
+  }> {
+    const createServiceOrderData: {
+      customerId?: string;
+      vehiclePlaca?: string;
+      vehicleMake?: string;
+      vehicleModel?: string;
+      vehicleYear?: number;
+      vehicleMileage?: number;
+      status: ServiceOrderStatus;
+      elevatorId?: string;
+      estimatedHours?: number;
+      laborCost?: number;
+      partsCost?: number;
+      discount?: number;
+      notes?: string;
+    } = {
+      status: ServiceOrderStatus.SCHEDULED,
+    };
+
+    if (quote.customerId) {
+      createServiceOrderData.customerId = quote.customerId;
+    }
+
+    this.prepareVehicleData(createServiceOrderData, quote.vehicle);
+
+    if (elevatorId) {
+      createServiceOrderData.elevatorId = elevatorId;
+    }
+
+    await this.prepareEstimatedHours(
+      createServiceOrderData,
+      quote.items,
+      quoteId,
+    );
+
+    this.prepareCostData(createServiceOrderData, quote);
+
+    if (quote.inspectionNotes) {
+      createServiceOrderData.notes = quote.inspectionNotes;
+    }
+
+    return createServiceOrderData;
+  }
+
+  private prepareVehicleData(
+    createServiceOrderData: {
+      vehiclePlaca?: string;
+      vehicleMake?: string;
+      vehicleModel?: string;
+      vehicleYear?: number;
+      vehicleMileage?: number;
+    },
+    vehicle: { placa: string | null; make: string | null; model: string | null; year: number | null; mileage: number | null } | null,
+  ): void {
+    if (!vehicle) {
+      return;
+    }
+
+    if (vehicle.placa) {
+      createServiceOrderData.vehiclePlaca = vehicle.placa;
+    }
+    if (vehicle.make) {
+      createServiceOrderData.vehicleMake = vehicle.make;
+    }
+    if (vehicle.model) {
+      createServiceOrderData.vehicleModel = vehicle.model;
+    }
+    if (vehicle.year) {
+      createServiceOrderData.vehicleYear = vehicle.year;
+    }
+    if (vehicle.mileage) {
+      createServiceOrderData.vehicleMileage = vehicle.mileage;
+    }
+  }
+
+  private async prepareEstimatedHours(
+    createServiceOrderData: { estimatedHours?: number },
+    items: Array<{ hours: unknown }>,
+    quoteId: string,
+  ): Promise<void> {
+    const quoteWithEstimatedHours = await this.prisma.quote.findUnique({
+      where: { id: quoteId },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      select: { estimatedHours: true } as any,
+    });
+
+    if (
+      quoteWithEstimatedHours?.estimatedHours &&
+      typeof quoteWithEstimatedHours.estimatedHours === 'object' &&
+      'toNumber' in quoteWithEstimatedHours.estimatedHours
+    ) {
+      const estimatedHours = quoteWithEstimatedHours.estimatedHours as {
+        toNumber: () => number;
+      };
+      createServiceOrderData.estimatedHours = estimatedHours.toNumber();
+    } else {
+      const totalHours = items
+        .filter((item) => item.hours)
+        .reduce((sum, item) => {
+          const hours = item.hours as { toNumber: () => number } | null;
+          return sum + (hours?.toNumber() || 0);
+        }, 0);
+      if (totalHours > 0) {
+        createServiceOrderData.estimatedHours = totalHours;
+      }
+    }
+  }
+
+  private prepareCostData(
+    createServiceOrderData: {
+      laborCost?: number;
+      partsCost?: number;
+      discount?: number;
+    },
+    quote: {
+      laborCost: unknown;
+      partsCost: unknown;
+      discount: unknown;
+    },
+  ): void {
+    if (quote.laborCost) {
+      const laborCost = quote.laborCost as { toNumber: () => number };
+      createServiceOrderData.laborCost = laborCost.toNumber();
+    }
+
+    if (quote.partsCost) {
+      const partsCost = quote.partsCost as { toNumber: () => number };
+      createServiceOrderData.partsCost = partsCost.toNumber();
+    }
+
+    if (quote.discount) {
+      const discount = quote.discount as { toNumber: () => number };
+      createServiceOrderData.discount = discount.toNumber();
+    }
+  }
+
+  private async updateQuoteAsApproved(
+    id: string,
+    serviceOrderId: string,
+    customerSignature: string | null | undefined,
+  ): Promise<
+    Prisma.QuoteGetPayload<{
+      include: {
+        customer: {
+          select: {
+            id: true;
+            name: true;
+            phone: true;
+            email: true;
+          };
+        };
+        vehicle: {
+          select: {
+            id: true;
+            placa: true;
+            make: true;
+            model: true;
+            year: true;
+          };
+        };
+        elevator: {
+          select: {
+            id: true;
+            name: true;
+            number: true;
+            status: true;
+          };
+        };
+        assignedMechanic: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+          };
+        };
+        items: true;
+      };
+    }>
+  > {
+    return await this.prisma.quote.update({
+      where: { id },
+      data: {
+        status: QuoteStatus.ACCEPTED,
+        acceptedAt: new Date(),
+        customerSignature: customerSignature || null,
+        convertedAt: new Date(),
+        convertedToServiceOrderId: serviceOrderId,
+        serviceOrder: { connect: { id: serviceOrderId } },
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+          },
+        },
+        vehicle: {
+          select: {
+            id: true,
+            placa: true,
+            make: true,
+            model: true,
+            year: true,
+          },
+        },
+        elevator: {
+          select: {
+            id: true,
+            name: true,
+            number: true,
+            status: true,
+          },
+        },
+        assignedMechanic: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        items: true,
+      },
+    });
+  }
+
+  private async handlePostApprovalTasks(
+    tenantId: string,
+    elevatorId: string | null | undefined,
+    quote: {
+      customerId: string | null;
+      assignedMechanicId: string | null;
+      vehicleId: string | null;
+      number: string;
+    },
+    serviceOrder: { id: string; number: string },
+    estimatedHours: number | undefined,
+  ): Promise<void> {
+    if (elevatorId) {
+      await this.reserveElevatorForApproval(
+        tenantId,
+        elevatorId,
+        serviceOrder.id,
+        quote.vehicleId,
+        quote.number,
+      );
+    }
+
+    await this.createAutomaticAppointment(
+      tenantId,
+      quote,
+      serviceOrder,
+      estimatedHours,
+    );
+  }
+
+  private async reserveElevatorForApproval(
+    tenantId: string,
+    elevatorId: string,
+    serviceOrderId: string,
+    vehicleId: string | null,
+    quoteNumber: string,
+  ): Promise<void> {
+    try {
+      await this.elevatorsService.reserve(tenantId, elevatorId, {
+        serviceOrderId,
+        vehicleId: vehicleId || undefined,
+        notes: `Reservado para ${quoteNumber} (aprovado)`,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Não foi possível reservar elevador: ${getErrorMessage(error)}`,
+      );
+    }
+  }
+
+  private async createAutomaticAppointment(
+    tenantId: string,
+    quote: {
+      customerId: string | null;
+      assignedMechanicId: string | null;
+      number: string;
+    },
+    serviceOrder: { id: string; number: string },
+    estimatedHours: number | undefined,
+  ): Promise<void> {
+    try {
+      const appointmentDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      appointmentDate.setUTCHours(9, 0, 0, 0);
+
+      this.logger.log(
+        `Tentando criar agendamento para OS ${serviceOrder.number} na data: ${appointmentDate.toISOString()}`,
+      );
+
+      await this.appointmentsService.create(tenantId, {
+        customerId: quote.customerId || undefined,
+        serviceOrderId: serviceOrder.id,
+        assignedToId: quote.assignedMechanicId || undefined,
+        date: appointmentDate.toISOString(),
+        duration: estimatedHours ? Math.ceil(estimatedHours * 60) : 60,
+        serviceType: 'Serviço aprovado',
+        notes: `Agendamento automático para OS ${serviceOrder.number}`,
+        status: AppointmentStatus.SCHEDULED,
+      });
+
+      this.logger.log(
+        `✅ Agendamento criado automaticamente para OS ${serviceOrder.number}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `❌ Não foi possível criar agendamento automaticamente para OS ${serviceOrder.number}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
+      );
+    }
   }
 
   /**

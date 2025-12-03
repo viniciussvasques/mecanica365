@@ -35,32 +35,38 @@ export class EmailService {
 
   constructor(private readonly configService: ConfigService) {
     this.templatesService = new EmailTemplatesService();
-    // Configurar transporter (SMTP)
-    // Em produção, usar variáveis de ambiente
+    this.transporter = this.createTransporter();
+    this.initializeConnection();
+  }
+
+  private createTransporter(): Transporter {
     const smtpConfig: SmtpConfig = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true', // true para 465, false para outras portas
+      secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
     };
 
-    // Para servidores privados com certificado autoassinado (Mailcow, etc)
     if (process.env.SMTP_HOST && process.env.SMTP_HOST.includes('mail.')) {
       smtpConfig.tls = {
-        rejectUnauthorized: false, // Aceitar certificados autoassinados
+        rejectUnauthorized: false,
       };
     }
 
-    this.transporter = nodemailer.createTransport(
+    return nodemailer.createTransport(
       smtpConfig as nodemailer.TransportOptions,
     );
+  }
 
-    // Verificar conexão (apenas em desenvolvimento)
+  private initializeConnection(): void {
     if (process.env.NODE_ENV === 'development') {
-      void this.verifyConnection();
+      // Verificar conexão de forma assíncrona sem bloquear o construtor
+      setImmediate(() => {
+        void this.verifyConnection();
+      });
     }
   }
 

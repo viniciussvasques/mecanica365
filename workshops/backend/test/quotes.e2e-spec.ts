@@ -142,7 +142,10 @@ describe('QuotesController (e2e)', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('message');
-      expect(Array.isArray(response.body.message) || typeof response.body.message === 'string').toBe(true);
+      expect(
+        Array.isArray(response.body.message) ||
+          typeof response.body.message === 'string',
+      ).toBe(true);
     });
   });
 

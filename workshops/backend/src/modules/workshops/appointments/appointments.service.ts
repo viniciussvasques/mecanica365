@@ -37,63 +37,26 @@ export class AppointmentsService {
     createAppointmentDto: CreateAppointmentDto,
   ): Promise<AppointmentResponseDto> {
     try {
-      // Validar data não pode ser no passado
       const appointmentDate = new Date(createAppointmentDto.date);
-      const now = new Date();
-      if (appointmentDate < now) {
-        throw new BadRequestException(
-          'Não é possível agendar para uma data no passado',
-        );
-      }
+      this.validateAppointmentDate(appointmentDate);
 
-      // Verificar conflitos de horário se houver mecânico atribuído
       if (createAppointmentDto.assignedToId) {
-        const hasConflict = await this.checkMechanicConflict(
+        await this.validateMechanicAvailability(
           tenantId,
           createAppointmentDto.assignedToId,
           appointmentDate,
           createAppointmentDto.duration || 60,
         );
-
-        if (hasConflict) {
-          throw new ConflictException(
-            'Mecânico já possui agendamento neste horário',
-          );
-        }
       }
 
-      // Verificar disponibilidade de elevador se fornecido
-      // Nota: ServiceOrder não tem relação direta com elevator no schema atual
-      // A verificação de elevador será feita via ElevatorUsage quando necessário
-
-      // Verificar se cliente existe (se fornecido)
-      if (createAppointmentDto.customerId) {
-        const customer = await this.prisma.customer.findFirst({
-          where: {
-            id: createAppointmentDto.customerId,
-            tenantId,
-          },
-        });
-
-        if (!customer) {
-          throw new NotFoundException('Cliente não encontrado');
-        }
-      }
-
-      // Verificar se mecânico existe (se fornecido)
-      if (createAppointmentDto.assignedToId) {
-        const mechanic = await this.prisma.user.findFirst({
-          where: {
-            id: createAppointmentDto.assignedToId,
-            tenantId,
-            role: 'mechanic',
-          },
-        });
-
-        if (!mechanic) {
-          throw new NotFoundException('Mecânico não encontrado');
-        }
-      }
+      await this.validateCustomerIfProvided(
+        tenantId,
+        createAppointmentDto.customerId,
+      );
+      await this.validateMechanicIfProvided(
+        tenantId,
+        createAppointmentDto.assignedToId,
+      );
 
       // Criar agendamento
       const appointment = await this.prisma.appointment.create({
@@ -321,103 +284,38 @@ export class AppointmentsService {
     updateAppointmentDto: UpdateAppointmentDto,
   ): Promise<AppointmentResponseDto> {
     try {
-      const appointment = await this.prisma.appointment.findFirst({
-        where: {
-          id,
-          tenantId,
-        },
-      });
+      const appointment = await this.findAppointmentByIdAndTenant(id, tenantId);
 
-      if (!appointment) {
-        throw new NotFoundException('Agendamento não encontrado');
-      }
-
-      // Validar data não pode ser no passado (se fornecida)
       if (updateAppointmentDto.date) {
         const appointmentDate = new Date(updateAppointmentDto.date);
-        const now = new Date();
-        if (appointmentDate < now) {
-          throw new BadRequestException(
-            'Não é possível agendar para uma data no passado',
-          );
-        }
+        this.validateAppointmentDate(appointmentDate);
 
-        // Verificar conflitos de horário se houver mecânico atribuído
         const assignedToId =
           updateAppointmentDto.assignedToId || appointment.assignedToId;
         if (assignedToId) {
-          const hasConflict = await this.checkMechanicConflict(
+          await this.validateMechanicAvailabilityForUpdate(
             tenantId,
             assignedToId,
             appointmentDate,
             updateAppointmentDto.duration || appointment.duration,
-            id, // Excluir o próprio agendamento da verificação
+            id,
           );
-
-          if (hasConflict) {
-            throw new ConflictException(
-              'Mecânico já possui agendamento neste horário',
-            );
-          }
         }
       }
 
-      // Verificar se cliente existe (se fornecido)
-      if (updateAppointmentDto.customerId) {
-        const customer = await this.prisma.customer.findFirst({
-          where: {
-            id: updateAppointmentDto.customerId,
-            tenantId,
-          },
-        });
+      await this.validateCustomerIfProvided(
+        tenantId,
+        updateAppointmentDto.customerId,
+      );
+      await this.validateMechanicIfProvided(
+        tenantId,
+        updateAppointmentDto.assignedToId,
+      );
 
-        if (!customer) {
-          throw new NotFoundException('Cliente não encontrado');
-        }
-      }
-
-      // Verificar se mecânico existe (se fornecido)
-      if (updateAppointmentDto.assignedToId) {
-        const mechanic = await this.prisma.user.findFirst({
-          where: {
-            id: updateAppointmentDto.assignedToId,
-            tenantId,
-            role: 'mechanic',
-          },
-        });
-
-        if (!mechanic) {
-          throw new NotFoundException('Mecânico não encontrado');
-        }
-      }
-
-      // Atualizar agendamento
+      const updateData = this.prepareAppointmentUpdateData(updateAppointmentDto);
       const updatedAppointment = await this.prisma.appointment.update({
         where: { id },
-        data: {
-          customer: updateAppointmentDto.customerId
-            ? { connect: { id: updateAppointmentDto.customerId } }
-            : updateAppointmentDto.customerId === null
-              ? { disconnect: true }
-              : undefined,
-          serviceOrder: updateAppointmentDto.serviceOrderId
-            ? { connect: { id: updateAppointmentDto.serviceOrderId } }
-            : updateAppointmentDto.serviceOrderId === null
-              ? { disconnect: true }
-              : undefined,
-          assignedTo: updateAppointmentDto.assignedToId
-            ? { connect: { id: updateAppointmentDto.assignedToId } }
-            : updateAppointmentDto.assignedToId === null
-              ? { disconnect: true }
-              : undefined,
-          date: updateAppointmentDto.date
-            ? new Date(updateAppointmentDto.date)
-            : undefined,
-          duration: updateAppointmentDto.duration,
-          serviceType: updateAppointmentDto.serviceType,
-          notes: updateAppointmentDto.notes,
-          status: updateAppointmentDto.status,
-        },
+        data: updateData,
         include: {
           customer: {
             select: {
@@ -445,7 +343,6 @@ export class AppointmentsService {
       });
 
       this.logger.log(`Agendamento atualizado: ${id}`);
-
       return this.toResponseDto(updatedAppointment);
     } catch (error) {
       if (
@@ -990,94 +887,17 @@ export class AppointmentsService {
         },
       });
 
-      // Gerar slots do dia (de 8h às 18h, a cada 30 minutos)
-      const slots: Array<{
-        startTime: string;
-        endTime: string;
-        available: boolean;
-        reason?: string;
-      }> = [];
-
-      for (let hour = workStartHour; hour < workEndHour; hour++) {
-        for (let minute = 0; minute < 60; minute += slotInterval) {
-          const slotStart = new Date(targetDate);
-          slotStart.setHours(hour, minute, 0, 0);
-          const slotEnd = new Date(slotStart);
-          slotEnd.setTime(slotStart.getTime() + duration * 60 * 1000);
-
-          // Verificar se o slot termina antes do horário de fechamento
-          if (
-            slotEnd.getHours() > workEndHour ||
-            (slotEnd.getHours() === workEndHour && slotEnd.getMinutes() > 0)
-          ) {
-            continue;
-          }
-
-          // Verificar conflitos com agendamentos
-          let hasConflict = false;
-          let conflictReason = '';
-
-          for (const appointment of appointments) {
-            const appointmentEnd = new Date(
-              appointment.date.getTime() + appointment.duration * 60 * 1000,
-            );
-
-            // Verifica sobreposição
-            if (slotStart < appointmentEnd && slotEnd > appointment.date) {
-              hasConflict = true;
-              conflictReason = `Agendamento existente`;
-              break;
-            }
-          }
-
-          // Verificar conflitos com OS em andamento
-          if (!hasConflict) {
-            for (const serviceOrder of serviceOrdersInProgress) {
-              if (
-                !serviceOrder.appointmentDate ||
-                !serviceOrder.estimatedHours
-              ) {
-                continue;
-              }
-
-              const soStart = new Date(serviceOrder.appointmentDate);
-              const soEnd = new Date(
-                soStart.getTime() +
-                  serviceOrder.estimatedHours.toNumber() * 60 * 60 * 1000,
-              );
-
-              // Verifica sobreposição
-              if (slotStart < soEnd && slotEnd > soStart) {
-                hasConflict = true;
-                conflictReason = `OS em andamento`;
-                break;
-              }
-            }
-          }
-
-          // Verificar disponibilidade de elevador (se fornecido)
-          if (!hasConflict && getAvailableSlotsDto.elevatorId) {
-            const isElevatorAvailable = await this.checkElevatorAvailability(
-              tenantId,
-              getAvailableSlotsDto.elevatorId,
-              slotStart,
-              duration,
-            );
-
-            if (!isElevatorAvailable) {
-              hasConflict = true;
-              conflictReason = `Elevador ocupado`;
-            }
-          }
-
-          slots.push({
-            startTime: slotStart.toISOString(),
-            endTime: slotEnd.toISOString(),
-            available: !hasConflict,
-            reason: hasConflict ? conflictReason : undefined,
-          });
-        }
-      }
+      const slots = await this.generateAvailableSlots(
+        targetDate,
+        workStartHour,
+        workEndHour,
+        slotInterval,
+        duration,
+        appointments,
+        serviceOrdersInProgress,
+        tenantId,
+        getAvailableSlotsDto.elevatorId,
+      );
 
       const hasAvailability = slots.some((slot) => slot.available);
 
@@ -1093,6 +913,402 @@ export class AppointmentsService {
       );
       throw new BadRequestException('Erro ao buscar horários disponíveis');
     }
+  }
+
+  private validateAppointmentDate(appointmentDate: Date): void {
+    const now = new Date();
+    if (appointmentDate < now) {
+      throw new BadRequestException(
+        'Não é possível agendar para uma data no passado',
+      );
+    }
+  }
+
+  private async validateMechanicAvailability(
+    tenantId: string,
+    mechanicId: string,
+    appointmentDate: Date,
+    duration: number,
+  ): Promise<void> {
+    const hasConflict = await this.checkMechanicConflict(
+      tenantId,
+      mechanicId,
+      appointmentDate,
+      duration,
+    );
+
+    if (hasConflict) {
+      throw new ConflictException(
+        'Mecânico já possui agendamento neste horário',
+      );
+    }
+  }
+
+  private async validateMechanicAvailabilityForUpdate(
+    tenantId: string,
+    mechanicId: string,
+    appointmentDate: Date,
+    duration: number,
+    excludeAppointmentId: string,
+  ): Promise<void> {
+    const hasConflict = await this.checkMechanicConflict(
+      tenantId,
+      mechanicId,
+      appointmentDate,
+      duration,
+      excludeAppointmentId,
+    );
+
+    if (hasConflict) {
+      throw new ConflictException(
+        'Mecânico já possui agendamento neste horário',
+      );
+    }
+  }
+
+  private async validateCustomerIfProvided(
+    tenantId: string,
+    customerId: string | undefined,
+  ): Promise<void> {
+    if (!customerId) {
+      return;
+    }
+
+    const customer = await this.prisma.customer.findFirst({
+      where: {
+        id: customerId,
+        tenantId,
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Cliente não encontrado');
+    }
+  }
+
+  private async validateMechanicIfProvided(
+    tenantId: string,
+    mechanicId: string | undefined,
+  ): Promise<void> {
+    if (!mechanicId) {
+      return;
+    }
+
+    const mechanic = await this.prisma.user.findFirst({
+      where: {
+        id: mechanicId,
+        tenantId,
+        role: 'mechanic',
+      },
+    });
+
+    if (!mechanic) {
+      throw new NotFoundException('Mecânico não encontrado');
+    }
+  }
+
+  private async findAppointmentByIdAndTenant(
+    id: string,
+    tenantId: string,
+  ): Promise<
+    Prisma.AppointmentGetPayload<{
+      include: {
+        customer: {
+          select: {
+            id: true;
+            name: true;
+            phone: true;
+            email: true;
+          };
+        };
+        serviceOrder: {
+          select: {
+            id: true;
+            number: true;
+            status: true;
+          };
+        };
+        assignedTo: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+          };
+        };
+      };
+    }>
+  > {
+    const appointment = await this.prisma.appointment.findFirst({
+      where: {
+        id,
+        tenantId,
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+          },
+        },
+        serviceOrder: {
+          select: {
+            id: true,
+            number: true,
+            status: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Agendamento não encontrado');
+    }
+
+    return appointment;
+  }
+
+  private async generateAvailableSlots(
+    targetDate: Date,
+    workStartHour: number,
+    workEndHour: number,
+    slotInterval: number,
+    duration: number,
+    appointments: Array<{
+      id: string;
+      date: Date;
+      duration: number;
+      assignedToId: string | null;
+    }>,
+    serviceOrdersInProgress: Array<{
+      id: string;
+      appointmentDate: Date | null;
+      estimatedHours: unknown;
+      technicianId: string | null;
+    }>,
+    tenantId: string,
+    elevatorId: string | undefined,
+  ): Promise<
+    Array<{
+      startTime: string;
+      endTime: string;
+      available: boolean;
+      reason?: string;
+    }>
+  > {
+    const slots: Array<{
+      startTime: string;
+      endTime: string;
+      available: boolean;
+      reason?: string;
+    }> = [];
+
+    for (let hour = workStartHour; hour < workEndHour; hour++) {
+      for (let minute = 0; minute < 60; minute += slotInterval) {
+        const slotStart = new Date(targetDate);
+        slotStart.setHours(hour, minute, 0, 0);
+        const slotEnd = new Date(slotStart);
+        slotEnd.setTime(slotStart.getTime() + duration * 60 * 1000);
+
+        if (!this.isSlotWithinWorkingHours(slotEnd, workEndHour)) {
+          continue;
+        }
+
+        const conflict = await this.checkSlotConflicts(
+          slotStart,
+          slotEnd,
+          appointments,
+          serviceOrdersInProgress,
+          tenantId,
+          elevatorId,
+          duration,
+        );
+
+        slots.push({
+          startTime: slotStart.toISOString(),
+          endTime: slotEnd.toISOString(),
+          available: !conflict.hasConflict,
+          reason: conflict.reason,
+        });
+      }
+    }
+
+    return slots;
+  }
+
+  private isSlotWithinWorkingHours(
+    slotEnd: Date,
+    workEndHour: number,
+  ): boolean {
+    return !(
+      slotEnd.getHours() > workEndHour ||
+      (slotEnd.getHours() === workEndHour && slotEnd.getMinutes() > 0)
+    );
+  }
+
+  private async checkSlotConflicts(
+    slotStart: Date,
+    slotEnd: Date,
+    appointments: Array<{
+      id: string;
+      date: Date;
+      duration: number;
+      assignedToId: string | null;
+    }>,
+    serviceOrdersInProgress: Array<{
+      id: string;
+      appointmentDate: Date | null;
+      estimatedHours: unknown;
+      technicianId: string | null;
+    }>,
+    tenantId: string,
+    elevatorId: string | undefined,
+    duration: number,
+  ): Promise<{ hasConflict: boolean; reason?: string }> {
+    const appointmentConflict = this.checkAppointmentConflict(
+      slotStart,
+      slotEnd,
+      appointments,
+    );
+    if (appointmentConflict.hasConflict) {
+      return appointmentConflict;
+    }
+
+    const serviceOrderConflict = this.checkServiceOrderConflict(
+      slotStart,
+      slotEnd,
+      serviceOrdersInProgress,
+    );
+    if (serviceOrderConflict.hasConflict) {
+      return serviceOrderConflict;
+    }
+
+    if (elevatorId) {
+      const elevatorConflict = await this.checkElevatorConflict(
+        tenantId,
+        elevatorId,
+        slotStart,
+        duration,
+      );
+      if (elevatorConflict.hasConflict) {
+        return elevatorConflict;
+      }
+    }
+
+    return { hasConflict: false };
+  }
+
+  private checkAppointmentConflict(
+    slotStart: Date,
+    slotEnd: Date,
+    appointments: Array<{
+      id: string;
+      date: Date;
+      duration: number;
+      assignedToId: string | null;
+    }>,
+  ): { hasConflict: boolean; reason?: string } {
+    for (const appointment of appointments) {
+      const appointmentEnd = new Date(
+        appointment.date.getTime() + appointment.duration * 60 * 1000,
+      );
+
+      if (slotStart < appointmentEnd && slotEnd > appointment.date) {
+        return { hasConflict: true, reason: 'Agendamento existente' };
+      }
+    }
+
+    return { hasConflict: false };
+  }
+
+  private checkServiceOrderConflict(
+    slotStart: Date,
+    slotEnd: Date,
+    serviceOrdersInProgress: Array<{
+      id: string;
+      appointmentDate: Date | null;
+      estimatedHours: unknown;
+      technicianId: string | null;
+    }>,
+  ): { hasConflict: boolean; reason?: string } {
+    for (const serviceOrder of serviceOrdersInProgress) {
+      if (!serviceOrder.appointmentDate || !serviceOrder.estimatedHours) {
+        continue;
+      }
+
+      const soStart = new Date(serviceOrder.appointmentDate);
+      const estimatedHours = serviceOrder.estimatedHours as {
+        toNumber: () => number;
+      };
+      const soEnd = new Date(
+        soStart.getTime() + estimatedHours.toNumber() * 60 * 60 * 1000,
+      );
+
+      if (slotStart < soEnd && slotEnd > soStart) {
+        return { hasConflict: true, reason: 'OS em andamento' };
+      }
+    }
+
+    return { hasConflict: false };
+  }
+
+  private async checkElevatorConflict(
+    tenantId: string,
+    elevatorId: string,
+    slotStart: Date,
+    duration: number,
+  ): Promise<{ hasConflict: boolean; reason?: string }> {
+    const isElevatorAvailable = await this.checkElevatorAvailability(
+      tenantId,
+      elevatorId,
+      slotStart,
+      duration,
+    );
+
+    if (!isElevatorAvailable) {
+      return { hasConflict: true, reason: 'Elevador ocupado' };
+    }
+
+    return { hasConflict: false };
+  }
+
+  private prepareAppointmentUpdateData(
+    updateAppointmentDto: UpdateAppointmentDto,
+  ): Prisma.AppointmentUpdateInput {
+    return {
+      customer: this.prepareRelationUpdate(updateAppointmentDto.customerId),
+      serviceOrder: this.prepareRelationUpdate(
+        updateAppointmentDto.serviceOrderId,
+      ),
+      assignedTo: this.prepareRelationUpdate(updateAppointmentDto.assignedToId),
+      date: updateAppointmentDto.date
+        ? new Date(updateAppointmentDto.date)
+        : undefined,
+      duration: updateAppointmentDto.duration,
+      serviceType: updateAppointmentDto.serviceType,
+      notes: updateAppointmentDto.notes,
+      status: updateAppointmentDto.status,
+    };
+  }
+
+  private prepareRelationUpdate(
+    id: string | null | undefined,
+  ): { connect: { id: string } } | { disconnect: true } | undefined {
+    if (id === undefined) {
+      return undefined;
+    }
+    if (id === null) {
+      return { disconnect: true };
+    }
+    return { connect: { id } };
   }
 
   /**

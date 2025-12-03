@@ -36,7 +36,20 @@ export class WorkshopSettingsService {
     tenantId: string,
     createDto: CreateWorkshopSettingsDto,
   ): Promise<WorkshopSettingsResponseDto> {
-    // Verificar se o tenant existe
+    await this.validateTenantExists(tenantId);
+
+    const existing = await this.prisma.workshopSettings.findUnique({
+      where: { tenantId },
+    });
+
+    if (existing) {
+      return this.updateExistingSettings(tenantId, createDto);
+    } else {
+      return this.createNewSettings(tenantId, createDto);
+    }
+  }
+
+  private async validateTenantExists(tenantId: string): Promise<void> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
     });
@@ -44,135 +57,113 @@ export class WorkshopSettingsService {
     if (!tenant) {
       throw new NotFoundException('Tenant não encontrado');
     }
+  }
 
-    // Verificar se já existe configuração
-    const existing = await this.prisma.workshopSettings.findUnique({
+  private async updateExistingSettings(
+    tenantId: string,
+    createDto: CreateWorkshopSettingsDto,
+  ): Promise<WorkshopSettingsResponseDto> {
+    const updateData = this.prepareUpdateData(createDto);
+    const updated = await this.prisma.workshopSettings.update({
       where: { tenantId },
+      data: updateData,
     });
 
-    if (existing) {
-      // Atualizar - tratar campos vazios como null para limpar valores anteriores
-      const updated = await this.prisma.workshopSettings.update({
-        where: { tenantId },
-        data: {
-          displayName:
-            createDto.displayName !== undefined
-              ? createDto.displayName || null
-              : undefined,
-          logoUrl:
-            createDto.logoUrl !== undefined
-              ? createDto.logoUrl || null
-              : undefined,
-          primaryColor:
-            createDto.primaryColor !== undefined
-              ? createDto.primaryColor || null
-              : undefined,
-          secondaryColor:
-            createDto.secondaryColor !== undefined
-              ? createDto.secondaryColor || null
-              : undefined,
-          accentColor:
-            createDto.accentColor !== undefined
-              ? createDto.accentColor || null
-              : undefined,
-          phone:
-            createDto.phone !== undefined ? createDto.phone || null : undefined,
-          email:
-            createDto.email !== undefined ? createDto.email || null : undefined,
-          whatsapp:
-            createDto.whatsapp !== undefined
-              ? createDto.whatsapp || null
-              : undefined,
-          address:
-            createDto.address !== undefined
-              ? createDto.address || null
-              : undefined,
-          city:
-            createDto.city !== undefined ? createDto.city || null : undefined,
-          state:
-            createDto.state !== undefined ? createDto.state || null : undefined,
-          zipCode:
-            createDto.zipCode !== undefined
-              ? createDto.zipCode || null
-              : undefined,
-          country:
-            createDto.country !== undefined
-              ? createDto.country || 'BR'
-              : undefined,
-          website:
-            createDto.website !== undefined
-              ? createDto.website || null
-              : undefined,
-          facebook:
-            createDto.facebook !== undefined
-              ? createDto.facebook || null
-              : undefined,
-          instagram:
-            createDto.instagram !== undefined
-              ? createDto.instagram || null
-              : undefined,
-          linkedin:
-            createDto.linkedin !== undefined
-              ? createDto.linkedin || null
-              : undefined,
-          showLogoOnQuotes:
-            createDto.showLogoOnQuotes !== undefined
-              ? createDto.showLogoOnQuotes
-              : undefined,
-          showAddressOnQuotes:
-            createDto.showAddressOnQuotes !== undefined
-              ? createDto.showAddressOnQuotes
-              : undefined,
-          showContactOnQuotes:
-            createDto.showContactOnQuotes !== undefined
-              ? createDto.showContactOnQuotes
-              : undefined,
-          quoteFooterText:
-            createDto.quoteFooterText !== undefined
-              ? createDto.quoteFooterText || null
-              : undefined,
-          invoiceFooterText:
-            createDto.invoiceFooterText !== undefined
-              ? createDto.invoiceFooterText || null
-              : undefined,
-        },
-      });
+    this.logger.log(`Configurações atualizadas para tenant ${tenantId}`);
+    return this.toResponseDto(updated);
+  }
 
-      this.logger.log(`Configurações atualizadas para tenant ${tenantId}`);
-      return this.toResponseDto(updated);
-    } else {
-      // Criar
-      const created = await this.prisma.workshopSettings.create({
-        data: {
-          tenantId,
-          displayName: createDto.displayName,
-          logoUrl: createDto.logoUrl,
-          primaryColor: createDto.primaryColor,
-          secondaryColor: createDto.secondaryColor,
-          accentColor: createDto.accentColor,
-          phone: createDto.phone,
-          email: createDto.email,
-          whatsapp: createDto.whatsapp,
-          address: createDto.address,
-          city: createDto.city,
-          state: createDto.state,
-          zipCode: createDto.zipCode,
-          country: createDto.country || 'BR',
-          website: createDto.website,
-          facebook: createDto.facebook,
-          instagram: createDto.instagram,
-          linkedin: createDto.linkedin,
-          showLogoOnQuotes: createDto.showLogoOnQuotes ?? true,
-          showAddressOnQuotes: createDto.showAddressOnQuotes ?? true,
-          showContactOnQuotes: createDto.showContactOnQuotes ?? true,
-          quoteFooterText: createDto.quoteFooterText,
-          invoiceFooterText: createDto.invoiceFooterText,
-        },
-      });
+  private async createNewSettings(
+    tenantId: string,
+    createDto: CreateWorkshopSettingsDto,
+  ): Promise<WorkshopSettingsResponseDto> {
+    const createData = this.prepareCreateData(tenantId, createDto);
+    const created = await this.prisma.workshopSettings.create({
+      data: createData,
+    });
 
-      this.logger.log(`Configurações criadas para tenant ${tenantId}`);
-      return this.toResponseDto(created);
-    }
+    this.logger.log(`Configurações criadas para tenant ${tenantId}`);
+    return this.toResponseDto(created);
+  }
+
+  private prepareUpdateData(
+    createDto: CreateWorkshopSettingsDto,
+  ): Prisma.WorkshopSettingsUpdateInput {
+    return {
+      displayName: this.normalizeField(createDto.displayName),
+      logoUrl: this.normalizeField(createDto.logoUrl),
+      primaryColor: this.normalizeField(createDto.primaryColor),
+      secondaryColor: this.normalizeField(createDto.secondaryColor),
+      accentColor: this.normalizeField(createDto.accentColor),
+      phone: this.normalizeField(createDto.phone),
+      email: this.normalizeField(createDto.email),
+      whatsapp: this.normalizeField(createDto.whatsapp),
+      address: this.normalizeField(createDto.address),
+      city: this.normalizeField(createDto.city),
+      state: this.normalizeField(createDto.state),
+      zipCode: this.normalizeField(createDto.zipCode),
+      country:
+        createDto.country !== undefined
+          ? createDto.country || 'BR'
+          : undefined,
+      website: this.normalizeField(createDto.website),
+      facebook: this.normalizeField(createDto.facebook),
+      instagram: this.normalizeField(createDto.instagram),
+      linkedin: this.normalizeField(createDto.linkedin),
+      showLogoOnQuotes:
+        createDto.showLogoOnQuotes !== undefined
+          ? createDto.showLogoOnQuotes
+          : undefined,
+      showAddressOnQuotes:
+        createDto.showAddressOnQuotes !== undefined
+          ? createDto.showAddressOnQuotes
+          : undefined,
+      showContactOnQuotes:
+        createDto.showContactOnQuotes !== undefined
+          ? createDto.showContactOnQuotes
+          : undefined,
+      quoteFooterText: this.normalizeField(createDto.quoteFooterText),
+      invoiceFooterText: this.normalizeField(createDto.invoiceFooterText),
+    };
+  }
+
+  private prepareCreateData(
+    tenantId: string,
+    createDto: CreateWorkshopSettingsDto,
+  ): Prisma.WorkshopSettingsCreateInput {
+    return {
+      tenant: {
+        connect: { id: tenantId },
+      },
+      displayName: createDto.displayName,
+      logoUrl: createDto.logoUrl,
+      primaryColor: createDto.primaryColor,
+      secondaryColor: createDto.secondaryColor,
+      accentColor: createDto.accentColor,
+      phone: createDto.phone,
+      email: createDto.email,
+      whatsapp: createDto.whatsapp,
+      address: createDto.address,
+      city: createDto.city,
+      state: createDto.state,
+      zipCode: createDto.zipCode,
+      country: createDto.country || 'BR',
+      website: createDto.website,
+      facebook: createDto.facebook,
+      instagram: createDto.instagram,
+      linkedin: createDto.linkedin,
+      showLogoOnQuotes: createDto.showLogoOnQuotes ?? true,
+      showAddressOnQuotes: createDto.showAddressOnQuotes ?? true,
+      showContactOnQuotes: createDto.showContactOnQuotes ?? true,
+      quoteFooterText: createDto.quoteFooterText,
+      invoiceFooterText: createDto.invoiceFooterText,
+    };
+  }
+
+  private normalizeField(
+    value: string | null | undefined,
+  ): string | null | undefined {
+    return value !== undefined ? value || null : undefined;
   }
 
   /**
@@ -182,6 +173,19 @@ export class WorkshopSettingsService {
     tenantId: string,
     updateDto: UpdateWorkshopSettingsDto,
   ): Promise<WorkshopSettingsResponseDto> {
+    await this.validateSettingsExist(tenantId);
+
+    const updateData = this.preparePartialUpdateData(updateDto);
+    const updated = await this.prisma.workshopSettings.update({
+      where: { tenantId },
+      data: updateData,
+    });
+
+    this.logger.log(`Configurações atualizadas para tenant ${tenantId}`);
+    return this.toResponseDto(updated);
+  }
+
+  private async validateSettingsExist(tenantId: string): Promise<void> {
     const existing = await this.prisma.workshopSettings.findUnique({
       where: { tenantId },
     });
@@ -189,69 +193,67 @@ export class WorkshopSettingsService {
     if (!existing) {
       throw new NotFoundException('Configurações não encontradas');
     }
+  }
 
-    const updated = await this.prisma.workshopSettings.update({
-      where: { tenantId },
-      data: {
-        ...(updateDto.displayName !== undefined && {
-          displayName: updateDto.displayName,
-        }),
-        ...(updateDto.logoUrl !== undefined && { logoUrl: updateDto.logoUrl }),
-        ...(updateDto.primaryColor !== undefined && {
-          primaryColor: updateDto.primaryColor,
-        }),
-        ...(updateDto.secondaryColor !== undefined && {
-          secondaryColor: updateDto.secondaryColor,
-        }),
-        ...(updateDto.accentColor !== undefined && {
-          accentColor: updateDto.accentColor,
-        }),
-        ...(updateDto.phone !== undefined && { phone: updateDto.phone }),
-        ...(updateDto.email !== undefined && { email: updateDto.email }),
-        ...(updateDto.whatsapp !== undefined && {
-          whatsapp: updateDto.whatsapp,
-        }),
-        ...(updateDto.address !== undefined && { address: updateDto.address }),
-        ...(updateDto.city !== undefined && { city: updateDto.city }),
-        ...(updateDto.state !== undefined && { state: updateDto.state }),
-        ...(updateDto.zipCode !== undefined && {
-          zipCode: updateDto.zipCode,
-        }),
-        ...(updateDto.country !== undefined && {
-          country: updateDto.country,
-        }),
-        ...(updateDto.website !== undefined && {
-          website: updateDto.website,
-        }),
-        ...(updateDto.facebook !== undefined && {
-          facebook: updateDto.facebook,
-        }),
-        ...(updateDto.instagram !== undefined && {
-          instagram: updateDto.instagram,
-        }),
-        ...(updateDto.linkedin !== undefined && {
-          linkedin: updateDto.linkedin,
-        }),
-        ...(updateDto.showLogoOnQuotes !== undefined && {
-          showLogoOnQuotes: updateDto.showLogoOnQuotes,
-        }),
-        ...(updateDto.showAddressOnQuotes !== undefined && {
-          showAddressOnQuotes: updateDto.showAddressOnQuotes,
-        }),
-        ...(updateDto.showContactOnQuotes !== undefined && {
-          showContactOnQuotes: updateDto.showContactOnQuotes,
-        }),
-        ...(updateDto.quoteFooterText !== undefined && {
-          quoteFooterText: updateDto.quoteFooterText,
-        }),
-        ...(updateDto.invoiceFooterText !== undefined && {
-          invoiceFooterText: updateDto.invoiceFooterText,
-        }),
-      },
-    });
-
-    this.logger.log(`Configurações atualizadas para tenant ${tenantId}`);
-    return this.toResponseDto(updated);
+  private preparePartialUpdateData(
+    updateDto: UpdateWorkshopSettingsDto,
+  ): Prisma.WorkshopSettingsUpdateInput {
+    return {
+      ...(updateDto.displayName !== undefined && {
+        displayName: updateDto.displayName,
+      }),
+      ...(updateDto.logoUrl !== undefined && { logoUrl: updateDto.logoUrl }),
+      ...(updateDto.primaryColor !== undefined && {
+        primaryColor: updateDto.primaryColor,
+      }),
+      ...(updateDto.secondaryColor !== undefined && {
+        secondaryColor: updateDto.secondaryColor,
+      }),
+      ...(updateDto.accentColor !== undefined && {
+        accentColor: updateDto.accentColor,
+      }),
+      ...(updateDto.phone !== undefined && { phone: updateDto.phone }),
+      ...(updateDto.email !== undefined && { email: updateDto.email }),
+      ...(updateDto.whatsapp !== undefined && {
+        whatsapp: updateDto.whatsapp,
+      }),
+      ...(updateDto.address !== undefined && { address: updateDto.address }),
+      ...(updateDto.city !== undefined && { city: updateDto.city }),
+      ...(updateDto.state !== undefined && { state: updateDto.state }),
+      ...(updateDto.zipCode !== undefined && {
+        zipCode: updateDto.zipCode,
+      }),
+      ...(updateDto.country !== undefined && {
+        country: updateDto.country,
+      }),
+      ...(updateDto.website !== undefined && {
+        website: updateDto.website,
+      }),
+      ...(updateDto.facebook !== undefined && {
+        facebook: updateDto.facebook,
+      }),
+      ...(updateDto.instagram !== undefined && {
+        instagram: updateDto.instagram,
+      }),
+      ...(updateDto.linkedin !== undefined && {
+        linkedin: updateDto.linkedin,
+      }),
+      ...(updateDto.showLogoOnQuotes !== undefined && {
+        showLogoOnQuotes: updateDto.showLogoOnQuotes,
+      }),
+      ...(updateDto.showAddressOnQuotes !== undefined && {
+        showAddressOnQuotes: updateDto.showAddressOnQuotes,
+      }),
+      ...(updateDto.showContactOnQuotes !== undefined && {
+        showContactOnQuotes: updateDto.showContactOnQuotes,
+      }),
+      ...(updateDto.quoteFooterText !== undefined && {
+        quoteFooterText: updateDto.quoteFooterText,
+      }),
+      ...(updateDto.invoiceFooterText !== undefined && {
+        invoiceFooterText: updateDto.invoiceFooterText,
+      }),
+    };
   }
 
   /**

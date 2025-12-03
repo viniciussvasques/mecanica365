@@ -595,234 +595,15 @@ export class OnboardingService {
    */
   async handleChargeFailed(charge: Stripe.Charge): Promise<void> {
     try {
-      const customerId =
-        typeof charge.customer === 'string'
-          ? charge.customer
-          : charge.customer?.id;
-
+      const customerId = this.extractCustomerId(charge);
       if (!customerId) {
         this.logger.warn('Customer ID não encontrado em charge.failed');
         return;
       }
 
-      this.logger.log(
-        `Processando charge.failed: ${charge.id}, customer: ${customerId}`,
-      );
-      this.logger.log(
-        `Billing email: ${charge.billing_details?.email || 'não disponível'}`,
-      );
+      this.logChargeFailedInfo(charge, customerId);
 
-      // Tentar buscar tenant pelo checkout session (mais confiável)
-      let result: {
-        tenant: TenantWithUsers;
-        subscription: unknown;
-        adminUser: AdminUser | null;
-      } | null = null;
-
-      if (this.stripe && customerId) {
-        try {
-          // Buscar checkout sessions recentes para este customer
-          const sessions = await this.stripe.checkout.sessions.list({
-            customer: customerId,
-            limit: 5,
-          });
-
-          // Procurar session com metadata contendo tenantId
-          for (const session of sessions.data) {
-            const currentSessionMetadata = session.metadata as Record<
-              string,
-              string
-            > | null;
-            const sessionTenantId = currentSessionMetadata?.tenantId;
-            if (sessionTenantId) {
-              const tenant = await this.prisma.tenant.findUnique({
-                where: { id: sessionTenantId },
-                include: {
-                  users: {
-                    where: { role: UserRole.ADMIN },
-                    take: 1,
-                  },
-                },
-              });
-
-              if (tenant) {
-                let adminUser: AdminUser | null = tenant.users[0]
-                  ? {
-                      id: tenant.users[0].id,
-                      email: tenant.users[0].email,
-                      name: tenant.users[0].name,
-                      role: tenant.users[0].role,
-                    }
-                  : null;
-
-                // Se não tem usuário, usar email da session
-                if (!adminUser && session.customer_email) {
-                  const sessionTenantName =
-                    (currentSessionMetadata?.tenantName as
-                      | string
-                      | undefined) || tenant.name;
-                  adminUser = {
-                    id: 'temp',
-                    email: session.customer_email || '',
-                    name: sessionTenantName,
-                    role: 'admin',
-                  };
-                }
-
-                if (adminUser) {
-                  result = {
-                    tenant,
-                    subscription: null,
-                    adminUser,
-                  };
-                  this.logger.log(
-                    `Tenant encontrado via checkout session: ${tenant.id}`,
-                  );
-                  break;
-                }
-              }
-            }
-          }
-        } catch (error: unknown) {
-          const err = error as { message?: string };
-          this.logger.warn(
-            `Erro ao buscar checkout sessions: ${err.message || String(error)}`,
-          );
-        }
-      }
-
-      // Se não encontrou via session, buscar pelo customer ID
-      if (!result) {
-        result = await this.findTenantByStripeId(customerId, undefined);
-      }
-
-      // Se não encontrou, tentar buscar pelo email do billing (se disponível)
-      if (!result && charge.billing_details?.email) {
-        const email = charge.billing_details.email;
-        const user = await this.prisma.user.findFirst({
-          where: {
-            email: email.toLowerCase().trim(),
-            isActive: true,
-          },
-          include: {
-            tenant: {
-              include: {
-                users: {
-                  where: { role: UserRole.ADMIN },
-                  take: 1,
-                },
-              },
-            },
-          },
-        });
-
-        if (user && user.tenant) {
-          result = {
-            tenant: user.tenant,
-            subscription: null,
-            adminUser: user.tenant.users[0] || user,
-          };
-        }
-      }
-
-      // Se ainda não encontrou, buscar tenant pendente mais recente
-      if (!result) {
-        this.logger.log('Buscando tenant pendente mais recente...');
-        const pendingTenant = await this.prisma.tenant.findFirst({
-          where: {
-            status: TenantStatus.PENDING,
-          },
-          include: {
-            users: {
-              take: 1, // Qualquer usuário, não precisa ser admin
-            },
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        });
-
-        if (pendingTenant) {
-          this.logger.log(
-            `Tenant pendente encontrado: ${pendingTenant.id} (${pendingTenant.subdomain})`,
-          );
-          // Se não tem usuário, usar email do billing ou criar um objeto temporário
-          let adminUser: AdminUser | null = pendingTenant.users[0]
-            ? {
-                id: pendingTenant.users[0].id,
-                email: pendingTenant.users[0].email,
-                name: pendingTenant.users[0].name,
-                role: pendingTenant.users[0].role,
-              }
-            : null;
-
-          if (!adminUser && charge.billing_details?.email) {
-            // Criar objeto temporário com dados do billing
-            this.logger.log(
-              `Usando email do billing: ${charge.billing_details.email}`,
-            );
-            adminUser = {
-              id: 'temp',
-              email: charge.billing_details.email,
-              name: charge.billing_details.name || pendingTenant.name,
-              role: 'admin',
-            };
-          } else if (!adminUser) {
-            // Tentar buscar o email usado no checkout session
-            // Buscar checkout sessions recentes do Stripe para este customer
-            if (this.stripe && customerId) {
-              try {
-                const sessions = await this.stripe.checkout.sessions.list({
-                  customer: customerId,
-                  limit: 1,
-                });
-
-                if (sessions.data[0]?.customer_email) {
-                  const sessionEmail = sessions.data[0].customer_email;
-                  this.logger.log(`Email da session: ${sessionEmail}`);
-                  adminUser = {
-                    id: 'temp',
-                    email: sessionEmail,
-                    name: pendingTenant.name,
-                    role: 'admin',
-                  };
-                }
-              } catch (error: unknown) {
-                const err = error as { message?: string };
-                this.logger.warn(
-                  `Erro ao buscar session: ${err.message || String(error)}`,
-                );
-              }
-            }
-
-            // Se ainda não tem, usar email gerado do tenant
-            if (!adminUser) {
-              const tenantEmail = `${pendingTenant.subdomain}@temp.com`;
-              this.logger.log(`Usando email gerado: ${tenantEmail}`);
-              adminUser = {
-                id: 'temp',
-                email: tenantEmail,
-                name: pendingTenant.name,
-                role: 'admin',
-              };
-            }
-          }
-
-          if (adminUser) {
-            result = {
-              tenant: pendingTenant,
-              subscription: null,
-              adminUser,
-            };
-            this.logger.log(
-              `Tenant encontrado! Enviando email para: ${adminUser.email}`,
-            );
-          }
-        } else {
-          this.logger.warn('Nenhum tenant pendente encontrado');
-        }
-      }
-
+      const result = await this.findTenantForChargeFailed(charge, customerId);
       if (!result || !result.adminUser) {
         this.logger.warn(
           `Tenant não encontrado para charge: ${charge.id}, customer: ${customerId}`,
@@ -830,32 +611,9 @@ export class OnboardingService {
         return;
       }
 
-      const { tenant, adminUser } = result;
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      const retryUrl = `${frontendUrl}/onboarding/checkout?tenantId=${tenant.id}`;
-
-      // Obter motivo da falha
-      const failureReason =
-        charge.failure_message ||
-        charge.outcome?.reason ||
-        'Falha no processamento do pagamento. Verifique os dados do seu cartão.';
-
-      await this.emailService.sendPaymentFailedEmail({
-        to: adminUser.email,
-        name: adminUser.name,
-        subdomain: tenant.subdomain,
-        amount: charge.amount,
-        currency: charge.currency,
-        paymentMethod:
-          (charge.payment_method_details as { type?: string })?.type ||
-          'Cartão',
-        failureReason,
-        retryUrl,
-        supportUrl: `${frontendUrl}/suporte`,
-      });
-
+      await this.sendChargeFailedEmail(charge, result.tenant, result.adminUser);
       this.logger.log(
-        `Email de charge failed enviado para: ${adminUser.email}`,
+        `Email de charge failed enviado para: ${result.adminUser.email}`,
       );
     } catch (error: unknown) {
       const err = error as { message?: string; stack?: string };
@@ -864,6 +622,345 @@ export class OnboardingService {
         err.stack,
       );
     }
+  }
+
+  private extractCustomerId(charge: Stripe.Charge): string | undefined {
+    return typeof charge.customer === 'string'
+      ? charge.customer
+      : charge.customer?.id;
+  }
+
+  private logChargeFailedInfo(charge: Stripe.Charge, customerId: string): void {
+    this.logger.log(
+      `Processando charge.failed: ${charge.id}, customer: ${customerId}`,
+    );
+    this.logger.log(
+      `Billing email: ${charge.billing_details?.email || 'não disponível'}`,
+    );
+  }
+
+  private async findTenantForChargeFailed(
+    charge: Stripe.Charge,
+    customerId: string,
+  ): Promise<{
+    tenant: TenantWithUsers;
+    subscription: unknown;
+    adminUser: AdminUser | null;
+  } | null> {
+    let result = await this.findTenantByCheckoutSession(customerId);
+    if (result) {
+      return result;
+    }
+
+    result = await this.findTenantByStripeId(customerId, undefined);
+    if (result) {
+      return result;
+    }
+
+    if (charge.billing_details?.email) {
+      result = await this.findTenantByBillingEmail(charge.billing_details.email);
+      if (result) {
+        return result;
+      }
+    }
+
+    return await this.findPendingTenantForChargeFailed(charge, customerId);
+  }
+
+  private async findTenantByCheckoutSession(
+    customerId: string,
+  ): Promise<{
+    tenant: TenantWithUsers;
+    subscription: unknown;
+    adminUser: AdminUser | null;
+  } | null> {
+    if (!this.stripe) {
+      return null;
+    }
+
+    try {
+      const sessions = await this.stripe.checkout.sessions.list({
+        customer: customerId,
+        limit: 5,
+      });
+
+      for (const session of sessions.data) {
+        const result = await this.findTenantFromSession(session);
+        if (result) {
+          return result;
+        }
+      }
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      this.logger.warn(
+        `Erro ao buscar checkout sessions: ${err.message || String(error)}`,
+      );
+    }
+
+    return null;
+  }
+
+  private async findTenantFromSession(
+    session: Stripe.Checkout.Session,
+  ): Promise<{
+    tenant: TenantWithUsers;
+    subscription: unknown;
+    adminUser: AdminUser | null;
+  } | null> {
+    const currentSessionMetadata = session.metadata as Record<
+      string,
+      string
+    > | null;
+    const sessionTenantId = currentSessionMetadata?.tenantId;
+    if (!sessionTenantId) {
+      return null;
+    }
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: sessionTenantId },
+      include: {
+        users: {
+          where: { role: UserRole.ADMIN },
+          take: 1,
+        },
+      },
+    });
+
+    if (!tenant) {
+      return null;
+    }
+
+    const adminUser = this.createAdminUserFromTenant(tenant, session);
+    if (!adminUser) {
+      return null;
+    }
+
+    this.logger.log(
+      `Tenant encontrado via checkout session: ${tenant.id}`,
+    );
+
+    return {
+      tenant,
+      subscription: null,
+      adminUser,
+    };
+  }
+
+  private createAdminUserFromTenant(
+    tenant: TenantWithUsers,
+    session?: Stripe.Checkout.Session,
+  ): AdminUser | null {
+    if (tenant.users[0]) {
+      return {
+        id: tenant.users[0].id,
+        email: tenant.users[0].email,
+        name: tenant.users[0].name,
+        role: tenant.users[0].role,
+      };
+    }
+
+    if (session?.customer_email) {
+      const currentSessionMetadata = session.metadata as Record<
+        string,
+        string
+      > | null;
+      const sessionTenantName =
+        (currentSessionMetadata?.tenantName as string | undefined) ||
+        tenant.subdomain;
+      return {
+        id: 'temp',
+        email: session.customer_email,
+        name: sessionTenantName,
+        role: 'admin',
+      };
+    }
+
+    return null;
+  }
+
+  private async findTenantByBillingEmail(
+    email: string,
+  ): Promise<{
+    tenant: TenantWithUsers;
+    subscription: unknown;
+    adminUser: AdminUser | null;
+  } | null> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: email.toLowerCase().trim(),
+        isActive: true,
+      },
+      include: {
+        tenant: {
+          include: {
+            users: {
+              where: { role: UserRole.ADMIN },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    if (user && user.tenant) {
+      return {
+        tenant: user.tenant,
+        subscription: null,
+        adminUser: user.tenant.users[0] || user,
+      };
+    }
+
+    return null;
+  }
+
+  private async findPendingTenantForChargeFailed(
+    charge: Stripe.Charge,
+    customerId: string,
+  ): Promise<{
+    tenant: TenantWithUsers;
+    subscription: unknown;
+    adminUser: AdminUser | null;
+  } | null> {
+    this.logger.log('Buscando tenant pendente mais recente...');
+    const pendingTenant = await this.prisma.tenant.findFirst({
+      where: {
+        status: TenantStatus.PENDING,
+      },
+      include: {
+        users: {
+          take: 1,
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!pendingTenant) {
+      this.logger.warn('Nenhum tenant pendente encontrado');
+      return null;
+    }
+
+    this.logger.log(
+      `Tenant pendente encontrado: ${pendingTenant.id} (${pendingTenant.subdomain})`,
+    );
+
+    const adminUser = await this.createAdminUserForPendingTenant(
+      pendingTenant,
+      charge,
+      customerId,
+    );
+
+    if (!adminUser) {
+      return null;
+    }
+
+    this.logger.log(
+      `Tenant encontrado! Enviando email para: ${adminUser.email}`,
+    );
+
+    return {
+      tenant: pendingTenant,
+      subscription: null,
+      adminUser,
+    };
+  }
+
+  private async createAdminUserForPendingTenant(
+    pendingTenant: TenantWithUsers,
+    charge: Stripe.Charge,
+    customerId: string,
+  ): Promise<AdminUser | null> {
+    if (pendingTenant.users[0]) {
+      return {
+        id: pendingTenant.users[0].id,
+        email: pendingTenant.users[0].email,
+        name: pendingTenant.users[0].name,
+        role: pendingTenant.users[0].role,
+      };
+    }
+
+    if (charge.billing_details?.email) {
+      this.logger.log(
+        `Usando email do billing: ${charge.billing_details.email}`,
+      );
+      return {
+        id: 'temp',
+        email: charge.billing_details.email,
+        name: charge.billing_details.name || pendingTenant.subdomain,
+        role: 'admin',
+      };
+    }
+
+    const sessionEmail = await this.getEmailFromCheckoutSession(customerId);
+    if (sessionEmail) {
+      this.logger.log(`Email da session: ${sessionEmail}`);
+      return {
+        id: 'temp',
+        email: sessionEmail,
+        name: pendingTenant.subdomain,
+        role: 'admin',
+      };
+    }
+
+    const tenantEmail = `${pendingTenant.subdomain}@temp.com`;
+    this.logger.log(`Usando email gerado: ${tenantEmail}`);
+    return {
+      id: 'temp',
+      email: tenantEmail,
+      name: pendingTenant.subdomain,
+      role: 'admin',
+    };
+  }
+
+  private async getEmailFromCheckoutSession(
+    customerId: string,
+  ): Promise<string | null> {
+    if (!this.stripe) {
+      return null;
+    }
+
+    try {
+      const sessions = await this.stripe.checkout.sessions.list({
+        customer: customerId,
+        limit: 1,
+      });
+
+      return sessions.data[0]?.customer_email || null;
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      this.logger.warn(
+        `Erro ao buscar session: ${err.message || String(error)}`,
+      );
+      return null;
+    }
+  }
+
+  private async sendChargeFailedEmail(
+    charge: Stripe.Charge,
+    tenant: TenantWithUsers,
+    adminUser: AdminUser,
+  ): Promise<void> {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const retryUrl = `${frontendUrl}/onboarding/checkout?tenantId=${tenant.id}`;
+
+    const failureReason =
+      charge.failure_message ||
+      charge.outcome?.reason ||
+      'Falha no processamento do pagamento. Verifique os dados do seu cartão.';
+
+    await this.emailService.sendPaymentFailedEmail({
+      to: adminUser.email,
+      name: adminUser.name,
+      subdomain: tenant.subdomain,
+      amount: charge.amount,
+      currency: charge.currency,
+      paymentMethod:
+        (charge.payment_method_details as { type?: string })?.type || 'Cartão',
+      failureReason,
+      retryUrl,
+      supportUrl: `${frontendUrl}/suporte`,
+    });
   }
 
   /**

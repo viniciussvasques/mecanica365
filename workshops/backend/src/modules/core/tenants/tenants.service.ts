@@ -46,99 +46,24 @@ export class TenantsService {
         .toLowerCase()
         .trim();
 
-      // Determinar tipo de documento (padrão: CNPJ)
       const documentType = createTenantDto.documentType || DocumentType.CNPJ;
       const document = createTenantDto.document;
 
-      // Validar documento (CPF ou CNPJ)
-      if (documentType === DocumentType.CPF) {
-        if (!this.isValidCPF(document)) {
-          throw new BadRequestException('CPF inválido');
-        }
-      } else {
-        if (!this.isValidCNPJ(document)) {
-          throw new BadRequestException('CNPJ inválido');
-        }
-      }
+      this.validateDocument(documentType, document);
+      await this.validateDocumentUniqueness(document, documentType);
+      await this.validateSubdomainUniqueness(normalizedSubdomain);
 
-      // Verificar se documento já existe
-      const existingByDocument = await this.prisma.tenant.findUnique({
-        where: { document },
-      });
-
-      if (existingByDocument) {
-        throw new ConflictException(
-          `${documentType.toUpperCase()} já cadastrado`,
-        );
-      }
-
-      // Verificar se subdomain já existe
-      const existingBySubdomain = await this.prisma.tenant.findUnique({
-        where: { subdomain: normalizedSubdomain },
-      });
-
-      if (existingBySubdomain) {
-        throw new ConflictException('Subdomain já está em uso');
-      }
-
-      // Criar tenant
-      const tenant = await this.prisma.tenant.create({
-        data: {
-          name: createTenantDto.name.trim(),
-          documentType,
-          document,
-          subdomain: normalizedSubdomain,
-          plan: createTenantDto.plan || 'workshops_starter',
-          status: createTenantDto.status || 'pending',
-          adminEmail: createTenantDto.adminEmail
-            ? createTenantDto.adminEmail.toLowerCase().trim()
-            : null,
-        },
-        include: { subscription: true },
-      });
+      const tenant = await this.createTenant(
+        createTenantDto,
+        normalizedSubdomain,
+        documentType,
+        document,
+      );
 
       this.logger.log(`Tenant criado: ${tenant.id} (${tenant.subdomain})`);
 
-      // PROVISIONAMENTO AUTOMÁTICO: Criar subscription
-      try {
-        await this.billingService.create({
-          tenantId: tenant.id,
-          plan: (createTenantDto.plan ||
-            'workshops_starter') as SubscriptionPlan,
-          billingCycle: BillingCycle.MONTHLY,
-        });
-        this.logger.log(
-          `Subscription criada automaticamente para tenant ${tenant.id}`,
-        );
-      } catch (error: unknown) {
-        this.logger.error(
-          `Erro ao criar subscription automaticamente: ${getErrorMessage(error)}`,
-        );
-      }
-
-      // PROVISIONAMENTO AUTOMÁTICO: Criar usuário admin (se dados fornecidos)
-      if (
-        createTenantDto.adminEmail &&
-        createTenantDto.adminName &&
-        createTenantDto.adminPassword
-      ) {
-        try {
-          await this.usersService.create(tenant.id, {
-            email: createTenantDto.adminEmail,
-            name: createTenantDto.adminName,
-            password: createTenantDto.adminPassword,
-            role: UserRole.ADMIN,
-            isActive: true,
-          });
-          this.logger.log(
-            `Usuário admin criado automaticamente para tenant ${tenant.id}`,
-          );
-        } catch (error: unknown) {
-          this.logger.error(
-            `Erro ao criar usuário admin automaticamente: ${getErrorMessage(error)}`,
-          );
-        }
-      }
+      await this.provisionSubscription(tenant.id, createTenantDto.plan);
+      await this.provisionAdminUser(tenant.id, createTenantDto);
 
       // Buscar tenant atualizado com subscription
       const tenantWithSubscription = await this.prisma.tenant.findUnique({
@@ -219,6 +144,120 @@ export class TenantsService {
         getErrorStack(error),
       );
       throw error;
+    }
+  }
+
+  private validateDocument(
+    documentType: DocumentType,
+    document: string,
+  ): void {
+    if (documentType === DocumentType.CPF) {
+      if (!this.isValidCPF(document)) {
+        throw new BadRequestException('CPF inválido');
+      }
+    } else {
+      if (!this.isValidCNPJ(document)) {
+        throw new BadRequestException('CNPJ inválido');
+      }
+    }
+  }
+
+  private async validateDocumentUniqueness(
+    document: string,
+    documentType: DocumentType,
+  ): Promise<void> {
+    const existingByDocument = await this.prisma.tenant.findUnique({
+      where: { document },
+    });
+
+    if (existingByDocument) {
+      throw new ConflictException(
+        `${documentType.toUpperCase()} já cadastrado`,
+      );
+    }
+  }
+
+  private async validateSubdomainUniqueness(
+    subdomain: string,
+  ): Promise<void> {
+    const existingBySubdomain = await this.prisma.tenant.findUnique({
+      where: { subdomain },
+    });
+
+    if (existingBySubdomain) {
+      throw new ConflictException('Subdomain já está em uso');
+    }
+  }
+
+  private async createTenant(
+    createTenantDto: CreateTenantDto,
+    normalizedSubdomain: string,
+    documentType: DocumentType,
+    document: string,
+  ): Promise<TenantWithSubscription> {
+    return await this.prisma.tenant.create({
+      data: {
+        name: createTenantDto.name.trim(),
+        documentType,
+        document,
+        subdomain: normalizedSubdomain,
+        plan: createTenantDto.plan || 'workshops_starter',
+        status: createTenantDto.status || 'pending',
+        adminEmail: createTenantDto.adminEmail
+          ? createTenantDto.adminEmail.toLowerCase().trim()
+          : null,
+      },
+      include: { subscription: true },
+    });
+  }
+
+  private async provisionSubscription(
+    tenantId: string,
+    plan?: string,
+  ): Promise<void> {
+    try {
+      await this.billingService.create({
+        tenantId,
+        plan: (plan || 'workshops_starter') as SubscriptionPlan,
+        billingCycle: BillingCycle.MONTHLY,
+      });
+      this.logger.log(
+        `Subscription criada automaticamente para tenant ${tenantId}`,
+      );
+    } catch (error: unknown) {
+      this.logger.error(
+        `Erro ao criar subscription automaticamente: ${getErrorMessage(error)}`,
+      );
+    }
+  }
+
+  private async provisionAdminUser(
+    tenantId: string,
+    createTenantDto: CreateTenantDto,
+  ): Promise<void> {
+    if (
+      !createTenantDto.adminEmail ||
+      !createTenantDto.adminName ||
+      !createTenantDto.adminPassword
+    ) {
+      return;
+    }
+
+    try {
+      await this.usersService.create(tenantId, {
+        email: createTenantDto.adminEmail,
+        name: createTenantDto.adminName,
+        password: createTenantDto.adminPassword,
+        role: UserRole.ADMIN,
+        isActive: true,
+      });
+      this.logger.log(
+        `Usuário admin criado automaticamente para tenant ${tenantId}`,
+      );
+    } catch (error: unknown) {
+      this.logger.error(
+        `Erro ao criar usuário admin automaticamente: ${getErrorMessage(error)}`,
+      );
     }
   }
 

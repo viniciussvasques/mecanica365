@@ -34,92 +34,23 @@ export class CustomersService {
   ): Promise<CustomerResponseDto> {
     try {
       const documentType = createCustomerDto.documentType || DocumentType.CPF;
+      this.validateDocumentForCreate(documentType, createCustomerDto);
 
-      // Validar documento conforme o tipo
-      if (documentType === DocumentType.CPF) {
-        if (!createCustomerDto.cpf) {
-          throw new BadRequestException('CPF é obrigatório para pessoa física');
-        }
-        if (!this.isValidCPF(createCustomerDto.cpf)) {
-          throw new BadRequestException('CPF inválido');
-        }
-      } else if (documentType === DocumentType.CNPJ) {
-        if (!createCustomerDto.cnpj) {
-          throw new BadRequestException(
-            'CNPJ é obrigatório para pessoa jurídica',
-          );
-        }
-        if (!this.isValidCNPJ(createCustomerDto.cnpj)) {
-          throw new BadRequestException('CNPJ inválido');
-        }
-      }
+      await this.validatePhoneUniqueness(tenantId, createCustomerDto.phone);
+      await this.validateDocumentUniqueness(
+        tenantId,
+        documentType,
+        createCustomerDto.cpf,
+        createCustomerDto.cnpj,
+      );
 
-      // Verificar se já existe cliente com mesmo telefone no tenant
-      const existingCustomer = await this.prisma.customer.findFirst({
-        where: {
-          tenantId,
-          phone: createCustomerDto.phone,
-        },
-      });
-
-      if (existingCustomer) {
-        throw new ConflictException(
-          'Já existe um cliente cadastrado com este telefone',
-        );
-      }
-
-      // Verificar se já existe cliente com mesmo documento no tenant
-      if (documentType === DocumentType.CPF && createCustomerDto.cpf) {
-        const existingByCpf = await this.prisma.customer.findFirst({
-          where: {
-            tenantId,
-            cpf: createCustomerDto.cpf,
-          },
-        });
-
-        if (existingByCpf) {
-          throw new ConflictException(
-            'Já existe um cliente cadastrado com este CPF',
-          );
-        }
-      } else if (documentType === DocumentType.CNPJ && createCustomerDto.cnpj) {
-        const existingByCnpj = await this.prisma.customer.findFirst({
-          where: {
-            tenantId,
-            cnpj: createCustomerDto.cnpj,
-          } as Prisma.CustomerWhereInput,
-        });
-
-        if (existingByCnpj) {
-          throw new ConflictException(
-            'Já existe um cliente cadastrado com este CNPJ',
-          );
-        }
-      }
-
-      // Criar cliente
-      const customer = await this.prisma.customer.create({
-        data: {
-          tenantId,
-          name: createCustomerDto.name.trim(),
-          email: createCustomerDto.email?.trim() || null,
-          phone: createCustomerDto.phone.trim(),
-          documentType,
-          cpf:
-            documentType === DocumentType.CPF
-              ? createCustomerDto.cpf?.trim() || null
-              : null,
-          cnpj:
-            documentType === DocumentType.CNPJ
-              ? createCustomerDto.cnpj?.trim() || null
-              : null,
-          address: createCustomerDto.address?.trim() || null,
-          notes: createCustomerDto.notes?.trim() || null,
-        } as Prisma.CustomerUncheckedCreateInput,
-      });
+      const customer = await this.createCustomer(
+        tenantId,
+        createCustomerDto,
+        documentType,
+      );
 
       this.logger.log(`Cliente criado: ${customer.id} (tenant: ${tenantId})`);
-
       return this.toResponseDto(customer);
     } catch (error) {
       if (
@@ -268,139 +199,29 @@ export class CustomersService {
     updateCustomerDto: UpdateCustomerDto,
   ): Promise<CustomerResponseDto> {
     try {
-      // Verificar se cliente existe
-      const existingCustomer = await this.prisma.customer.findFirst({
-        where: {
-          id,
-          tenantId,
-        },
-      });
+      const existingCustomer = await this.findCustomerByIdAndTenant(id, tenantId);
+      this.validateDocumentsForUpdate(updateCustomerDto);
 
-      if (!existingCustomer) {
-        throw new NotFoundException('Cliente não encontrado');
-      }
+      await this.validatePhoneUniquenessForUpdate(
+        tenantId,
+        id,
+        updateCustomerDto.phone,
+        existingCustomer.phone,
+      );
+      await this.validateDocumentUniquenessForUpdate(
+        tenantId,
+        id,
+        updateCustomerDto,
+        existingCustomer,
+      );
 
-      // Validar documento se fornecido
-      if (updateCustomerDto.cpf && !this.isValidCPF(updateCustomerDto.cpf)) {
-        throw new BadRequestException('CPF inválido');
-      }
-      if (updateCustomerDto.cnpj && !this.isValidCNPJ(updateCustomerDto.cnpj)) {
-        throw new BadRequestException('CNPJ inválido');
-      }
-
-      // Verificar conflito de telefone (se alterado)
-      if (
-        updateCustomerDto.phone &&
-        updateCustomerDto.phone !== existingCustomer.phone
-      ) {
-        const customerWithPhone = await this.prisma.customer.findFirst({
-          where: {
-            tenantId,
-            phone: updateCustomerDto.phone,
-            NOT: { id },
-          },
-        });
-
-        if (customerWithPhone) {
-          throw new ConflictException(
-            'Já existe um cliente cadastrado com este telefone',
-          );
-        }
-      }
-
-      // Verificar conflito de documento (se alterado)
-      if (
-        updateCustomerDto.cpf &&
-        updateCustomerDto.cpf !== existingCustomer.cpf
-      ) {
-        const customerWithCpf = await this.prisma.customer.findFirst({
-          where: {
-            tenantId,
-            cpf: updateCustomerDto.cpf,
-            NOT: { id },
-          },
-        });
-
-        if (customerWithCpf) {
-          throw new ConflictException(
-            'Já existe um cliente cadastrado com este CPF',
-          );
-        }
-      }
-
-      if (
-        updateCustomerDto.cnpj &&
-        updateCustomerDto.cnpj !==
-          (existingCustomer as { cnpj?: string | null }).cnpj
-      ) {
-        const customerWithCnpj = await this.prisma.customer.findFirst({
-          where: {
-            tenantId,
-            cnpj: updateCustomerDto.cnpj,
-            NOT: { id },
-          } as Prisma.CustomerWhereInput,
-        });
-
-        if (customerWithCnpj) {
-          throw new ConflictException(
-            'Já existe um cliente cadastrado com este CNPJ',
-          );
-        }
-      }
-
-      // Preparar dados para atualização
-      const updateData: Prisma.CustomerUpdateInput = {};
-
-      if (updateCustomerDto.name !== undefined) {
-        updateData.name = updateCustomerDto.name.trim();
-      }
-
-      if (updateCustomerDto.email !== undefined) {
-        updateData.email = updateCustomerDto.email?.trim() || null;
-      }
-
-      if (updateCustomerDto.phone !== undefined) {
-        updateData.phone = updateCustomerDto.phone.trim();
-      }
-
-      if (updateCustomerDto.documentType !== undefined) {
-        (updateData as { documentType?: string }).documentType =
-          updateCustomerDto.documentType;
-      }
-
-      if (updateCustomerDto.cpf !== undefined) {
-        updateData.cpf = updateCustomerDto.cpf?.trim() || null;
-        // Se está atualizando CPF, limpar CNPJ
-        if (updateCustomerDto.cpf) {
-          (updateData as { cnpj?: string | null }).cnpj = null;
-        }
-      }
-
-      if (updateCustomerDto.cnpj !== undefined) {
-        (updateData as { cnpj?: string | null }).cnpj =
-          updateCustomerDto.cnpj?.trim() || null;
-        // Se está atualizando CNPJ, limpar CPF
-        if (updateCustomerDto.cnpj) {
-          updateData.cpf = null;
-        }
-      }
-
-      if (updateCustomerDto.address !== undefined) {
-        updateData.address = updateCustomerDto.address?.trim() || null;
-      }
-
-      if (updateCustomerDto.notes !== undefined) {
-        updateData.notes = updateCustomerDto.notes?.trim() || null;
-      }
-
-      // Atualizar cliente
+      const updateData = this.prepareCustomerUpdateData(updateCustomerDto);
       const customer = await this.prisma.customer.update({
         where: { id },
         data: updateData,
       });
 
       this.logger.log(`Cliente atualizado: ${id} (tenant: ${tenantId})`);
-
       return this.toResponseDto(customer);
     } catch (error) {
       if (
@@ -486,6 +307,289 @@ export class CustomersService {
       );
       throw new BadRequestException('Erro ao remover cliente');
     }
+  }
+
+  private validateDocumentForCreate(
+    documentType: DocumentType,
+    createCustomerDto: CreateCustomerDto,
+  ): void {
+    if (documentType === DocumentType.CPF) {
+      if (!createCustomerDto.cpf) {
+        throw new BadRequestException('CPF é obrigatório para pessoa física');
+      }
+      if (!this.isValidCPF(createCustomerDto.cpf)) {
+        throw new BadRequestException('CPF inválido');
+      }
+    } else if (documentType === DocumentType.CNPJ) {
+      if (!createCustomerDto.cnpj) {
+        throw new BadRequestException(
+          'CNPJ é obrigatório para pessoa jurídica',
+        );
+      }
+      if (!this.isValidCNPJ(createCustomerDto.cnpj)) {
+        throw new BadRequestException('CNPJ inválido');
+      }
+    }
+  }
+
+  private async validatePhoneUniqueness(
+    tenantId: string,
+    phone: string,
+  ): Promise<void> {
+    const existingCustomer = await this.prisma.customer.findFirst({
+      where: {
+        tenantId,
+        phone,
+      },
+    });
+
+    if (existingCustomer) {
+      throw new ConflictException(
+        'Já existe um cliente cadastrado com este telefone',
+      );
+    }
+  }
+
+  private async validateDocumentUniqueness(
+    tenantId: string,
+    documentType: DocumentType,
+    cpf: string | undefined,
+    cnpj: string | undefined,
+  ): Promise<void> {
+    if (documentType === DocumentType.CPF && cpf) {
+      await this.validateCpfUniqueness(tenantId, cpf);
+    } else if (documentType === DocumentType.CNPJ && cnpj) {
+      await this.validateCnpjUniqueness(tenantId, cnpj);
+    }
+  }
+
+  private async validateCpfUniqueness(
+    tenantId: string,
+    cpf: string,
+  ): Promise<void> {
+    const existingByCpf = await this.prisma.customer.findFirst({
+      where: {
+        tenantId,
+        cpf: cpf.trim(),
+      },
+    });
+
+    if (existingByCpf) {
+      throw new ConflictException(
+        'Já existe um cliente cadastrado com este CPF',
+      );
+    }
+  }
+
+  private async validateCnpjUniqueness(
+    tenantId: string,
+    cnpj: string,
+  ): Promise<void> {
+    const existingByCnpj = await this.prisma.customer.findFirst({
+      where: {
+        tenantId,
+        cnpj: cnpj.trim(),
+      } as Prisma.CustomerWhereInput,
+    });
+
+    if (existingByCnpj) {
+      throw new ConflictException(
+        'Já existe um cliente cadastrado com este CNPJ',
+      );
+    }
+  }
+
+  private async createCustomer(
+    tenantId: string,
+    createCustomerDto: CreateCustomerDto,
+    documentType: DocumentType,
+  ): Promise<PrismaCustomer> {
+    return await this.prisma.customer.create({
+      data: {
+        tenantId,
+        name: createCustomerDto.name.trim(),
+        email: createCustomerDto.email?.trim() || null,
+        phone: createCustomerDto.phone.trim(),
+        documentType,
+        cpf:
+          documentType === DocumentType.CPF
+            ? createCustomerDto.cpf?.trim() || null
+            : null,
+        cnpj:
+          documentType === DocumentType.CNPJ
+            ? createCustomerDto.cnpj?.trim() || null
+            : null,
+        address: createCustomerDto.address?.trim() || null,
+        notes: createCustomerDto.notes?.trim() || null,
+      } as Prisma.CustomerUncheckedCreateInput,
+    });
+  }
+
+  private async findCustomerByIdAndTenant(
+    id: string,
+    tenantId: string,
+  ): Promise<PrismaCustomer> {
+    const existingCustomer = await this.prisma.customer.findFirst({
+      where: {
+        id,
+        tenantId,
+      },
+    });
+
+    if (!existingCustomer) {
+      throw new NotFoundException('Cliente não encontrado');
+    }
+
+    return existingCustomer;
+  }
+
+  private validateDocumentsForUpdate(
+    updateCustomerDto: UpdateCustomerDto,
+  ): void {
+    if (updateCustomerDto.cpf && !this.isValidCPF(updateCustomerDto.cpf)) {
+      throw new BadRequestException('CPF inválido');
+    }
+    if (updateCustomerDto.cnpj && !this.isValidCNPJ(updateCustomerDto.cnpj)) {
+      throw new BadRequestException('CNPJ inválido');
+    }
+  }
+
+  private async validatePhoneUniquenessForUpdate(
+    tenantId: string,
+    id: string,
+    newPhone: string | undefined,
+    currentPhone: string,
+  ): Promise<void> {
+    if (!newPhone || newPhone === currentPhone) {
+      return;
+    }
+
+    const customerWithPhone = await this.prisma.customer.findFirst({
+      where: {
+        tenantId,
+        phone: newPhone,
+        NOT: { id },
+      },
+    });
+
+    if (customerWithPhone) {
+      throw new ConflictException(
+        'Já existe um cliente cadastrado com este telefone',
+      );
+    }
+  }
+
+  private async validateDocumentUniquenessForUpdate(
+    tenantId: string,
+    id: string,
+    updateCustomerDto: UpdateCustomerDto,
+    existingCustomer: PrismaCustomer,
+  ): Promise<void> {
+    if (
+      updateCustomerDto.cpf &&
+      updateCustomerDto.cpf !== existingCustomer.cpf
+    ) {
+      await this.validateCpfUniquenessForUpdate(tenantId, id, updateCustomerDto.cpf);
+    }
+
+    const existingCustomerWithCnpj = existingCustomer as PrismaCustomer & {
+      cnpj?: string | null;
+    };
+
+    if (
+      updateCustomerDto.cnpj &&
+      updateCustomerDto.cnpj !== existingCustomerWithCnpj.cnpj
+    ) {
+      await this.validateCnpjUniquenessForUpdate(tenantId, id, updateCustomerDto.cnpj);
+    }
+  }
+
+  private async validateCpfUniquenessForUpdate(
+    tenantId: string,
+    id: string,
+    cpf: string,
+  ): Promise<void> {
+    const customerWithCpf = await this.prisma.customer.findFirst({
+      where: {
+        tenantId,
+        cpf,
+        NOT: { id },
+      },
+    });
+
+    if (customerWithCpf) {
+      throw new ConflictException(
+        'Já existe um cliente cadastrado com este CPF',
+      );
+    }
+  }
+
+  private async validateCnpjUniquenessForUpdate(
+    tenantId: string,
+    id: string,
+    cnpj: string,
+  ): Promise<void> {
+    const customerWithCnpj = await this.prisma.customer.findFirst({
+      where: {
+        tenantId,
+        cnpj,
+        NOT: { id },
+      } as Prisma.CustomerWhereInput,
+    });
+
+    if (customerWithCnpj) {
+      throw new ConflictException(
+        'Já existe um cliente cadastrado com este CNPJ',
+      );
+    }
+  }
+
+  private prepareCustomerUpdateData(
+    updateCustomerDto: UpdateCustomerDto,
+  ): Prisma.CustomerUpdateInput {
+    const updateData: Prisma.CustomerUpdateInput = {};
+
+    if (updateCustomerDto.name !== undefined) {
+      updateData.name = updateCustomerDto.name.trim();
+    }
+
+    if (updateCustomerDto.email !== undefined) {
+      updateData.email = updateCustomerDto.email?.trim() || null;
+    }
+
+    if (updateCustomerDto.phone !== undefined) {
+      updateData.phone = updateCustomerDto.phone.trim();
+    }
+
+    if (updateCustomerDto.documentType !== undefined) {
+      (updateData as { documentType?: string }).documentType =
+        updateCustomerDto.documentType;
+    }
+
+    if (updateCustomerDto.cpf !== undefined) {
+      updateData.cpf = updateCustomerDto.cpf?.trim() || null;
+      if (updateCustomerDto.cpf) {
+        (updateData as { cnpj?: string | null }).cnpj = null;
+      }
+    }
+
+    if (updateCustomerDto.cnpj !== undefined) {
+      (updateData as { cnpj?: string | null }).cnpj =
+        updateCustomerDto.cnpj?.trim() || null;
+      if (updateCustomerDto.cnpj) {
+        updateData.cpf = null;
+      }
+    }
+
+    if (updateCustomerDto.address !== undefined) {
+      updateData.address = updateCustomerDto.address?.trim() || null;
+    }
+
+    if (updateCustomerDto.notes !== undefined) {
+      updateData.notes = updateCustomerDto.notes?.trim() || null;
+    }
+
+    return updateData;
   }
 
   /**

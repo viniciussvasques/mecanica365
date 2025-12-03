@@ -32,138 +32,16 @@ export class VehiclesService {
     createVehicleDto: CreateVehicleDto,
   ): Promise<VehicleResponseDto> {
     try {
-      // Verificar se o cliente existe e pertence ao tenant
-      const customer = await this.prisma.customer.findFirst({
-        where: {
-          id: createVehicleDto.customerId,
-          tenantId,
-        },
-      });
+      await this.validateCustomerExists(tenantId, createVehicleDto.customerId);
+      this.validateAtLeastOneIdentifierProvided(createVehicleDto);
 
-      if (!customer) {
-        throw new NotFoundException('Cliente não encontrado');
-      }
+      await this.validateIdentifiersForCreate(tenantId, createVehicleDto);
+      await this.handleDefaultVehicleOnCreate(
+        createVehicleDto.isDefault,
+        createVehicleDto.customerId,
+      );
 
-      // Validar que pelo menos um identificador seja fornecido (VIN, RENAVAN ou Placa)
-      if (
-        !createVehicleDto.vin &&
-        !createVehicleDto.renavan &&
-        !createVehicleDto.placa
-      ) {
-        throw new BadRequestException(
-          'É necessário informar pelo menos um identificador: VIN, RENAVAN ou Placa',
-        );
-      }
-
-      // Validar RENAVAN se fornecido
-      if (createVehicleDto.renavan) {
-        const normalizedRenavan = createVehicleDto.renavan.trim();
-
-        // Verificar se já existe veículo com mesmo RENAVAN no tenant
-        const existingByRenavan = await this.prisma.customerVehicle.findFirst({
-          where: {
-            customer: {
-              tenantId,
-            },
-            renavan: normalizedRenavan,
-          } as Prisma.CustomerVehicleWhereInput,
-        });
-
-        if (existingByRenavan) {
-          throw new ConflictException(
-            'Já existe um veículo cadastrado com este RENAVAN',
-          );
-        }
-      }
-
-      // Validar VIN se fornecido
-      if (createVehicleDto.vin) {
-        const normalizedVin = createVehicleDto.vin.toUpperCase().trim();
-
-        // Verificar se já existe veículo com mesmo VIN no tenant
-        const existingByVin = await this.prisma.customerVehicle.findFirst({
-          where: {
-            customer: {
-              tenantId,
-            },
-            vin: normalizedVin,
-          },
-        });
-
-        if (existingByVin) {
-          throw new ConflictException(
-            'Já existe um veículo cadastrado com este VIN',
-          );
-        }
-      }
-
-      // Validar placa se fornecida
-      if (createVehicleDto.placa) {
-        const normalizedPlaca = createVehicleDto.placa.toUpperCase().trim();
-
-        // Verificar se já existe veículo com mesma placa no tenant
-        const existingByPlaca = await this.prisma.customerVehicle.findFirst({
-          where: {
-            customer: {
-              tenantId,
-            },
-            placa: normalizedPlaca,
-          },
-        });
-
-        if (existingByPlaca) {
-          throw new ConflictException(
-            'Já existe um veículo cadastrado com esta placa',
-          );
-        }
-      }
-
-      // Se isDefault for true, desmarcar outros veículos padrão do cliente
-      if (createVehicleDto.isDefault) {
-        await this.prisma.customerVehicle.updateMany({
-          where: {
-            customerId: createVehicleDto.customerId,
-            isDefault: true,
-          },
-          data: {
-            isDefault: false,
-          },
-        });
-      }
-
-      // Criar veículo - não enviar campos null, apenas undefined ou omitir
-      const vehicleData: Prisma.CustomerVehicleCreateInput = {
-        customer: {
-          connect: { id: createVehicleDto.customerId },
-        },
-        isDefault: createVehicleDto.isDefault ?? false,
-      };
-
-      if (createVehicleDto.vin) {
-        vehicleData.vin = createVehicleDto.vin.toUpperCase().trim();
-      }
-      if (createVehicleDto.renavan) {
-        vehicleData.renavan = createVehicleDto.renavan.trim();
-      }
-      if (createVehicleDto.placa) {
-        vehicleData.placa = createVehicleDto.placa.toUpperCase().trim();
-      }
-      if (createVehicleDto.make) {
-        vehicleData.make = createVehicleDto.make.trim();
-      }
-      if (createVehicleDto.model) {
-        vehicleData.model = createVehicleDto.model.trim();
-      }
-      if (createVehicleDto.year) {
-        vehicleData.year = createVehicleDto.year;
-      }
-      if (createVehicleDto.color) {
-        vehicleData.color = createVehicleDto.color.trim();
-      }
-      if (createVehicleDto.mileage !== undefined) {
-        vehicleData.mileage = createVehicleDto.mileage;
-      }
-
+      const vehicleData = this.prepareVehicleCreateData(createVehicleDto);
       const vehicle = await this.prisma.customerVehicle.create({
         data: vehicleData,
       });
@@ -342,235 +220,44 @@ export class VehiclesService {
     updateVehicleDto: UpdateVehicleDto,
   ): Promise<VehicleResponseDto> {
     try {
-      // Verificar se o veículo existe e pertence ao tenant
-      const existingVehicle = await this.prisma.customerVehicle.findFirst({
-        where: {
-          id,
-          customer: {
-            tenantId,
-          },
-        },
-      });
+      const existingVehicle = await this.findVehicleByIdAndTenant(id, tenantId);
+      await this.validateCustomerTransfer(
+        tenantId,
+        updateVehicleDto.customerId,
+        existingVehicle.customerId,
+      );
 
-      if (!existingVehicle) {
-        throw new NotFoundException('Veículo não encontrado');
-      }
+      await this.validateIdentifiers(
+        tenantId,
+        id,
+        updateVehicleDto,
+        existingVehicle,
+      );
 
-      // Se customerId foi fornecido, validar transferência de veículo
-      if (
-        updateVehicleDto.customerId &&
-        updateVehicleDto.customerId !== existingVehicle.customerId
-      ) {
-        // Verificar se o novo cliente existe e pertence ao tenant
-        const newCustomer = await this.prisma.customer.findFirst({
-          where: {
-            id: updateVehicleDto.customerId,
-            tenantId,
-          },
-        });
+      const finalIdentifiers = this.calculateFinalIdentifiers(
+        updateVehicleDto,
+        existingVehicle,
+      );
+      this.validateAtLeastOneIdentifier(finalIdentifiers);
 
-        if (!newCustomer) {
-          throw new NotFoundException(
-            'Cliente não encontrado para transferência',
-          );
-        }
-      }
+      await this.handleDefaultVehicle(
+        updateVehicleDto.isDefault,
+        existingVehicle.customerId,
+        id,
+      );
 
-      // Validar VIN se fornecido e diferente do atual
-      if (
-        updateVehicleDto.vin &&
-        updateVehicleDto.vin !== existingVehicle.vin
-      ) {
-        const normalizedVin = updateVehicleDto.vin.toUpperCase().trim();
+      const updateData = await this.prepareVehicleUpdateData(
+        updateVehicleDto,
+        existingVehicle,
+        id,
+      );
 
-        const existingByVin = await this.prisma.customerVehicle.findFirst({
-          where: {
-            id: { not: id },
-            customer: {
-              tenantId,
-            },
-            vin: normalizedVin,
-          },
-        });
-
-        if (existingByVin) {
-          throw new ConflictException(
-            'Já existe um veículo cadastrado com este VIN',
-          );
-        }
-      }
-
-      // Declarar tipo com renavan uma única vez
-      const existingVehicleWithRenavan =
-        existingVehicle as typeof existingVehicle & { renavan?: string | null };
-
-      // Validar RENAVAN se fornecido e diferente do atual
-      if (
-        updateVehicleDto.renavan &&
-        updateVehicleDto.renavan !== existingVehicleWithRenavan.renavan
-      ) {
-        const normalizedRenavan = updateVehicleDto.renavan.trim();
-
-        const existingByRenavan = await this.prisma.customerVehicle.findFirst({
-          where: {
-            id: { not: id },
-            customer: {
-              tenantId,
-            },
-            renavan: normalizedRenavan,
-          } as Prisma.CustomerVehicleWhereInput,
-        });
-
-        if (existingByRenavan) {
-          throw new ConflictException(
-            'Já existe um veículo cadastrado com este RENAVAN',
-          );
-        }
-      }
-
-      // Validar placa se fornecida e diferente da atual
-      if (
-        updateVehicleDto.placa &&
-        updateVehicleDto.placa !== existingVehicle.placa
-      ) {
-        const normalizedPlaca = updateVehicleDto.placa.toUpperCase().trim();
-
-        const existingByPlaca = await this.prisma.customerVehicle.findFirst({
-          where: {
-            id: { not: id },
-            customer: {
-              tenantId,
-            },
-            placa: normalizedPlaca,
-          },
-        });
-
-        if (existingByPlaca) {
-          throw new ConflictException(
-            'Já existe um veículo cadastrado com esta placa',
-          );
-        }
-      }
-
-      // Validar que pelo menos um identificador seja mantido (VIN, RENAVAN ou Placa)
-      // Usar existingVehicleWithRenavan já declarado acima
-      const finalVin =
-        updateVehicleDto.vin !== undefined
-          ? updateVehicleDto.vin?.toUpperCase().trim() || null
-          : existingVehicle.vin;
-      const finalRenavan =
-        updateVehicleDto.renavan !== undefined
-          ? updateVehicleDto.renavan?.trim() || null
-          : existingVehicleWithRenavan.renavan || null;
-      const finalPlaca =
-        updateVehicleDto.placa !== undefined
-          ? updateVehicleDto.placa?.toUpperCase().trim() || null
-          : existingVehicle.placa;
-
-      if (!finalVin && !finalRenavan && !finalPlaca) {
-        throw new BadRequestException(
-          'É necessário manter pelo menos um identificador: VIN, RENAVAN ou Placa',
-        );
-      }
-
-      // Se isDefault for true, desmarcar outros veículos padrão do cliente
-      if (updateVehicleDto.isDefault === true) {
-        await this.prisma.customerVehicle.updateMany({
-          where: {
-            customerId: existingVehicle.customerId,
-            id: { not: id },
-            isDefault: true,
-          },
-          data: {
-            isDefault: false,
-          },
-        });
-      }
-
-      // Preparar dados para atualização - não enviar null, apenas undefined ou omitir
-      const updateData: Prisma.CustomerVehicleUpdateInput = {};
-
-      if (updateVehicleDto.vin !== undefined) {
-        if (updateVehicleDto.vin) {
-          updateData.vin = updateVehicleDto.vin.toUpperCase().trim();
-        } else {
-          updateData.vin = null; // Permitir limpar o campo
-        }
-      }
-
-      if (updateVehicleDto.renavan !== undefined) {
-        if (updateVehicleDto.renavan) {
-          (updateData as { renavan?: string }).renavan =
-            updateVehicleDto.renavan.trim();
-        } else {
-          (updateData as { renavan?: string | null }).renavan = null; // Permitir limpar o campo
-        }
-      }
-
-      if (updateVehicleDto.placa !== undefined) {
-        if (updateVehicleDto.placa) {
-          updateData.placa = updateVehicleDto.placa.toUpperCase().trim();
-        } else {
-          updateData.placa = null; // Permitir limpar o campo
-        }
-      }
-
-      if (updateVehicleDto.make !== undefined) {
-        updateData.make = updateVehicleDto.make?.trim() || null;
-      }
-
-      if (updateVehicleDto.model !== undefined) {
-        updateData.model = updateVehicleDto.model?.trim() || null;
-      }
-
-      if (updateVehicleDto.year !== undefined) {
-        updateData.year = updateVehicleDto.year || null;
-      }
-
-      if (updateVehicleDto.color !== undefined) {
-        updateData.color = updateVehicleDto.color?.trim() || null;
-      }
-
-      if (updateVehicleDto.mileage !== undefined) {
-        updateData.mileage = updateVehicleDto.mileage ?? null;
-      }
-
-      if (updateVehicleDto.isDefault !== undefined) {
-        updateData.isDefault = updateVehicleDto.isDefault;
-      }
-
-      // Se customerId foi fornecido, transferir veículo para novo cliente
-      if (
-        updateVehicleDto.customerId &&
-        updateVehicleDto.customerId !== existingVehicle.customerId
-      ) {
-        updateData.customer = { connect: { id: updateVehicleDto.customerId } };
-
-        // Se isDefault não foi explicitamente false, marcar como padrão no novo cliente
-        if (updateVehicleDto.isDefault !== false) {
-          // Desmarcar outros veículos padrão do novo cliente
-          await this.prisma.customerVehicle.updateMany({
-            where: {
-              customerId: updateVehicleDto.customerId,
-              id: { not: id },
-              isDefault: true,
-            },
-            data: {
-              isDefault: false,
-            },
-          });
-          updateData.isDefault = true;
-        }
-      }
-
-      // Atualizar veículo
       const updatedVehicle = await this.prisma.customerVehicle.update({
         where: { id },
         data: updateData,
       });
 
       this.logger.log(`Veículo atualizado: ${id}`);
-
       return this.toResponseDto(updatedVehicle);
     } catch (error) {
       if (
@@ -650,6 +337,465 @@ export class VehiclesService {
       );
       throw new BadRequestException('Erro ao remover veículo');
     }
+  }
+
+  private async validateCustomerExists(
+    tenantId: string,
+    customerId: string,
+  ): Promise<void> {
+    const customer = await this.prisma.customer.findFirst({
+      where: {
+        id: customerId,
+        tenantId,
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Cliente não encontrado');
+    }
+  }
+
+  private validateAtLeastOneIdentifierProvided(
+    createVehicleDto: CreateVehicleDto,
+  ): void {
+    if (
+      !createVehicleDto.vin &&
+      !createVehicleDto.renavan &&
+      !createVehicleDto.placa
+    ) {
+      throw new BadRequestException(
+        'É necessário informar pelo menos um identificador: VIN, RENAVAN ou Placa',
+      );
+    }
+  }
+
+  private async validateIdentifiersForCreate(
+    tenantId: string,
+    createVehicleDto: CreateVehicleDto,
+  ): Promise<void> {
+    if (createVehicleDto.renavan) {
+      await this.validateRenavanUniquenessForCreate(
+        tenantId,
+        createVehicleDto.renavan.trim(),
+      );
+    }
+
+    if (createVehicleDto.vin) {
+      await this.validateVinUniquenessForCreate(
+        tenantId,
+        createVehicleDto.vin.toUpperCase().trim(),
+      );
+    }
+
+    if (createVehicleDto.placa) {
+      await this.validatePlacaUniquenessForCreate(
+        tenantId,
+        createVehicleDto.placa.toUpperCase().trim(),
+      );
+    }
+  }
+
+  private async validateRenavanUniquenessForCreate(
+    tenantId: string,
+    normalizedRenavan: string,
+  ): Promise<void> {
+    const existingByRenavan = await this.prisma.customerVehicle.findFirst({
+      where: {
+        customer: {
+          tenantId,
+        },
+        renavan: normalizedRenavan,
+      } as Prisma.CustomerVehicleWhereInput,
+    });
+
+    if (existingByRenavan) {
+      throw new ConflictException(
+        'Já existe um veículo cadastrado com este RENAVAN',
+      );
+    }
+  }
+
+  private async validateVinUniquenessForCreate(
+    tenantId: string,
+    normalizedVin: string,
+  ): Promise<void> {
+    const existingByVin = await this.prisma.customerVehicle.findFirst({
+      where: {
+        customer: {
+          tenantId,
+        },
+        vin: normalizedVin,
+      },
+    });
+
+    if (existingByVin) {
+      throw new ConflictException(
+        'Já existe um veículo cadastrado com este VIN',
+      );
+    }
+  }
+
+  private async validatePlacaUniquenessForCreate(
+    tenantId: string,
+    normalizedPlaca: string,
+  ): Promise<void> {
+    const existingByPlaca = await this.prisma.customerVehicle.findFirst({
+      where: {
+        customer: {
+          tenantId,
+        },
+        placa: normalizedPlaca,
+      },
+    });
+
+    if (existingByPlaca) {
+      throw new ConflictException(
+        'Já existe um veículo cadastrado com esta placa',
+      );
+    }
+  }
+
+  private async handleDefaultVehicleOnCreate(
+    isDefault: boolean | undefined,
+    customerId: string,
+  ): Promise<void> {
+    if (isDefault) {
+      await this.prisma.customerVehicle.updateMany({
+        where: {
+          customerId,
+          isDefault: true,
+        },
+        data: {
+          isDefault: false,
+        },
+      });
+    }
+  }
+
+  private prepareVehicleCreateData(
+    createVehicleDto: CreateVehicleDto,
+  ): Prisma.CustomerVehicleCreateInput {
+    const vehicleData: Prisma.CustomerVehicleCreateInput = {
+      customer: {
+        connect: { id: createVehicleDto.customerId },
+      },
+      isDefault: createVehicleDto.isDefault ?? false,
+    };
+
+    if (createVehicleDto.vin) {
+      vehicleData.vin = createVehicleDto.vin.toUpperCase().trim();
+    }
+    if (createVehicleDto.renavan) {
+      vehicleData.renavan = createVehicleDto.renavan.trim();
+    }
+    if (createVehicleDto.placa) {
+      vehicleData.placa = createVehicleDto.placa.toUpperCase().trim();
+    }
+    if (createVehicleDto.make) {
+      vehicleData.make = createVehicleDto.make.trim();
+    }
+    if (createVehicleDto.model) {
+      vehicleData.model = createVehicleDto.model.trim();
+    }
+    if (createVehicleDto.year) {
+      vehicleData.year = createVehicleDto.year;
+    }
+    if (createVehicleDto.color) {
+      vehicleData.color = createVehicleDto.color.trim();
+    }
+    if (createVehicleDto.mileage !== undefined) {
+      vehicleData.mileage = createVehicleDto.mileage;
+    }
+
+    return vehicleData;
+  }
+
+  private async findVehicleByIdAndTenant(
+    id: string,
+    tenantId: string,
+  ): Promise<
+    Prisma.CustomerVehicleGetPayload<{
+      include: { customer: true };
+    }>
+  > {
+    const existingVehicle = await this.prisma.customerVehicle.findFirst({
+      where: {
+        id,
+        customer: {
+          tenantId,
+        },
+      },
+      include: {
+        customer: true,
+      },
+    });
+
+    if (!existingVehicle) {
+      throw new NotFoundException('Veículo não encontrado');
+    }
+
+    return existingVehicle;
+  }
+
+  private async validateCustomerTransfer(
+    tenantId: string,
+    newCustomerId: string | undefined,
+    currentCustomerId: string,
+  ): Promise<void> {
+    if (!newCustomerId || newCustomerId === currentCustomerId) {
+      return;
+    }
+
+    const newCustomer = await this.prisma.customer.findFirst({
+      where: {
+        id: newCustomerId,
+        tenantId,
+      },
+    });
+
+    if (!newCustomer) {
+      throw new NotFoundException(
+        'Cliente não encontrado para transferência',
+      );
+    }
+  }
+
+  private async validateIdentifiers(
+    tenantId: string,
+    id: string,
+    updateVehicleDto: UpdateVehicleDto,
+    existingVehicle: Prisma.CustomerVehicleGetPayload<{
+      include: { customer: true };
+    }>,
+  ): Promise<void> {
+    if (updateVehicleDto.vin && updateVehicleDto.vin !== existingVehicle.vin) {
+      await this.validateVinUniqueness(
+        tenantId,
+        id,
+        updateVehicleDto.vin.toUpperCase().trim(),
+      );
+    }
+
+    const existingVehicleWithRenavan =
+      existingVehicle as typeof existingVehicle & { renavan?: string | null };
+
+    if (
+      updateVehicleDto.renavan &&
+      updateVehicleDto.renavan !== existingVehicleWithRenavan.renavan
+    ) {
+      await this.validateRenavanUniqueness(
+        tenantId,
+        id,
+        updateVehicleDto.renavan.trim(),
+      );
+    }
+
+    if (
+      updateVehicleDto.placa &&
+      updateVehicleDto.placa !== existingVehicle.placa
+    ) {
+      await this.validatePlacaUniqueness(
+        tenantId,
+        id,
+        updateVehicleDto.placa.toUpperCase().trim(),
+      );
+    }
+  }
+
+  private async validateVinUniqueness(
+    tenantId: string,
+    id: string,
+    normalizedVin: string,
+  ): Promise<void> {
+    const existingByVin = await this.prisma.customerVehicle.findFirst({
+      where: {
+        id: { not: id },
+        customer: {
+          tenantId,
+        },
+        vin: normalizedVin,
+      },
+    });
+
+    if (existingByVin) {
+      throw new ConflictException(
+        'Já existe um veículo cadastrado com este VIN',
+      );
+    }
+  }
+
+  private async validateRenavanUniqueness(
+    tenantId: string,
+    id: string,
+    normalizedRenavan: string,
+  ): Promise<void> {
+    const existingByRenavan = await this.prisma.customerVehicle.findFirst({
+      where: {
+        id: { not: id },
+        customer: {
+          tenantId,
+        },
+        renavan: normalizedRenavan,
+      } as Prisma.CustomerVehicleWhereInput,
+    });
+
+    if (existingByRenavan) {
+      throw new ConflictException(
+        'Já existe um veículo cadastrado com este RENAVAN',
+      );
+    }
+  }
+
+  private async validatePlacaUniqueness(
+    tenantId: string,
+    id: string,
+    normalizedPlaca: string,
+  ): Promise<void> {
+    const existingByPlaca = await this.prisma.customerVehicle.findFirst({
+      where: {
+        id: { not: id },
+        customer: {
+          tenantId,
+        },
+        placa: normalizedPlaca,
+      },
+    });
+
+    if (existingByPlaca) {
+      throw new ConflictException(
+        'Já existe um veículo cadastrado com esta placa',
+      );
+    }
+  }
+
+  private calculateFinalIdentifiers(
+    updateVehicleDto: UpdateVehicleDto,
+    existingVehicle: Prisma.CustomerVehicleGetPayload<{
+      include: { customer: true };
+    }>,
+  ): { vin: string | null; renavan: string | null; placa: string | null } {
+    const existingVehicleWithRenavan =
+      existingVehicle as typeof existingVehicle & { renavan?: string | null };
+
+    return {
+      vin:
+        updateVehicleDto.vin !== undefined
+          ? updateVehicleDto.vin?.toUpperCase().trim() || null
+          : existingVehicle.vin,
+      renavan:
+        updateVehicleDto.renavan !== undefined
+          ? updateVehicleDto.renavan?.trim() || null
+          : existingVehicleWithRenavan.renavan || null,
+      placa:
+        updateVehicleDto.placa !== undefined
+          ? updateVehicleDto.placa?.toUpperCase().trim() || null
+          : existingVehicle.placa,
+    };
+  }
+
+  private validateAtLeastOneIdentifier(identifiers: {
+    vin: string | null;
+    renavan: string | null;
+    placa: string | null;
+  }): void {
+    if (!identifiers.vin && !identifiers.renavan && !identifiers.placa) {
+      throw new BadRequestException(
+        'É necessário manter pelo menos um identificador: VIN, RENAVAN ou Placa',
+      );
+    }
+  }
+
+  private async handleDefaultVehicle(
+    isDefault: boolean | undefined,
+    customerId: string,
+    vehicleId: string,
+  ): Promise<void> {
+    if (isDefault === true) {
+      await this.prisma.customerVehicle.updateMany({
+        where: {
+          customerId,
+          id: { not: vehicleId },
+          isDefault: true,
+        },
+        data: {
+          isDefault: false,
+        },
+      });
+    }
+  }
+
+  private async prepareVehicleUpdateData(
+    updateVehicleDto: UpdateVehicleDto,
+    existingVehicle: Prisma.CustomerVehicleGetPayload<{
+      include: { customer: true };
+    }>,
+    id: string,
+  ): Promise<Prisma.CustomerVehicleUpdateInput> {
+    const updateData: Prisma.CustomerVehicleUpdateInput = {};
+
+    if (updateVehicleDto.vin !== undefined) {
+      updateData.vin = updateVehicleDto.vin
+        ? updateVehicleDto.vin.toUpperCase().trim()
+        : null;
+    }
+
+    if (updateVehicleDto.renavan !== undefined) {
+      (updateData as { renavan?: string | null }).renavan =
+        updateVehicleDto.renavan ? updateVehicleDto.renavan.trim() : null;
+    }
+
+    if (updateVehicleDto.placa !== undefined) {
+      updateData.placa = updateVehicleDto.placa
+        ? updateVehicleDto.placa.toUpperCase().trim()
+        : null;
+    }
+
+    if (updateVehicleDto.make !== undefined) {
+      updateData.make = updateVehicleDto.make?.trim() || null;
+    }
+
+    if (updateVehicleDto.model !== undefined) {
+      updateData.model = updateVehicleDto.model?.trim() || null;
+    }
+
+    if (updateVehicleDto.year !== undefined) {
+      updateData.year = updateVehicleDto.year || null;
+    }
+
+    if (updateVehicleDto.color !== undefined) {
+      updateData.color = updateVehicleDto.color?.trim() || null;
+    }
+
+    if (updateVehicleDto.mileage !== undefined) {
+      updateData.mileage = updateVehicleDto.mileage ?? null;
+    }
+
+    if (updateVehicleDto.isDefault !== undefined) {
+      updateData.isDefault = updateVehicleDto.isDefault;
+    }
+
+    if (
+      updateVehicleDto.customerId &&
+      updateVehicleDto.customerId !== existingVehicle.customerId
+    ) {
+      updateData.customer = { connect: { id: updateVehicleDto.customerId } };
+
+      if (updateVehicleDto.isDefault !== false) {
+        await this.prisma.customerVehicle.updateMany({
+          where: {
+            customerId: updateVehicleDto.customerId,
+            id: { not: id },
+            isDefault: true,
+          },
+          data: {
+            isDefault: false,
+          },
+        });
+        updateData.isDefault = true;
+      }
+    }
+
+    return updateData;
   }
 
   /**

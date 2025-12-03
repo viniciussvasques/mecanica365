@@ -22,6 +22,8 @@
     "sonar:local": "npm run test:cov && npm run sonar",
     "sonar:check": "powershell -ExecutionPolicy Bypass -File scripts/sonar-scanner.ps1 -Token $env:SONAR_TOKEN -CheckQualityGate",
     "sonar:with-coverage": "powershell -ExecutionPolicy Bypass -File scripts/sonar-scanner.ps1 -Token $env:SONAR_TOKEN -WithCoverage",
+    "sonar:fix": "powershell -ExecutionPolicy Bypass -File scripts/fix-sonar-issues.ps1 -Token $env:SONAR_TOKEN -AutoFix",
+    "sonar:fix:full": "powershell -ExecutionPolicy Bypass -File scripts/fix-sonar-issues.ps1 -Token $env:SONAR_TOKEN -AutoFix -RunTests",
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",

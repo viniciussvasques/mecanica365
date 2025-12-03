@@ -544,58 +544,95 @@ export class QuotePdfService {
     const pageHeight = doc.page.height;
     const footerY = pageHeight - 100;
 
-    // Linha separadora
-    doc
-      .moveTo(50, footerY - 20)
-      .lineTo(550, footerY - 20)
-      .stroke();
+    this.drawFooterSeparator(doc, footerY);
 
-    // Informações da oficina (se configurado)
     if (workshopSettings?.showContactOnQuotes !== false) {
-      doc.fontSize(8).font('Helvetica');
-      let footerText = '';
-
-      if (workshopSettings?.phone) {
-        footerText += `Tel: ${workshopSettings.phone}`;
-      }
-      if (workshopSettings?.email) {
-        if (footerText) footerText += ' | ';
-        footerText += `Email: ${workshopSettings.email}`;
-      }
-      if (workshopSettings?.whatsapp) {
-        if (footerText) footerText += ' | ';
-        footerText += `WhatsApp: ${workshopSettings.whatsapp}`;
-      }
-
-      if (footerText) {
-        doc.text(footerText, 50, footerY - 10, { align: 'center' });
-      }
-
-      // Endereço (se configurado)
-      if (
-        workshopSettings?.showAddressOnQuotes !== false &&
-        workshopSettings?.address
-      ) {
-        const addressParts = [
-          workshopSettings.address,
-          workshopSettings.city,
-          workshopSettings.state,
-          workshopSettings.zipCode,
-        ]
-          .filter(Boolean)
-          .join(' - ');
-        doc.text(addressParts, 50, footerY, { align: 'center' });
-      }
+      this.addContactInfo(doc, footerY, workshopSettings);
+      this.addAddressInfo(doc, footerY, workshopSettings);
     }
 
-    // Texto de rodapé personalizado
+    this.addCustomFooterText(doc, footerY, workshopSettings);
+    this.addGenerationInfo(doc, footerY, quote);
+  }
+
+  private drawFooterSeparator(
+    doc: InstanceType<typeof PDFDocument>,
+    footerY: number,
+  ): void {
+    doc.moveTo(50, footerY - 20).lineTo(550, footerY - 20).stroke();
+  }
+
+  private addContactInfo(
+    doc: InstanceType<typeof PDFDocument>,
+    footerY: number,
+    workshopSettings: WorkshopSettings | null | undefined,
+  ): void {
+    const footerText = this.buildContactText(workshopSettings);
+    if (footerText) {
+      doc.fontSize(8).font('Helvetica');
+      doc.text(footerText, 50, footerY - 10, { align: 'center' });
+    }
+  }
+
+  private buildContactText(
+    workshopSettings: WorkshopSettings | null | undefined,
+  ): string {
+    const parts: string[] = [];
+
+    if (workshopSettings?.phone) {
+      parts.push(`Tel: ${workshopSettings.phone}`);
+    }
+    if (workshopSettings?.email) {
+      parts.push(`Email: ${workshopSettings.email}`);
+    }
+    if (workshopSettings?.whatsapp) {
+      parts.push(`WhatsApp: ${workshopSettings.whatsapp}`);
+    }
+
+    return parts.join(' | ');
+  }
+
+  private addAddressInfo(
+    doc: InstanceType<typeof PDFDocument>,
+    footerY: number,
+    workshopSettings: WorkshopSettings | null | undefined,
+  ): void {
+    if (
+      workshopSettings?.showAddressOnQuotes === false ||
+      !workshopSettings?.address
+    ) {
+      return;
+    }
+
+    const addressParts = [
+      workshopSettings.address,
+      workshopSettings.city,
+      workshopSettings.state,
+      workshopSettings.zipCode,
+    ]
+      .filter(Boolean)
+      .join(' - ');
+
+    doc.text(addressParts, 50, footerY, { align: 'center' });
+  }
+
+  private addCustomFooterText(
+    doc: InstanceType<typeof PDFDocument>,
+    footerY: number,
+    workshopSettings: WorkshopSettings | null | undefined,
+  ): void {
     if (workshopSettings?.quoteFooterText) {
       doc.text(workshopSettings.quoteFooterText, 50, footerY + 10, {
         align: 'center',
       });
     }
+  }
 
-    // Informação de geração
+  private addGenerationInfo(
+    doc: InstanceType<typeof PDFDocument>,
+    footerY: number,
+    quote: QuoteResponseDto,
+  ): void {
     doc.fontSize(7).font('Helvetica').fillColor('#999999');
     doc.text(
       `Orçamento ${quote.number} - Gerado em ${new Date().toLocaleString('pt-BR')}`,

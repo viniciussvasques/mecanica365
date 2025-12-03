@@ -129,7 +129,9 @@ describe('WorkshopSettingsService', () => {
       expect(result).toHaveProperty('displayName', 'Oficina Mecânica Silva');
       expect(mockPrismaService.workshopSettings.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          tenantId: mockTenantId,
+          tenant: {
+            connect: { id: mockTenantId },
+          },
           displayName: createDto.displayName,
           logoUrl: createDto.logoUrl,
           primaryColor: createDto.primaryColor,

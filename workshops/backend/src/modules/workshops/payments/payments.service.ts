@@ -141,7 +141,7 @@ export class PaymentsService {
       },
     });
 
-    if (!invoice) {
+    if (!invoice || !invoice.payments) {
       return;
     }
 
@@ -305,56 +305,10 @@ export class PaymentsService {
     updatePaymentDto: UpdatePaymentDto,
   ): Promise<PaymentResponseDto> {
     try {
-      const payment = await this.prisma.payment.findFirst({
-        where: {
-          id,
-          tenantId,
-        },
-      });
+      const payment = await this.findPaymentByIdAndTenant(id, tenantId);
+      this.validatePaymentCanBeUpdated(payment);
 
-      if (!payment) {
-        throw new NotFoundException('Pagamento não encontrado');
-      }
-
-      // Não permitir atualizar pagamento reembolsado
-      const paymentStatus = payment.status as PaymentStatus;
-      if (paymentStatus === PaymentStatus.REFUNDED) {
-        throw new BadRequestException(
-          'Não é possível atualizar um pagamento reembolsado',
-        );
-      }
-
-      // Preparar dados de atualização
-      const updateData: Prisma.PaymentUpdateInput = {};
-
-      if (updatePaymentDto.amount !== undefined) {
-        updateData.amount = new Decimal(updatePaymentDto.amount);
-      }
-
-      if (updatePaymentDto.method) {
-        updateData.method = updatePaymentDto.method;
-      }
-
-      if (updatePaymentDto.status) {
-        updateData.status = updatePaymentDto.status;
-        if (updatePaymentDto.status === PaymentStatus.COMPLETED) {
-          updateData.paidAt = new Date();
-        } else {
-          updateData.paidAt = null;
-        }
-      }
-
-      if (updatePaymentDto.transactionId !== undefined) {
-        updateData.transactionId = updatePaymentDto.transactionId || null;
-      }
-
-      if (updatePaymentDto.installments !== undefined) {
-        updateData.installments = updatePaymentDto.installments;
-      }
-
-      if (updatePaymentDto.notes !== undefined) {
-        updateData.notes = updatePaymentDto.notes || null;
-      }
+      const updateData = this.preparePaymentUpdateData(updatePaymentDto);
 
       // Atualizar pagamento
       const updatedPayment = await this.prisma.payment.update({
@@ -401,6 +355,105 @@ export class PaymentsService {
 
       throw new BadRequestException('Erro ao atualizar pagamento');
     }
+  }
+
+  private async findPaymentByIdAndTenant(
+    id: string,
+    tenantId: string,
+  ): Promise<
+    Prisma.PaymentGetPayload<{
+      include: {
+        invoice: {
+          select: {
+            id: true;
+            invoiceNumber: true;
+            total: true;
+            status: true;
+          };
+        };
+      };
+    }>
+  > {
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        id,
+        tenantId,
+      },
+      include: {
+        invoice: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+            total: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Pagamento não encontrado');
+    }
+
+    return payment;
+  }
+
+  private validatePaymentCanBeUpdated(
+    payment: Prisma.PaymentGetPayload<{
+      include: {
+        invoice: {
+          select: {
+            id: true;
+            invoiceNumber: true;
+            total: true;
+            status: true;
+          };
+        };
+      };
+    }>,
+  ): void {
+    const paymentStatus = payment.status as PaymentStatus;
+    if (paymentStatus === PaymentStatus.REFUNDED) {
+      throw new BadRequestException(
+        'Não é possível atualizar um pagamento reembolsado',
+      );
+    }
+  }
+
+  private preparePaymentUpdateData(
+    updatePaymentDto: UpdatePaymentDto,
+  ): Prisma.PaymentUpdateInput {
+    const updateData: Prisma.PaymentUpdateInput = {};
+
+    if (updatePaymentDto.amount !== undefined) {
+      updateData.amount = new Decimal(updatePaymentDto.amount);
+    }
+
+    if (updatePaymentDto.method) {
+      updateData.method = updatePaymentDto.method;
+    }
+
+    if (updatePaymentDto.status) {
+      updateData.status = updatePaymentDto.status;
+      updateData.paidAt =
+        updatePaymentDto.status === PaymentStatus.COMPLETED
+          ? new Date()
+          : null;
+    }
+
+    if (updatePaymentDto.transactionId !== undefined) {
+      updateData.transactionId = updatePaymentDto.transactionId || null;
+    }
+
+    if (updatePaymentDto.installments !== undefined) {
+      updateData.installments = updatePaymentDto.installments;
+    }
+
+    if (updatePaymentDto.notes !== undefined) {
+      updateData.notes = updatePaymentDto.notes || null;
+    }
+
+    return updateData;
   }
 
   /**
