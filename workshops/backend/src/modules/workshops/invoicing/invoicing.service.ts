@@ -55,9 +55,7 @@ export class InvoicingService {
   /**
    * Valida se a fatura pode ser atualizada
    */
-  private validateInvoiceCanBeUpdated(invoice: {
-    status: string;
-  }): void {
+  private validateInvoiceCanBeUpdated(invoice: { status: string }): void {
     const invoiceStatus = invoice.status as InvoiceStatus;
     if (
       invoiceStatus === InvoiceStatus.ISSUED ||
@@ -121,6 +119,88 @@ export class InvoicingService {
   }
 
   /**
+   * Prepara dados de atualização de valores monetários
+   */
+  private prepareMonetaryUpdateData(
+    updateInvoiceDto: UpdateInvoiceDto,
+  ): Partial<Prisma.InvoiceUpdateInput> {
+    const updateData: Partial<Prisma.InvoiceUpdateInput> = {};
+
+    if (updateInvoiceDto.total !== undefined) {
+      updateData.total = new Decimal(updateInvoiceDto.total);
+    }
+
+    if (updateInvoiceDto.discount !== undefined) {
+      updateData.discount = new Decimal(updateInvoiceDto.discount);
+    }
+
+    if (updateInvoiceDto.taxAmount !== undefined) {
+      updateData.taxAmount = new Decimal(updateInvoiceDto.taxAmount);
+    }
+
+    return updateData;
+  }
+
+  /**
+   * Prepara dados de atualização de status e pagamento
+   */
+  private prepareStatusAndPaymentUpdateData(
+    updateInvoiceDto: UpdateInvoiceDto,
+  ): Partial<Prisma.InvoiceUpdateInput> {
+    const updateData: Partial<Prisma.InvoiceUpdateInput> = {};
+
+    if (updateInvoiceDto.paymentMethod !== undefined) {
+      updateData.paymentMethod = updateInvoiceDto.paymentMethod || null;
+    }
+
+    if (updateInvoiceDto.paymentStatus) {
+      updateData.paymentStatus = updateInvoiceDto.paymentStatus;
+      if (updateInvoiceDto.paymentStatus === PaymentStatus.PAID) {
+        updateData.paidAt = new Date();
+      }
+    }
+
+    if (updateInvoiceDto.status) {
+      updateData.status = updateInvoiceDto.status;
+      if (updateInvoiceDto.status === InvoiceStatus.ISSUED) {
+        updateData.issuedAt = new Date();
+      }
+    }
+
+    if (updateInvoiceDto.dueDate !== undefined) {
+      updateData.dueDate = updateInvoiceDto.dueDate
+        ? new Date(updateInvoiceDto.dueDate)
+        : null;
+    }
+
+    return updateData;
+  }
+
+  /**
+   * Prepara dados de atualização de NFE
+   */
+  private prepareNfeUpdateData(
+    updateInvoiceDto: UpdateInvoiceDto,
+  ): Partial<Prisma.InvoiceUpdateInput> {
+    const updateData: Partial<Prisma.InvoiceUpdateInput> = {};
+
+    if (updateInvoiceDto.nfeKey !== undefined) {
+      updateData.nfeKey = updateInvoiceDto.nfeKey || null;
+    }
+    if (updateInvoiceDto.nfeXmlUrl !== undefined) {
+      updateData.nfeXmlUrl = updateInvoiceDto.nfeXmlUrl || null;
+    }
+    if (updateInvoiceDto.nfePdfUrl !== undefined) {
+      updateData.nfePdfUrl = updateInvoiceDto.nfePdfUrl || null;
+    }
+    if (updateInvoiceDto.nfeStatus !== undefined) {
+      updateData.nfeStatus = updateInvoiceDto.nfeStatus || null;
+    }
+
+    return updateData;
+  }
+
+  /**
    * Prepara dados de atualização da fatura
    */
   private async prepareInvoiceUpdateData(
@@ -158,62 +238,17 @@ export class InvoicingService {
       }
     }
 
-    // Total
-    if (updateInvoiceDto.total !== undefined) {
-      updateData.total = new Decimal(updateInvoiceDto.total);
-    }
+    // Valores monetários
+    Object.assign(updateData, this.prepareMonetaryUpdateData(updateInvoiceDto));
 
-    // Desconto
-    if (updateInvoiceDto.discount !== undefined) {
-      updateData.discount = new Decimal(updateInvoiceDto.discount);
-    }
-
-    // Imposto
-    if (updateInvoiceDto.taxAmount !== undefined) {
-      updateData.taxAmount = new Decimal(updateInvoiceDto.taxAmount);
-    }
-
-    // Método de pagamento
-    if (updateInvoiceDto.paymentMethod !== undefined) {
-      updateData.paymentMethod = updateInvoiceDto.paymentMethod || null;
-    }
-
-    // Status de pagamento
-    if (updateInvoiceDto.paymentStatus) {
-      updateData.paymentStatus = updateInvoiceDto.paymentStatus;
-      if (updateInvoiceDto.paymentStatus === PaymentStatus.PAID) {
-        updateData.paidAt = new Date();
-      }
-    }
-
-    // Status da fatura
-    if (updateInvoiceDto.status) {
-      updateData.status = updateInvoiceDto.status;
-      if (updateInvoiceDto.status === InvoiceStatus.ISSUED) {
-        updateData.issuedAt = new Date();
-      }
-    }
-
-    // Data de vencimento
-    if (updateInvoiceDto.dueDate !== undefined) {
-      updateData.dueDate = updateInvoiceDto.dueDate
-        ? new Date(updateInvoiceDto.dueDate)
-        : null;
-    }
+    // Status e pagamento
+    Object.assign(
+      updateData,
+      this.prepareStatusAndPaymentUpdateData(updateInvoiceDto),
+    );
 
     // NFE
-    if (updateInvoiceDto.nfeKey !== undefined) {
-      updateData.nfeKey = updateInvoiceDto.nfeKey || null;
-    }
-    if (updateInvoiceDto.nfeXmlUrl !== undefined) {
-      updateData.nfeXmlUrl = updateInvoiceDto.nfeXmlUrl || null;
-    }
-    if (updateInvoiceDto.nfePdfUrl !== undefined) {
-      updateData.nfePdfUrl = updateInvoiceDto.nfePdfUrl || null;
-    }
-    if (updateInvoiceDto.nfeStatus !== undefined) {
-      updateData.nfeStatus = updateInvoiceDto.nfeStatus || null;
-    }
+    Object.assign(updateData, this.prepareNfeUpdateData(updateInvoiceDto));
 
     return updateData;
   }
@@ -552,7 +587,10 @@ export class InvoicingService {
       );
 
       // Preparar dados de atualização
-      const updateData = await this.prepareInvoiceUpdateData(id, updateInvoiceDto);
+      const updateData = await this.prepareInvoiceUpdateData(
+        id,
+        updateInvoiceDto,
+      );
 
       // Atualizar fatura
       const updatedInvoice = await this.prisma.invoice.update({

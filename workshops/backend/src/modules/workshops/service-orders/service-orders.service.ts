@@ -108,9 +108,7 @@ export class ServiceOrdersService {
     partsCost?: number | null,
     discount?: number | null,
   ): number {
-    return (
-      (laborCost ?? 0) + (partsCost ?? 0) - (discount ?? 0)
-    );
+    return (laborCost ?? 0) + (partsCost ?? 0) - (discount ?? 0);
   }
 
   /**
@@ -339,7 +337,10 @@ export class ServiceOrdersService {
     }
 
     // Veículo
-    Object.assign(updateData, this.prepareVehicleUpdateData(updateServiceOrderDto));
+    Object.assign(
+      updateData,
+      this.prepareVehicleUpdateData(updateServiceOrderDto),
+    );
 
     // Custos e status
     Object.assign(
@@ -348,10 +349,16 @@ export class ServiceOrdersService {
     );
 
     // Problemas
-    Object.assign(updateData, this.prepareProblemsUpdateData(updateServiceOrderDto));
+    Object.assign(
+      updateData,
+      this.prepareProblemsUpdateData(updateServiceOrderDto),
+    );
 
     // Notas
-    Object.assign(updateData, this.prepareNotesUpdateData(updateServiceOrderDto));
+    Object.assign(
+      updateData,
+      this.prepareNotesUpdateData(updateServiceOrderDto),
+    );
 
     return updateData;
   }
@@ -1153,11 +1160,7 @@ export class ServiceOrdersService {
     await this.validateChecklistsBeforeCompletion(tenantId, id);
 
     // Finalizar uso do elevador se houver
-    await this.finalizeElevatorUsageIfActive(
-      tenantId,
-      id,
-      serviceOrder.number,
-    );
+    await this.finalizeElevatorUsageIfActive(tenantId, id, serviceOrder.number);
 
     // Atualizar status, data de conclusão e notas finais
     const updateData: Prisma.ServiceOrderUpdateInput = {
