@@ -652,7 +652,7 @@ export class OnboardingService {
       return result;
     }
 
-    result = await this.findTenantByStripeId(customerId, undefined);
+    result = await this.findTenantByStripeId(customerId);
     if (result) {
       return result;
     }

@@ -126,7 +126,6 @@ export class QuotePdfService {
             height: 80,
             fit: [80, 80],
           });
-          currentY += 90;
         }
       } catch (error) {
         this.logger.warn(`Erro ao carregar logo: ${error}`);

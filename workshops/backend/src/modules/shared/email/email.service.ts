@@ -50,7 +50,7 @@ export class EmailService {
       },
     };
 
-    if (process.env.SMTP_HOST && process.env.SMTP_HOST.includes('mail.')) {
+    if (process.env.SMTP_HOST?.includes('mail.')) {
       smtpConfig.tls = {
         rejectUnauthorized: false,
       };

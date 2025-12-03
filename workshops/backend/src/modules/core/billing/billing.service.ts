@@ -516,7 +516,7 @@ export class BillingService {
         this.featureFlagsService.getEnabledFeaturesForPlan(featureFlagsPlan);
       for (const featureName of allFeatures) {
         const config = planFeatures[featureName];
-        if (config && config.enabled) {
+        if (config?.enabled) {
           enabledFeatures.push(featureName);
         }
       }

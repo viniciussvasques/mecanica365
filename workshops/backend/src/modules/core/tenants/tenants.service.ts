@@ -155,10 +155,8 @@ export class TenantsService {
       if (!this.isValidCPF(document)) {
         throw new BadRequestException('CPF inválido');
       }
-    } else {
-      if (!this.isValidCNPJ(document)) {
-        throw new BadRequestException('CNPJ inválido');
-      }
+    } else if (!this.isValidCNPJ(document)) {
+      throw new BadRequestException('CNPJ inválido');
     }
   }
 
