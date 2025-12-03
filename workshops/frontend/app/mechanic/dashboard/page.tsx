@@ -172,11 +172,10 @@ export default function MechanicDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1115] text-[#D0D6DE] p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-[#0F1115] text-[#D0D6DE]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Subtitle */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#D0D6DE]">Dashboard do Mecânico</h1>
           <p className="text-[#7E8691] mt-2">Visão geral dos seus orçamentos e atividades</p>
         </div>
 

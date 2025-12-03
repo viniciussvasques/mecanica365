@@ -91,73 +91,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1115] carbon-texture">
-      {/* Header */}
-      <header className="bg-[#1A1E23] border-b border-[#2A3038] sticky top-0 z-50 glass-dark">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <Link href="/dashboard" className="flex items-center space-x-2">
-                <GearIcon className="text-[#00E0B8]" size={28} />
-                <h1 className="text-2xl font-bold neon-turquoise">Mecânica365</h1>
-              </Link>
-              <nav className="hidden md:flex space-x-1">
-                <Link
-                  href="/dashboard"
-                  className="text-[#D0D6DE] hover:text-[#00E0B8] px-4 py-2 rounded-lg text-sm font-medium bg-[#2A3038] transition-all"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/dashboard/service-orders"
-                  className="text-[#7E8691] hover:text-[#00E0B8] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#2A3038] transition-all"
-                >
-                  Ordens de Serviço
-                </Link>
-                <Link
-                  href="/dashboard/customers"
-                  className="text-[#7E8691] hover:text-[#00E0B8] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#2A3038] transition-all"
-                >
-                  Clientes
-                </Link>
-                <Link
-                  href="/dashboard/parts"
-                  className="text-[#7E8691] hover:text-[#00E0B8] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#2A3038] transition-all"
-                >
-                  Peças
-                </Link>
-              </nav>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="hidden sm:flex items-center space-x-3 px-4 py-2 bg-[#2A3038] rounded-lg">
-                <ElevatorIcon className="text-[#00E0B8]" size={18} />
-                <span className="text-sm text-[#D0D6DE]">
-                  <span className="text-[#00E0B8]">Elevador 3</span> ocupado / <span className="text-[#00E0B8]">2</span> livres
-                </span>
-              </div>
-              <button className="relative p-2 text-[#7E8691] hover:text-[#00E0B8] transition-colors">
-                <BellIcon size={20} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[#FF4E3D] rounded-full"></span>
-              </button>
-              <div className="flex items-center space-x-3">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-medium text-[#D0D6DE]">{user?.name}</p>
-                  <p className="text-xs text-[#7E8691]">{user?.email}</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="bg-[#2A3038] hover:bg-[#3ABFF8] text-[#D0D6DE] hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                >
-                  Sair
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-[#0F1115]">
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className={`mb-8 transform transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <h2 className="text-3xl font-bold text-[#D0D6DE] mb-2">
@@ -415,7 +351,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
 
       <ChangePasswordModal
         isOpen={showChangePasswordModal}
