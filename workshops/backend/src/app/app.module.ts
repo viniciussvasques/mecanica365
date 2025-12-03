@@ -27,6 +27,11 @@ import { ChecklistsModule } from '../modules/workshops/checklists/checklists.mod
 import { InvoicingModule } from '../modules/workshops/invoicing/invoicing.module';
 import { PaymentsModule } from '../modules/workshops/payments/payments.module';
 import { ReportsModule } from '../modules/workshops/reports/reports.module';
+import { SuppliersModule } from '../modules/workshops/suppliers/suppliers.module';
+import { WebhooksModule } from '../modules/shared/webhooks/webhooks.module';
+import { JobsModule } from '../modules/shared/jobs/jobs.module';
+import { IntegrationsModule } from '../modules/shared/integrations/integrations.module';
+import { AutomationsModule } from '../modules/shared/automations/automations.module';
 import { TenantResolverMiddleware } from '../common/middleware/tenant-resolver.middleware';
 import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
 import { ValidationPipe } from '../common/pipes/validation.pipe';
@@ -62,6 +67,11 @@ import appConfig from '../config/app.config';
     InvoicingModule,
     PaymentsModule,
     ReportsModule,
+    SuppliersModule,
+    WebhooksModule,
+    JobsModule,
+    IntegrationsModule,
+    AutomationsModule,
     // Módulos adicionais serão adicionados conforme necessário
   ],
   controllers: [AppController],
