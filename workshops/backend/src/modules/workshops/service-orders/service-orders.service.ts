@@ -1518,7 +1518,9 @@ export class ServiceOrdersService {
   }): ServiceOrderResponseDto {
     // Helper para converter Decimal ou number para number (com fallback para 0)
     const toNumber = (value: unknown): number => {
-      const result = toNumberUtil(value);
+      if (value == null) return 0;
+      if (typeof value === 'number') return value;
+      const result = toNumberUtil(value as { toNumber: () => number } | number | null | undefined);
       return result ?? 0;
     };
 
