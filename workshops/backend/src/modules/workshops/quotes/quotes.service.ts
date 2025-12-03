@@ -21,6 +21,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
+import { toNumber as toNumberUtil } from '@common/utils/dto-mapper.util';
 import { ElevatorsService } from '../elevators/elevators.service';
 import { ServiceOrdersService } from '../service-orders/service-orders.service';
 import { AppointmentsService } from '../appointments/appointments.service';
@@ -3330,11 +3331,11 @@ export class QuotesService {
       status: quote.status as QuoteStatus,
       version: quote.version,
       parentQuoteId: quote.parentQuoteId || undefined,
-      laborCost: quote.laborCost?.toNumber() || undefined,
-      partsCost: quote.partsCost?.toNumber() || undefined,
-      totalCost: quote.totalCost?.toNumber() ?? 0,
-      discount: quote.discount?.toNumber() ?? 0,
-      taxAmount: quote.taxAmount?.toNumber() ?? 0,
+      laborCost: toNumberUtil(quote.laborCost),
+      partsCost: toNumberUtil(quote.partsCost),
+      totalCost: toNumberUtil(quote.totalCost) ?? 0,
+      discount: toNumberUtil(quote.discount) ?? 0,
+      taxAmount: toNumberUtil(quote.taxAmount) ?? 0,
       expiresAt: quote.expiresAt || undefined,
       validUntil: quote.validUntil || undefined,
       sentAt: quote.sentAt || undefined,
@@ -3377,9 +3378,9 @@ export class QuotesService {
         name: item.name,
         description: item.description || undefined,
         quantity: item.quantity,
-        unitCost: item.unitCost?.toNumber() ?? 0,
-        totalCost: item.totalCost?.toNumber() ?? 0,
-        hours: item.hours?.toNumber() || undefined,
+        unitCost: toNumberUtil(item.unitCost) ?? 0,
+        totalCost: toNumberUtil(item.totalCost) ?? 0,
+        hours: toNumberUtil(item.hours),
       })),
       // Integrações com novos módulos (serão populados assincronamente se necessário)
       attachments: undefined, // Será populado quando necessário

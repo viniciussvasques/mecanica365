@@ -14,6 +14,7 @@ import {
 } from './dto';
 import { Prisma } from '@prisma/client';
 import { getErrorMessage } from '@common/utils/error.utils';
+import { toNumber as toNumberUtil } from '@common/utils/dto-mapper.util';
 import { ElevatorsService } from '../elevators/elevators.service';
 import { ChecklistsService } from '../checklists/checklists.service';
 import { ChecklistType, ChecklistEntityType } from '../checklists/dto';
@@ -1515,18 +1516,10 @@ export class ServiceOrdersService {
     createdAt: Date;
     updatedAt: Date;
   }): ServiceOrderResponseDto {
-    // Helper para converter Decimal ou number para number
+    // Helper para converter Decimal ou number para number (com fallback para 0)
     const toNumber = (value: unknown): number => {
-      if (value == null) return 0;
-      if (typeof value === 'number') return value;
-      if (
-        typeof value === 'object' &&
-        'toNumber' in value &&
-        typeof (value as { toNumber: () => number }).toNumber === 'function'
-      ) {
-        return (value as { toNumber: () => number }).toNumber();
-      }
-      return Number(value) || 0;
+      const result = toNumberUtil(value);
+      return result ?? 0;
     };
 
     // Calcular total se não estiver definido

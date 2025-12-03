@@ -539,18 +539,11 @@ export class PaymentsService {
         ? {
             id: payment.invoice.id,
             invoiceNumber: payment.invoice.invoiceNumber,
-            total:
-              typeof payment.invoice.total === 'object' &&
-              'toNumber' in payment.invoice.total
-                ? payment.invoice.total.toNumber()
-                : Number(payment.invoice.total),
+            total: toNumberUtil(payment.invoice.total) ?? 0,
             status: payment.invoice.status,
           }
         : undefined,
-      amount:
-        typeof payment.amount === 'object' && 'toNumber' in payment.amount
-          ? payment.amount.toNumber()
-          : Number(payment.amount),
+      amount: toNumberUtil(payment.amount) ?? 0,
       method: payment.method as PaymentMethod,
       status: payment.status as PaymentStatus,
       paidAt: payment.paidAt || undefined,
