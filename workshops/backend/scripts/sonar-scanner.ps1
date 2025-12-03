@@ -12,6 +12,30 @@ $ErrorActionPreference = "Stop"
 Write-Host "SonarQube Scanner via Docker" -ForegroundColor Cyan
 Write-Host ""
 
+# Tentar carregar token do .env se não foi fornecido
+if ([string]::IsNullOrEmpty($Token)) {
+  # Tentar da variável de ambiente primeiro
+  if ($env:SONAR_TOKEN) {
+    $Token = $env:SONAR_TOKEN
+    Write-Host "Token carregado da variavel de ambiente SONAR_TOKEN" -ForegroundColor Green
+  }
+  
+  # Se ainda não tiver, tentar do arquivo .env
+  if ([string]::IsNullOrEmpty($Token)) {
+    $envFile = Join-Path $PSScriptRoot "..\.env"
+    if (Test-Path $envFile) {
+      $envLines = Get-Content $envFile
+      foreach ($line in $envLines) {
+        if ($line -match "^SONAR_TOKEN=(.+)$") {
+          $Token = $matches[1].Trim()
+          Write-Host "Token carregado do arquivo .env" -ForegroundColor Green
+          break
+        }
+      }
+    }
+  }
+}
+
 # Verificar se o token foi fornecido
 if ([string]::IsNullOrEmpty($Token)) {
     Write-Host "Token nao fornecido!" -ForegroundColor Red
