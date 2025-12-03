@@ -69,19 +69,25 @@ describe('ElevatorsController (e2e)', () => {
   });
 
   afterAll(async () => {
-    // Limpar dados de teste
-    if (prismaService) {
-      await prismaService.elevator.deleteMany({
-        where: { tenantId: testTenantId },
-      });
-      await prismaService.user.deleteMany({
-        where: { tenantId: testTenantId },
-      });
-      await prismaService.tenant.delete({
-        where: { id: testTenantId },
-      });
+    // Limpar dados de teste (ignorar erros se banco não estiver disponível)
+    try {
+      if (prismaService && testTenantId) {
+        await prismaService.elevator.deleteMany({
+          where: { tenantId: testTenantId },
+        }).catch(() => {});
+        await prismaService.user.deleteMany({
+          where: { tenantId: testTenantId },
+        }).catch(() => {});
+        await prismaService.tenant.delete({
+          where: { id: testTenantId },
+        }).catch(() => {});
+      }
+    } catch {
+      // Ignorar erros de limpeza
     }
-    await app.close();
+    if (app) {
+      await app.close().catch(() => {});
+    }
   });
 
   describe('/elevators (POST)', () => {
