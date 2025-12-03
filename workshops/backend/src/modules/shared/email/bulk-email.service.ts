@@ -60,7 +60,7 @@ export class BulkEmailService {
             typeof recipient.customData === 'object'
           ) {
             const customData = recipient.customData;
-            Object.keys(customData).forEach((key) => {
+            for (const key of Object.keys(customData)) {
               const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
               const rawValue = customData[key];
               let value = '';
@@ -75,9 +75,9 @@ export class BulkEmailService {
                   value = JSON.stringify(rawValue);
                 }
               }
-              htmlContent = htmlContent.replace(regex, value);
-              textContent = textContent.replace(regex, value);
-            });
+              htmlContent = htmlContent.replaceAll(regex, value);
+              textContent = textContent.replaceAll(regex, value);
+            }
           }
 
           // Substituir variáveis padrão
@@ -138,13 +138,13 @@ export class BulkEmailService {
     let result = template;
 
     // Variáveis padrão
-    result = result.replace(/\{\{email\}\}/g, recipient.email);
-    result = result.replace(/\{\{name\}\}/g, recipient.name || 'Cliente');
+    result = result.replaceAll(/\{\{email\}\}/g, recipient.email);
+    result = result.replaceAll(/\{\{name\}\}/g, recipient.name || 'Cliente');
 
     // Variáveis customizadas
     if (recipient.customData && typeof recipient.customData === 'object') {
       const customData = recipient.customData;
-      Object.keys(customData).forEach((key) => {
+      for (const key of Object.keys(customData)) {
         const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
         const rawValue = customData[key];
         let value = '';
@@ -159,8 +159,8 @@ export class BulkEmailService {
             value = JSON.stringify(rawValue);
           }
         }
-        result = result.replace(regex, value);
-      });
+        result = result.replaceAll(regex, value);
+      }
     }
 
     return result;

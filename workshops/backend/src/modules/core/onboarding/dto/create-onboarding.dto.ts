@@ -37,10 +37,10 @@ export class CreateOnboardingDto {
   @ApiProperty({
     description: 'CNPJ ou CPF (apenas números)',
     example: '12345678000199',
-    pattern: '^[0-9]{11}$|^[0-9]{14}$',
+    pattern: '^\\d{11}$|^\\d{14}$',
   })
   @IsString()
-  @Matches(/^[0-9]{11}$|^[0-9]{14}$/, {
+  @Matches(/^\d{11}$|^\d{14}$/, {
     message: 'Documento deve conter 11 (CPF) ou 14 (CNPJ) dígitos numéricos',
   })
   document: string;

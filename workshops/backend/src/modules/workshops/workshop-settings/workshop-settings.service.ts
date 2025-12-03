@@ -103,25 +103,14 @@ export class WorkshopSettingsService {
       state: this.normalizeField(createDto.state),
       zipCode: this.normalizeField(createDto.zipCode),
       country:
-        createDto.country !== undefined
-          ? createDto.country || 'BR'
-          : undefined,
+        createDto.country ?? 'BR',
       website: this.normalizeField(createDto.website),
       facebook: this.normalizeField(createDto.facebook),
       instagram: this.normalizeField(createDto.instagram),
       linkedin: this.normalizeField(createDto.linkedin),
-      showLogoOnQuotes:
-        createDto.showLogoOnQuotes !== undefined
-          ? createDto.showLogoOnQuotes
-          : undefined,
-      showAddressOnQuotes:
-        createDto.showAddressOnQuotes !== undefined
-          ? createDto.showAddressOnQuotes
-          : undefined,
-      showContactOnQuotes:
-        createDto.showContactOnQuotes !== undefined
-          ? createDto.showContactOnQuotes
-          : undefined,
+      showLogoOnQuotes: createDto.showLogoOnQuotes ?? undefined,
+      showAddressOnQuotes: createDto.showAddressOnQuotes ?? undefined,
+      showContactOnQuotes: createDto.showContactOnQuotes ?? undefined,
       quoteFooterText: this.normalizeField(createDto.quoteFooterText),
       invoiceFooterText: this.normalizeField(createDto.invoiceFooterText),
     };

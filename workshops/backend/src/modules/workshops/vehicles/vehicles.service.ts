@@ -554,9 +554,7 @@ export class VehiclesService {
     });
 
     if (!newCustomer) {
-      throw new NotFoundException(
-        'Cliente não encontrado para transferência',
-      );
+      throw new NotFoundException('Cliente não encontrado para transferência');
     }
   }
 

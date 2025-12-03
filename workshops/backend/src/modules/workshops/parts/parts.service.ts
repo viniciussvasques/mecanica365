@@ -60,10 +60,7 @@ export class PartsService {
           costPrice: new Decimal(createPartDto.costPrice),
           sellPrice: new Decimal(createPartDto.sellPrice),
           location: createPartDto.location?.trim() || null,
-          isActive:
-            createPartDto.isActive !== undefined
-              ? createPartDto.isActive
-              : true,
+          isActive: createPartDto.isActive ?? true,
         },
         include: {
           supplier: {

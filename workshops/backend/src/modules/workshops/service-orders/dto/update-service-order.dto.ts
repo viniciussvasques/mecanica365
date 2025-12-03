@@ -1,7 +1,6 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType, ApiProperty } from '@nestjs/swagger';
 import { CreateServiceOrderDto } from './create-service-order.dto';
 import { IsOptional, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateServiceOrderDto extends PartialType(CreateServiceOrderDto) {
   @ApiProperty({

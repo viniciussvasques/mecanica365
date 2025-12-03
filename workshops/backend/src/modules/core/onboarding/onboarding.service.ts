@@ -192,7 +192,7 @@ export class OnboardingService {
           where: { tenantId: tenant.id },
         })
       )?.email ||
-      tenantName.toLowerCase().replace(/\s+/g, '.') + '@temp.com';
+      tenantName.toLowerCase().replaceAll(/\s+/g, '.') + '@temp.com';
 
     if (!tenantEmail || tenantEmail.includes('@temp.com')) {
       this.logger.warn(
@@ -658,7 +658,9 @@ export class OnboardingService {
     }
 
     if (charge.billing_details?.email) {
-      result = await this.findTenantByBillingEmail(charge.billing_details.email);
+      result = await this.findTenantByBillingEmail(
+        charge.billing_details.email,
+      );
       if (result) {
         return result;
       }
@@ -667,9 +669,7 @@ export class OnboardingService {
     return await this.findPendingTenantForChargeFailed(charge, customerId);
   }
 
-  private async findTenantByCheckoutSession(
-    customerId: string,
-  ): Promise<{
+  private async findTenantByCheckoutSession(customerId: string): Promise<{
     tenant: TenantWithUsers;
     subscription: unknown;
     adminUser: AdminUser | null;
@@ -735,9 +735,7 @@ export class OnboardingService {
       return null;
     }
 
-    this.logger.log(
-      `Tenant encontrado via checkout session: ${tenant.id}`,
-    );
+    this.logger.log(`Tenant encontrado via checkout session: ${tenant.id}`);
 
     return {
       tenant,
@@ -765,8 +763,7 @@ export class OnboardingService {
         string
       > | null;
       const sessionTenantName =
-        (currentSessionMetadata?.tenantName as string | undefined) ||
-        tenant.subdomain;
+        currentSessionMetadata?.tenantName ?? tenant.subdomain;
       return {
         id: 'temp',
         email: session.customer_email,
@@ -778,9 +775,7 @@ export class OnboardingService {
     return null;
   }
 
-  private async findTenantByBillingEmail(
-    email: string,
-  ): Promise<{
+  private async findTenantByBillingEmail(email: string): Promise<{
     tenant: TenantWithUsers;
     subscription: unknown;
     adminUser: AdminUser | null;
@@ -1482,15 +1477,15 @@ export class OnboardingService {
     const prices: Record<string, Record<string, number>> = {
       workshops_starter: {
         monthly: 49.9,
-        annual: 499.0,
+        annual: 499,
       },
       workshops_professional: {
         monthly: 149.9,
-        annual: 1499.0,
+        annual: 1499,
       },
       workshops_enterprise: {
         monthly: 499.9,
-        annual: 4999.0,
+        annual: 4999,
       },
     };
 

@@ -101,7 +101,8 @@ export class WorkshopSettingsController {
         },
       }),
       fileFilter: (req, file, cb) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp|svg)$/)) {
+        const mimetypeRegex = /\/(jpg|jpeg|png|gif|webp|svg)$/;
+        if (!mimetypeRegex.exec(file.mimetype)) {
           return cb(
             new BadRequestException('Apenas imagens são permitidas'),
             false,

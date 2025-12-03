@@ -50,7 +50,7 @@ export class CreateVehicleDto {
     value === '' ? undefined : value,
   )
   @Length(11, 11, { message: 'RENAVAN deve ter exatamente 11 dígitos' })
-  @Matches(/^[0-9]{11}$/, {
+  @Matches(/^\d{11}$/, {
     message: 'RENAVAN inválido. Deve conter exatamente 11 dígitos numéricos',
   })
   renavan?: string;
@@ -65,7 +65,7 @@ export class CreateVehicleDto {
   @Transform(({ value }): string | undefined =>
     value === '' ? undefined : value,
   )
-  @Matches(/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/i, {
+  @Matches(/^[A-Z]{3}\d[A-Z\d]\d{2}$/i, {
     message:
       'Placa inválida. Use o formato ABC1234 (Mercosul) ou ABC1D23 (antigo)',
   })

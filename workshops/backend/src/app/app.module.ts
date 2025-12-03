@@ -62,7 +62,7 @@ import appConfig from '../config/app.config';
     InvoicingModule,
     PaymentsModule,
     ReportsModule,
-    // TODO: Adicionar outros módulos aqui
+    // Módulos adicionais serão adicionados conforme necessário
   ],
   controllers: [AppController],
   providers: [

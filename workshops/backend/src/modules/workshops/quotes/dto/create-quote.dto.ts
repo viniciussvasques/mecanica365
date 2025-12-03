@@ -9,8 +9,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { Transform } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { QuoteItemDto } from './quote-item.dto';
 import { QuoteStatus } from './quote-status.enum';
 import { ProblemCategory } from '@modules/workshops/shared/enums/problem-category.enum';
@@ -56,7 +55,7 @@ export class CreateQuoteDto {
 
   @ApiProperty({
     description: 'Custo de mão de obra',
-    example: 200.0,
+    example: 200,
     required: false,
   })
   @IsNumber({}, { message: 'Custo de mão de obra deve ser um número' })
@@ -66,7 +65,7 @@ export class CreateQuoteDto {
 
   @ApiProperty({
     description: 'Custo de peças',
-    example: 300.0,
+    example: 300,
     required: false,
   })
   @IsNumber({}, { message: 'Custo de peças deve ser um número' })
@@ -76,7 +75,7 @@ export class CreateQuoteDto {
 
   @ApiProperty({
     description: 'Desconto aplicado',
-    example: 50.0,
+    example: 50,
     required: false,
     default: 0,
   })
@@ -87,7 +86,7 @@ export class CreateQuoteDto {
 
   @ApiProperty({
     description: 'Valor de impostos',
-    example: 0.0,
+    example: 0,
     required: false,
     default: 0,
   })
@@ -114,7 +113,7 @@ export class CreateQuoteDto {
         name: 'Troca de óleo',
         description: 'Troca de óleo do motor com filtro',
         quantity: 1,
-        unitCost: 150.0,
+        unitCost: 150,
         hours: 1.5,
       },
     ],

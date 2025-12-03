@@ -66,7 +66,7 @@ export class CreateCustomerDto {
     required: false,
   })
   @IsString({ message: 'CPF deve ser uma string' })
-  @Matches(/^[0-9]{11}$/, {
+  @Matches(/^\d{11}$/, {
     message: 'CPF deve conter exatamente 11 dígitos numéricos',
   })
   @IsOptional()
@@ -79,7 +79,7 @@ export class CreateCustomerDto {
     required: false,
   })
   @IsString({ message: 'CNPJ deve ser uma string' })
-  @Matches(/^[0-9]{14}$/, {
+  @Matches(/^\d{14}$/, {
     message: 'CNPJ deve conter exatamente 14 dígitos numéricos',
   })
   @IsOptional()

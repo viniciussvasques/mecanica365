@@ -436,9 +436,7 @@ export class PaymentsService {
     if (updatePaymentDto.status) {
       updateData.status = updatePaymentDto.status;
       updateData.paidAt =
-        updatePaymentDto.status === PaymentStatus.COMPLETED
-          ? new Date()
-          : null;
+        updatePaymentDto.status === PaymentStatus.COMPLETED ? new Date() : null;
     }
 
     if (updatePaymentDto.transactionId !== undefined) {

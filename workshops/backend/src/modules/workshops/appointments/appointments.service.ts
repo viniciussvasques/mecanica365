@@ -312,7 +312,8 @@ export class AppointmentsService {
         updateAppointmentDto.assignedToId,
       );
 
-      const updateData = this.prepareAppointmentUpdateData(updateAppointmentDto);
+      const updateData =
+        this.prepareAppointmentUpdateData(updateAppointmentDto);
       const updatedAppointment = await this.prisma.appointment.update({
         where: { id },
         data: updateData,

@@ -111,7 +111,7 @@ export class QuotePdfService {
     primaryColor: string,
   ): void {
     const headerY = 50;
-    let currentY = headerY;
+    const currentY = headerY;
 
     // Logo da oficina (se configurado)
     if (
@@ -285,9 +285,9 @@ export class QuotePdfService {
       quote.reportedProblemSymptoms.length > 0
     ) {
       doc.text('Sintomas:', { continued: false });
-      quote.reportedProblemSymptoms.forEach((symptom) => {
+      for (const symptom of quote.reportedProblemSymptoms) {
         doc.text(`• ${symptom}`, { indent: 20 });
-      });
+      }
     }
 
     doc.moveDown(1);
@@ -338,7 +338,7 @@ export class QuotePdfService {
     doc.moveDown(0.3);
 
     // Itens
-    quote.items.forEach((item) => {
+    for (const item of quote.items) {
       const itemY = doc.y;
 
       // Verificar se precisa de nova página
@@ -364,7 +364,7 @@ export class QuotePdfService {
       }
 
       doc.moveDown(0.5);
-    });
+    }
 
     doc.moveDown(0.5);
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
@@ -558,7 +558,10 @@ export class QuotePdfService {
     doc: InstanceType<typeof PDFDocument>,
     footerY: number,
   ): void {
-    doc.moveTo(50, footerY - 20).lineTo(550, footerY - 20).stroke();
+    doc
+      .moveTo(50, footerY - 20)
+      .lineTo(550, footerY - 20)
+      .stroke();
   }
 
   private addContactInfo(

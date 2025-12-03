@@ -52,7 +52,7 @@ export class CreateTenantDto {
     example: '12345678000199',
   })
   @IsString()
-  @Matches(/^[0-9]{11,14}$/, {
+  @Matches(/^\d{11,14}$/, {
     message: 'Documento deve conter 11 dígitos (CPF) ou 14 dígitos (CNPJ)',
   })
   document: string;

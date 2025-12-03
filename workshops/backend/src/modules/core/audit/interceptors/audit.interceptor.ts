@@ -182,8 +182,9 @@ export class AuditInterceptor implements NestInterceptor {
 
   private extractResourceType(url: string): string | undefined {
     // Extrair tipo de recurso da URL (ex: /api/customers -> customers)
-    const match = url.match(/\/api\/([^/]+)/);
-    return match ? match[1].replace(/s$/, '') : undefined; // Remove plural
+    const regex = /\/api\/([^/]+)/;
+    const match = regex.exec(url);
+    return match ? match[1].replaceAll(/s$/, '') : undefined; // Remove plural
   }
 
   private sanitizeChanges(body: unknown): Record<string, unknown> | undefined {
@@ -194,11 +195,11 @@ export class AuditInterceptor implements NestInterceptor {
 
     const sanitized = { ...(body as Record<string, unknown>) };
 
-    sensitiveFields.forEach((field) => {
+    for (const field of sensitiveFields) {
       if (sanitized[field]) {
         sanitized[field] = '***REDACTED***';
       }
-    });
+    }
 
     return sanitized;
   }

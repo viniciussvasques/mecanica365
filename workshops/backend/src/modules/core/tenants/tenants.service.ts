@@ -147,10 +147,7 @@ export class TenantsService {
     }
   }
 
-  private validateDocument(
-    documentType: DocumentType,
-    document: string,
-  ): void {
+  private validateDocument(documentType: DocumentType, document: string): void {
     if (documentType === DocumentType.CPF) {
       if (!this.isValidCPF(document)) {
         throw new BadRequestException('CPF inválido');
@@ -175,9 +172,7 @@ export class TenantsService {
     }
   }
 
-  private async validateSubdomainUniqueness(
-    subdomain: string,
-  ): Promise<void> {
+  private async validateSubdomainUniqueness(subdomain: string): Promise<void> {
     const existingBySubdomain = await this.prisma.tenant.findUnique({
       where: { subdomain },
     });
@@ -386,7 +381,7 @@ export class TenantsService {
 
   private isValidCPF(cpf: string): boolean {
     // Remove caracteres não numéricos
-    const cleanCPF = cpf.replace(/\D/g, '');
+    const cleanCPF = cpf.replaceAll(/\D/g, '');
 
     // Verifica se tem 11 dígitos
     if (cleanCPF.length !== 11) {
@@ -424,7 +419,7 @@ export class TenantsService {
 
   private isValidCNPJ(cnpj: string): boolean {
     // Remove caracteres não numéricos
-    const cleanCNPJ = cnpj.replace(/\D/g, '');
+    const cleanCNPJ = cnpj.replaceAll(/\D/g, '');
 
     // Verifica se tem 14 dígitos
     if (cleanCNPJ.length !== 14) {

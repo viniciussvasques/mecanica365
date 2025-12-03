@@ -13,6 +13,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiProperty,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
 import { TenantGuard } from '@common/guards/tenant.guard';
@@ -23,7 +24,6 @@ import {
 } from '../services/diagnostic.service';
 import { ProblemCategory } from '../enums/problem-category.enum';
 import { IsArray, IsString, IsOptional, IsEnum } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 
 class SuggestProblemsDto {
   @ApiProperty({

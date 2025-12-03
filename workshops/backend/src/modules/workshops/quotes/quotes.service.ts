@@ -63,7 +63,10 @@ export class QuotesService {
       return 'ORC-001';
     }
 
-    const lastNumber = Number.parseInt(lastQuote.number.replace('ORC-', ''), 10);
+    const lastNumber = Number.parseInt(
+      lastQuote.number.replace('ORC-', ''),
+      10,
+    );
     const nextNumber = lastNumber + 1;
     return `ORC-${nextNumber.toString().padStart(3, '0')}`;
   }
@@ -708,20 +711,34 @@ export class QuotesService {
       },
     });
 
-    this.logger.log(`Diagnóstico concluído para orçamento: ${updatedQuote.number}`);
+    this.logger.log(
+      `Diagnóstico concluído para orçamento: ${updatedQuote.number}`,
+    );
     return this.toResponseDto(updatedQuote);
   }
 
   private async findQuoteForDiagnosis(
     tenantId: string,
     id: string,
-  ): Promise<Prisma.QuoteGetPayload<{
-    include: {
-      customer: { select: { id: true; name: true; phone: true; email: true } };
-      vehicle: { select: { id: true; placa: true; make: true; model: true; year: true } };
-      items: true;
-    };
-  }>> {
+  ): Promise<
+    Prisma.QuoteGetPayload<{
+      include: {
+        customer: {
+          select: { id: true; name: true; phone: true; email: true };
+        };
+        vehicle: {
+          select: {
+            id: true;
+            placa: true;
+            make: true;
+            model: true;
+            year: true;
+          };
+        };
+        items: true;
+      };
+    }>
+  > {
     const quote = await this.prisma.quote.findFirst({
       where: {
         id,
@@ -759,8 +776,18 @@ export class QuotesService {
   private validateQuoteForDiagnosis(
     quote: Prisma.QuoteGetPayload<{
       include: {
-        customer: { select: { id: true; name: true; phone: true; email: true } };
-        vehicle: { select: { id: true; placa: true; make: true; model: true; year: true } };
+        customer: {
+          select: { id: true; name: true; phone: true; email: true };
+        };
+        vehicle: {
+          select: {
+            id: true;
+            placa: true;
+            make: true;
+            model: true;
+            year: true;
+          };
+        };
         items: true;
       };
     }>,
@@ -1082,9 +1109,7 @@ export class QuotesService {
     return this.toResponseDto(updatedQuote);
   }
 
-  private async findQuoteByPublicToken(
-    token: string,
-  ): Promise<
+  private async findQuoteByPublicToken(token: string): Promise<
     Prisma.QuoteGetPayload<{
       include: {
         customer: {
@@ -1176,13 +1201,11 @@ export class QuotesService {
     return quote;
   }
 
-  private validateQuoteForPublicApproval(
-    quote: {
-      status: string;
-      acceptedAt: Date | null;
-      serviceOrderId: string | null;
-    },
-  ): void {
+  private validateQuoteForPublicApproval(quote: {
+    status: string;
+    acceptedAt: Date | null;
+    serviceOrderId: string | null;
+  }): void {
     const allowedStatuses = [
       QuoteStatus.SENT,
       QuoteStatus.VIEWED,
@@ -1201,27 +1224,25 @@ export class QuotesService {
     }
   }
 
-  private async createServiceOrderFromQuote(
-    quote: {
-      tenantId: string;
-      customerId: string | null;
-      vehicle: {
-        placa: string | null;
-        make: string | null;
-        model: string | null;
-        year: number | null;
-        mileage: number | null;
-      } | null;
-      elevatorId: string | null;
-      assignedMechanicId: string | null;
-      items: Array<{ hours: unknown }>;
-      laborCost: unknown;
-      partsCost: unknown;
-      discount: unknown;
-      inspectionNotes: string | null;
-      number: string;
-    },
-  ): Promise<{ id: string; number: string }> {
+  private async createServiceOrderFromQuote(quote: {
+    tenantId: string;
+    customerId: string | null;
+    vehicle: {
+      placa: string | null;
+      make: string | null;
+      model: string | null;
+      year: number | null;
+      mileage: number | null;
+    } | null;
+    elevatorId: string | null;
+    assignedMechanicId: string | null;
+    items: Array<{ hours: unknown }>;
+    laborCost: unknown;
+    partsCost: unknown;
+    discount: unknown;
+    inspectionNotes: string | null;
+    number: string;
+  }): Promise<{ id: string; number: string }> {
     try {
       const serviceOrder = await this.serviceOrdersService.create(
         quote.tenantId,
@@ -1244,9 +1265,17 @@ export class QuotesService {
                 const hours = item.hours as { toNumber: () => number } | null;
                 return sum + (hours?.toNumber() || 0);
               }, 0) || undefined,
-          laborCost: (quote.laborCost as { toNumber: () => number } | null)?.toNumber() || undefined,
-          partsCost: (quote.partsCost as { toNumber: () => number } | null)?.toNumber() || undefined,
-          discount: (quote.discount as { toNumber: () => number } | null)?.toNumber() || undefined,
+          laborCost:
+            (
+              quote.laborCost as { toNumber: () => number } | null
+            )?.toNumber() || undefined,
+          partsCost:
+            (
+              quote.partsCost as { toNumber: () => number } | null
+            )?.toNumber() || undefined,
+          discount:
+            (quote.discount as { toNumber: () => number } | null)?.toNumber() ||
+            undefined,
           notes: quote.inspectionNotes || undefined,
         },
       );
@@ -2617,7 +2646,8 @@ export class QuotesService {
     updateQuoteDto: UpdateQuoteDto,
   ): void {
     if (updateQuoteDto.diagnosticNotes !== undefined) {
-      updateData.diagnosticNotes = updateQuoteDto.diagnosticNotes?.trim() || null;
+      updateData.diagnosticNotes =
+        updateQuoteDto.diagnosticNotes?.trim() || null;
     }
     if (updateQuoteDto.inspectionNotes !== undefined) {
       updateData.inspectionNotes =
@@ -2627,7 +2657,8 @@ export class QuotesService {
       updateData.inspectionPhotos = updateQuoteDto.inspectionPhotos || [];
     }
     if (updateQuoteDto.recommendations !== undefined) {
-      updateData.recommendations = updateQuoteDto.recommendations?.trim() || null;
+      updateData.recommendations =
+        updateQuoteDto.recommendations?.trim() || null;
     }
   }
 
@@ -2709,9 +2740,21 @@ export class QuotesService {
   ): Promise<
     Prisma.QuoteGetPayload<{
       include: {
-        customer: { select: { id: true; name: true; phone: true; email: true } };
-        vehicle: { select: { id: true; placa: true; make: true; model: true; year: true } };
-        elevator: { select: { id: true; name: true; number: true; status: true } };
+        customer: {
+          select: { id: true; name: true; phone: true; email: true };
+        };
+        vehicle: {
+          select: {
+            id: true;
+            placa: true;
+            make: true;
+            model: true;
+            year: true;
+          };
+        };
+        elevator: {
+          select: { id: true; name: true; number: true; status: true };
+        };
         assignedMechanic: { select: { id: true; name: true; email: true } };
         items: true;
       };
@@ -2920,7 +2963,13 @@ export class QuotesService {
       vehicleYear?: number;
       vehicleMileage?: number;
     },
-    vehicle: { placa: string | null; make: string | null; model: string | null; year: number | null; mileage: number | null } | null,
+    vehicle: {
+      placa: string | null;
+      make: string | null;
+      model: string | null;
+      year: number | null;
+      mileage: number | null;
+    } | null,
   ): void {
     if (!vehicle) {
       return;
@@ -3550,9 +3599,7 @@ export class QuotesService {
     return this.toResponseDto(updatedQuote);
   }
 
-  private extractEstimatedHours(
-    estimatedHours: unknown,
-  ): number | undefined {
+  private extractEstimatedHours(estimatedHours: unknown): number | undefined {
     if (!estimatedHours) {
       return undefined;
     }
@@ -3572,7 +3619,10 @@ export class QuotesService {
   }
 
   private extractAssignedMechanic(
-    assignedMechanic: { id: string; name: string; email: string } | null | undefined,
+    assignedMechanic:
+      | { id: string; name: string; email: string }
+      | null
+      | undefined,
   ): { id: string; name: string; email: string } | undefined {
     if (!assignedMechanic) {
       return undefined;

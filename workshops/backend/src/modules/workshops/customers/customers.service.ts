@@ -199,7 +199,10 @@ export class CustomersService {
     updateCustomerDto: UpdateCustomerDto,
   ): Promise<CustomerResponseDto> {
     try {
-      const existingCustomer = await this.findCustomerByIdAndTenant(id, tenantId);
+      const existingCustomer = await this.findCustomerByIdAndTenant(
+        id,
+        tenantId,
+      );
       this.validateDocumentsForUpdate(updateCustomerDto);
 
       await this.validatePhoneUniquenessForUpdate(
@@ -489,7 +492,11 @@ export class CustomersService {
       updateCustomerDto.cpf &&
       updateCustomerDto.cpf !== existingCustomer.cpf
     ) {
-      await this.validateCpfUniquenessForUpdate(tenantId, id, updateCustomerDto.cpf);
+      await this.validateCpfUniquenessForUpdate(
+        tenantId,
+        id,
+        updateCustomerDto.cpf,
+      );
     }
 
     const existingCustomerWithCnpj = existingCustomer as PrismaCustomer & {
@@ -500,7 +507,11 @@ export class CustomersService {
       updateCustomerDto.cnpj &&
       updateCustomerDto.cnpj !== existingCustomerWithCnpj.cnpj
     ) {
-      await this.validateCnpjUniquenessForUpdate(tenantId, id, updateCustomerDto.cnpj);
+      await this.validateCnpjUniquenessForUpdate(
+        tenantId,
+        id,
+        updateCustomerDto.cnpj,
+      );
     }
   }
 
@@ -622,7 +633,7 @@ export class CustomersService {
    */
   private isValidCPF(cpf: string): boolean {
     // Remove caracteres não numéricos
-    const cleanCpf = cpf.replace(/\D/g, '');
+    const cleanCpf = cpf.replaceAll(/\D/g, '');
 
     // Verifica se tem 11 dígitos
     if (cleanCpf.length !== 11) {
@@ -675,7 +686,7 @@ export class CustomersService {
    */
   private isValidCNPJ(cnpj: string): boolean {
     // Remove caracteres não numéricos
-    const cleanCnpj = cnpj.replace(/\D/g, '');
+    const cleanCnpj = cnpj.replaceAll(/\D/g, '');
 
     // Verifica se tem 14 dígitos
     if (cleanCnpj.length !== 14) {

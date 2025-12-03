@@ -107,10 +107,7 @@ export class TenantResolverMiddleware implements NestMiddleware {
     );
   }
 
-  private isPublicAuthRoute(
-    pathWithoutQuery: string,
-    method: string,
-  ): boolean {
+  private isPublicAuthRoute(pathWithoutQuery: string, method: string): boolean {
     return (
       (pathWithoutQuery === '/api/auth/find-tenant' && method === 'POST') ||
       (pathWithoutQuery === '/api/auth/login' && method === 'POST') ||

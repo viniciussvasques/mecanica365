@@ -1,7 +1,6 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType, ApiProperty } from '@nestjs/swagger';
 import { CreateVehicleDto } from './create-vehicle.dto';
 import { IsString, IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateVehicleDto extends PartialType(CreateVehicleDto) {
   @ApiProperty({

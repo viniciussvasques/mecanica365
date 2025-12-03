@@ -73,13 +73,13 @@ export class VehicleQueryService {
   async queryByPlaca(placa: string): Promise<VehicleQueryResult> {
     try {
       // Remover formatação da placa
-      const cleanPlaca = placa.replace(/[^A-Z0-9]/g, '').toUpperCase();
+      const cleanPlaca = placa.replaceAll(/[^A-Z0-9]/g, '').toUpperCase();
 
       if (cleanPlaca.length < 7) {
         throw new BadRequestException('Placa inválida');
       }
 
-      // TODO: Configurar API key em variável de ambiente
+      // API key deve ser configurada em variável de ambiente
       // Por enquanto, usando API pública sem autenticação
       // Exemplo: https://api.placaapi.com/v1/placa/{placa}
 
@@ -192,7 +192,7 @@ export class VehicleQueryService {
   async queryByRenavan(renavan: string): Promise<VehicleQueryResult> {
     try {
       // Remover formatação do RENAVAN
-      const cleanRenavan = renavan.replace(/\D/g, '');
+      const cleanRenavan = renavan.replaceAll(/\D/g, '');
 
       if (cleanRenavan.length !== 11) {
         throw new BadRequestException('RENAVAN deve ter 11 dígitos');
@@ -357,11 +357,11 @@ export class VehicleQueryService {
     result.chassis = apiData.chassi || apiData.chassis || apiData.chassiNumber;
 
     // Remover campos undefined
-    Object.keys(result).forEach((key) => {
+    for (const key of Object.keys(result)) {
       if (result[key as keyof VehicleQueryResult] === undefined) {
         delete result[key as keyof VehicleQueryResult];
       }
-    });
+    }
 
     return result;
   }
