@@ -100,8 +100,8 @@ export class VehicleQueryService {
       const apiUrl = process.env.VEHICLE_API_URL;
 
       // APIs gratuitas não precisam de API key
-      const freeProviders = ['placa-fipe', 'api-brasil'];
-      const needsApiKey = !freeProviders.includes(apiProvider);
+      const freeProviders = new Set(['placa-fipe', 'api-brasil']);
+      const needsApiKey = !freeProviders.has(apiProvider);
 
       // Se precisar de API key mas não tiver, retorna objeto vazio
       if (needsApiKey && !apiKey) {
@@ -207,8 +207,8 @@ export class VehicleQueryService {
       const apiUrl = process.env.VEHICLE_API_URL;
 
       // APIs gratuitas não suportam RENAVAN, apenas placa
-      const freeProviders = ['placa-fipe', 'api-brasil'];
-      const needsApiKey = !freeProviders.includes(apiProvider);
+      const freeProviders = new Set(['placa-fipe', 'api-brasil']);
+      const needsApiKey = !freeProviders.has(apiProvider);
 
       // Se precisar de API key mas não tiver, retorna objeto vazio
       if (needsApiKey && !apiKey) {
