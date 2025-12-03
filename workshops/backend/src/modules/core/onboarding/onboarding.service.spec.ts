@@ -205,22 +205,25 @@ describe('OnboardingService', () => {
       // Salvar o valor original
       const originalKey = process.env.STRIPE_SECRET_KEY;
       delete process.env.STRIPE_SECRET_KEY;
-      
+
       // Criar um novo módulo sem Stripe configurado
-      const moduleWithoutStripe: TestingModule = await Test.createTestingModule({
-        providers: [
-          OnboardingService,
-          { provide: PrismaService, useValue: prismaService },
-          { provide: TenantsService, useValue: tenantsService },
-          { provide: BillingService, useValue: billingService },
-          { provide: UsersService, useValue: usersService },
-          { provide: EmailService, useValue: emailService },
-          { provide: ConfigService, useValue: { get: jest.fn() } },
-        ],
-      }).compile();
-      
-      const serviceWithoutStripe = moduleWithoutStripe.get<OnboardingService>(OnboardingService);
-      
+      const moduleWithoutStripe: TestingModule = await Test.createTestingModule(
+        {
+          providers: [
+            OnboardingService,
+            { provide: PrismaService, useValue: prismaService },
+            { provide: TenantsService, useValue: tenantsService },
+            { provide: BillingService, useValue: billingService },
+            { provide: UsersService, useValue: usersService },
+            { provide: EmailService, useValue: emailService },
+            { provide: ConfigService, useValue: { get: jest.fn() } },
+          ],
+        },
+      ).compile();
+
+      const serviceWithoutStripe =
+        moduleWithoutStripe.get<OnboardingService>(OnboardingService);
+
       // Restaurar o valor original
       if (originalKey) {
         process.env.STRIPE_SECRET_KEY = originalKey;

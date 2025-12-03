@@ -72,15 +72,21 @@ describe('ElevatorsController (e2e)', () => {
     // Limpar dados de teste (ignorar erros se banco não estiver disponível)
     try {
       if (prismaService && testTenantId) {
-        await prismaService.elevator.deleteMany({
-          where: { tenantId: testTenantId },
-        }).catch(() => {});
-        await prismaService.user.deleteMany({
-          where: { tenantId: testTenantId },
-        }).catch(() => {});
-        await prismaService.tenant.delete({
-          where: { id: testTenantId },
-        }).catch(() => {});
+        await prismaService.elevator
+          .deleteMany({
+            where: { tenantId: testTenantId },
+          })
+          .catch(() => {});
+        await prismaService.user
+          .deleteMany({
+            where: { tenantId: testTenantId },
+          })
+          .catch(() => {});
+        await prismaService.tenant
+          .delete({
+            where: { id: testTenantId },
+          })
+          .catch(() => {});
       }
     } catch {
       // Ignorar erros de limpeza

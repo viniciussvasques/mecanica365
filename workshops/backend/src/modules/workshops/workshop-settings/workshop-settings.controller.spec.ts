@@ -131,11 +131,14 @@ describe('WorkshopSettingsController', () => {
     it('deve lançar erro se nenhum arquivo for enviado', async () => {
       await expect(
         controller.uploadLogo(
-          null as unknown as { filename: string; path: string; mimetype: string },
+          null as unknown as {
+            filename: string;
+            path: string;
+            mimetype: string;
+          },
           mockTenantId,
         ),
       ).rejects.toThrow(BadRequestException);
     });
   });
 });
-

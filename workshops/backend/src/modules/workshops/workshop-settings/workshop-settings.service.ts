@@ -102,8 +102,7 @@ export class WorkshopSettingsService {
       city: this.normalizeField(createDto.city),
       state: this.normalizeField(createDto.state),
       zipCode: this.normalizeField(createDto.zipCode),
-      country:
-        createDto.country ?? 'BR',
+      country: createDto.country ?? 'BR',
       website: this.normalizeField(createDto.website),
       facebook: this.normalizeField(createDto.facebook),
       instagram: this.normalizeField(createDto.instagram),

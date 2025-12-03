@@ -166,10 +166,7 @@ describe('VehiclesController', () => {
       const result = await controller.queryByPlaca('ABC1234');
 
       expect(result).toEqual(mockQueryResult);
-      expect(vehicleQueryService.queryByPlaca).toHaveBeenCalledWith(
-        'ABC1234',
-      );
+      expect(vehicleQueryService.queryByPlaca).toHaveBeenCalledWith('ABC1234');
     });
   });
 });
-
