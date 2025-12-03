@@ -308,11 +308,24 @@ Gere um novo token no SonarQube:
 1. Acesse: http://localhost:9000
 2. Vá em: **My Account** → **Security** → **Generate Tokens**
 
+## 🔧 SonarLint - Correção Automática no VS Code
+
+Para usar correção automática diretamente no VS Code, consulte:
+
+📖 **[Guia Completo de SonarLint](./SONARLINT_SETUP.md)**
+
+**Resumo rápido:**
+1. Instale a extensão **SonarLint** no VS Code
+2. Conecte ao SonarQube local (`http://localhost:9000`)
+3. Habilite **Autofix** e **Quick Fix** nas configurações
+4. Use **Ctrl + .** (Windows) ou **Cmd + .** (Mac) para aplicar correções
+
 ## 📚 Referências
 
 - [Documentação SonarQube](https://docs.sonarqube.org/)
 - [SonarScanner](https://docs.sonarsource.com/sonarqube/analyzing-source-code/scanners/sonarscanner/)
 - [Quality Gates](https://docs.sonarqube.org/latest/user-guide/quality-gates/)
+- [SonarLint VS Code Extension](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarlint-vscode)
 
 ---
 
