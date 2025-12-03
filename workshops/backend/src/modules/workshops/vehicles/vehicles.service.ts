@@ -677,17 +677,17 @@ export class VehiclesService {
 
     return {
       vin:
-        updateVehicleDto.vin !== undefined
-          ? updateVehicleDto.vin?.toUpperCase().trim() || null
-          : existingVehicle.vin,
+        updateVehicleDto.vin === undefined
+          ? existingVehicle.vin
+          : updateVehicleDto.vin?.toUpperCase().trim() || null,
       renavan:
-        updateVehicleDto.renavan !== undefined
-          ? updateVehicleDto.renavan?.trim() || null
-          : existingVehicleWithRenavan.renavan || null,
+        updateVehicleDto.renavan === undefined
+          ? existingVehicleWithRenavan.renavan || null
+          : updateVehicleDto.renavan?.trim() || null,
       placa:
-        updateVehicleDto.placa !== undefined
-          ? updateVehicleDto.placa?.toUpperCase().trim() || null
-          : existingVehicle.placa,
+        updateVehicleDto.placa === undefined
+          ? existingVehicle.placa
+          : updateVehicleDto.placa?.toUpperCase().trim() || null,
     };
   }
 

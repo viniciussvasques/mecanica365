@@ -152,7 +152,7 @@ export class WorkshopSettingsService {
   private normalizeField(
     value: string | null | undefined,
   ): string | null | undefined {
-    return value !== undefined ? value || null : undefined;
+    return value === undefined ? undefined : value || null;
   }
 
   /**

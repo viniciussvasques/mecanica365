@@ -138,8 +138,8 @@ export class BulkEmailService {
     let result = template;
 
     // Variáveis padrão
-    result = result.replaceAll(/\{\{email\}\}/g, recipient.email);
-    result = result.replaceAll(/\{\{name\}\}/g, recipient.name || 'Cliente');
+    result = result.replaceAll('{{email}}', recipient.email);
+    result = result.replaceAll('{{name}}', recipient.name || 'Cliente');
 
     // Variáveis customizadas
     if (recipient.customData && typeof recipient.customData === 'object') {

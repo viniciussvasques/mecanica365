@@ -80,7 +80,7 @@ export class QuoteItemDto {
 
   @ApiProperty({
     description: 'Custo unitário',
-    example: 150.0,
+    example: 150,
   })
   @IsNumber({}, { message: 'Custo unitário deve ser um número' })
   @Min(0, { message: 'Custo unitário deve ser maior ou igual a 0' })

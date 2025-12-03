@@ -139,7 +139,7 @@ export class CreateServiceOrderDto {
 
   @ApiProperty({
     description: 'Custo de mão de obra',
-    example: 150.0,
+    example: 150,
     required: false,
   })
   @IsNumber({}, { message: 'Custo de mão de obra deve ser um número' })
@@ -149,7 +149,7 @@ export class CreateServiceOrderDto {
 
   @ApiProperty({
     description: 'Custo de peças',
-    example: 300.0,
+    example: 300,
     required: false,
   })
   @IsNumber({}, { message: 'Custo de peças deve ser um número' })
@@ -159,7 +159,7 @@ export class CreateServiceOrderDto {
 
   @ApiProperty({
     description: 'Desconto aplicado',
-    example: 50.0,
+    example: 50,
     required: false,
     default: 0,
   })

@@ -213,28 +213,28 @@ export class ServiceOrderResponseDto {
 
   @ApiProperty({
     description: 'Custo de mão de obra',
-    example: 150.0,
+    example: 150,
     nullable: true,
   })
   laborCost?: number;
 
   @ApiProperty({
     description: 'Custo de peças',
-    example: 300.0,
+    example: 300,
     nullable: true,
   })
   partsCost?: number;
 
   @ApiProperty({
     description: 'Custo total',
-    example: 450.0,
+    example: 450,
     nullable: true,
   })
   totalCost?: number;
 
   @ApiProperty({
     description: 'Desconto aplicado',
-    example: 50.0,
+    example: 50,
     nullable: true,
   })
   discount?: number;

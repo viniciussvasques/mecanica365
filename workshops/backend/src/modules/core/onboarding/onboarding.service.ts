@@ -70,7 +70,7 @@ export class OnboardingService {
     private readonly configService: ConfigService,
   ) {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecretKey) {
+    if (stripeSecretKey == null) {
       this.logger.warn(
         'STRIPE_SECRET_KEY não configurado. Stripe desabilitado.',
       );
@@ -356,7 +356,7 @@ export class OnboardingService {
       let adminUser = tenant.users.find((u) => u.role === 'admin');
       let userPassword: string | undefined;
 
-      if (!adminUser) {
+      if (adminUser == null) {
         // Buscar senha salva ou gerar nova
         userPassword = generateRandomPassword(12);
 
@@ -1028,11 +1028,12 @@ export class OnboardingService {
         typeof invoice.customer === 'string'
           ? invoice.customer
           : invoice.customer?.id;
-      const invoiceData = invoice as unknown as {
+      type InvoiceData = {
         subscription?: string | { id: string } | null;
         payment_method_types?: string[];
         last_finalization_error?: { message?: string };
       };
+      const invoiceData = invoice as unknown as InvoiceData;
       const subscriptionId =
         typeof invoiceData.subscription === 'string'
           ? invoiceData.subscription

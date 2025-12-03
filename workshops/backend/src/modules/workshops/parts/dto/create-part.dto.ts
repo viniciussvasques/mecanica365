@@ -87,7 +87,7 @@ export class CreatePartDto {
 
   @ApiProperty({
     description: 'Preço de custo',
-    example: 50.0,
+    example: 50,
   })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
@@ -96,7 +96,7 @@ export class CreatePartDto {
 
   @ApiProperty({
     description: 'Preço de venda',
-    example: 80.0,
+    example: 80,
   })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)

@@ -37,7 +37,7 @@ export class CreateOnboardingDto {
   @ApiProperty({
     description: 'CNPJ ou CPF (apenas números)',
     example: '12345678000199',
-    pattern: '^\\d{11}$|^\\d{14}$',
+    pattern: String.raw`^\d{11}$|^\d{14}$`,
   })
   @IsString()
   @Matches(/^\d{11}$|^\d{14}$/, {
