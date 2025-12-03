@@ -71,7 +71,7 @@ $dockerArgs = @(
     "-w", "/usr/src",
     "sonarsource/sonar-scanner-cli:latest",
     "-Dsonar.host.url=http://mecanica365-workshops-sonarqube:9000",
-    "-Dsonar.login=$Token"
+    "-Dsonar.token=$Token"
 )
 
 if ($CheckQualityGate) {
