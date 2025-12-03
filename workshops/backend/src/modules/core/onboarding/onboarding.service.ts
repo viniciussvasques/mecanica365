@@ -604,7 +604,7 @@ export class OnboardingService {
       this.logChargeFailedInfo(charge, customerId);
 
       const result = await this.findTenantForChargeFailed(charge, customerId);
-      if (!result || !result.adminUser) {
+      if (!result?.adminUser) {
         this.logger.warn(
           `Tenant não encontrado para charge: ${charge.id}, customer: ${customerId}`,
         );

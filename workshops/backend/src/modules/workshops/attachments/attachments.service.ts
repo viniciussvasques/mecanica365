@@ -67,7 +67,7 @@ export class AttachmentsService {
       const filePath = join(tenantDir, fileName);
 
       // Salvar arquivo
-      const fs = await import('fs/promises');
+      const fs = await import('node:fs/promises');
       // file.buffer está disponível quando usamos memoryStorage (padrão)
       const fileBuffer = file.buffer || Buffer.from([]);
       await fs.writeFile(filePath, fileBuffer);
