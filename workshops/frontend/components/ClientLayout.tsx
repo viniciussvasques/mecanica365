@@ -264,7 +264,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                     </div>
                     <div className="p-2 border-t border-[#2A3038]">
                       <Link
-                        href={user?.role === 'mechanic' ? '/mechanic/notifications' : '/notifications'}
+                        href="/mechanic/notifications"
                         className="block text-center text-sm text-[#00E0B8] hover:text-[#3ABFF8] py-2"
                         onClick={() => setShowNotifications(false)}
                       >
