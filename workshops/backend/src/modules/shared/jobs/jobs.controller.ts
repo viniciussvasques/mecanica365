@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Query,
+  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -54,5 +55,20 @@ export class JobsController {
   })
   findAll(@TenantId() tenantId: string, @Query() filters: JobFiltersDto) {
     return this.jobsService.findAll(tenantId, filters);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Buscar job por ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Job encontrado',
+    type: JobResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Job não encontrado' })
+  findOne(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<JobResponseDto> {
+    return this.jobsService.findOne(tenantId, id);
   }
 }

@@ -3,6 +3,12 @@ import { NotFoundException } from '@nestjs/common';
 import { WebhooksService } from './webhooks.service';
 import { PrismaService } from '@database/prisma.service';
 import { CreateWebhookDto, UpdateWebhookDto } from './dto';
+import axios, { AxiosError } from 'axios';
+
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('WebhooksService', () => {
   let service: WebhooksService;
@@ -30,6 +36,8 @@ describe('WebhooksService', () => {
     },
     webhookAttempt: {
       create: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -88,9 +96,14 @@ describe('WebhooksService', () => {
         events: createDtoMultipleEvents.events,
       };
 
-      mockPrismaService.webhook.create.mockResolvedValue(webhookWithMultipleEvents);
+      mockPrismaService.webhook.create.mockResolvedValue(
+        webhookWithMultipleEvents,
+      );
 
-      const result = await service.create(mockTenantId, createDtoMultipleEvents);
+      const result = await service.create(
+        mockTenantId,
+        createDtoMultipleEvents,
+      );
 
       expect(result.events).toHaveLength(3);
       expect(result.events).toContain('quote.approved');
@@ -202,6 +215,8 @@ describe('WebhooksService', () => {
       await service.trigger(mockTenantId, 'quote.approved', payload);
 
       expect(mockPrismaService.webhookAttempt.create).not.toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockedAxios.post).not.toHaveBeenCalled();
     });
 
     it('deve lidar com erros ao disparar webhook sem interromper fluxo', async () => {
@@ -225,34 +240,87 @@ describe('WebhooksService', () => {
         webhook1,
         webhook2,
       ]);
-      mockPrismaService.webhookAttempt.create.mockResolvedValue({});
+      mockPrismaService.webhookAttempt.create.mockResolvedValue({
+        id: 'attempt-id',
+        webhookId: 'webhook-id',
+        event: 'quote.approved',
+        payload: {},
+        status: 'pending',
+        attemptedAt: new Date(),
+      });
+      mockPrismaService.webhookAttempt.update.mockResolvedValue({
+        id: 'attempt-id',
+        status: 'success',
+      });
       mockPrismaService.webhook.update.mockResolvedValue(mockWebhook);
+
+      mockedAxios.post.mockResolvedValue({
+        status: 200,
+        data: { success: true },
+      });
 
       const payload = { quoteId: 'quote-123' };
 
-      await service.trigger(mockTenantId, 'quote.approved', payload);
+      const triggerPromise = service.trigger(
+        mockTenantId,
+        'quote.approved',
+        payload,
+      );
+      await jest.runAllTimersAsync();
+      await triggerPromise;
 
-      expect(mockPrismaService.webhookAttempt.create).toHaveBeenCalledTimes(2);
-      expect(mockPrismaService.webhook.update).toHaveBeenCalledTimes(2);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockedAxios.post).toHaveBeenCalledTimes(2);
     });
 
     it('deve registrar tentativa falha quando sendWebhook falha', async () => {
       mockPrismaService.webhook.findMany.mockResolvedValue([mockWebhook]);
-      mockPrismaService.webhookAttempt.create
-        .mockRejectedValueOnce(new Error('Database error'))
-        .mockResolvedValueOnce({});
+      mockPrismaService.webhookAttempt.create.mockResolvedValue({
+        id: 'attempt-id',
+        webhookId: 'webhook-id',
+        event: 'quote.approved',
+        payload: {},
+        status: 'pending',
+        attemptedAt: new Date(),
+      });
+      mockPrismaService.webhookAttempt.update.mockResolvedValue({
+        id: 'attempt-id',
+        status: 'failed',
+      });
+
+      mockedAxios.post.mockRejectedValue({
+        response: { status: 500 },
+        isAxiosError: true,
+      } as AxiosError);
 
       const payload = { quoteId: 'quote-123' };
 
-      await service.trigger(mockTenantId, 'quote.approved', payload);
+      const triggerPromise = service.trigger(
+        mockTenantId,
+        'quote.approved',
+        payload,
+      );
+      await jest.runAllTimersAsync();
+      await triggerPromise;
 
-      expect(mockPrismaService.webhookAttempt.create).toHaveBeenCalledTimes(2);
-      expect(mockPrismaService.webhookAttempt.create).toHaveBeenLastCalledWith({
-        data: expect.objectContaining({
-          status: 'failed',
-          error: expect.any(String),
-        }),
-      });
+      // Verificar que foi chamado com status 'failed' na última tentativa
+      expect(mockPrismaService.webhookAttempt.update).toHaveBeenCalled();
+      const updateCalls = mockPrismaService.webhookAttempt.update.mock.calls;
+      const lastCall = updateCalls.at(-1);
+      if (lastCall && lastCall[0] && 'data' in lastCall[0]) {
+        expect((lastCall[0] as { data: { status: string } }).data.status).toBe(
+          'failed',
+        );
+      } else {
+        // Verificar se alguma chamada tem status 'failed'
+        const hasFailedStatus = updateCalls.some(
+          (call) =>
+            call[0] &&
+            'data' in call[0] &&
+            (call[0] as { data: { status: string } }).data.status === 'failed',
+        );
+        expect(hasFailedStatus).toBe(true);
+      }
     });
   });
 
@@ -323,7 +391,9 @@ describe('WebhooksService', () => {
         secret: 'custom-secret-key',
       };
 
-      mockPrismaService.webhook.create.mockResolvedValue(webhookWithCustomSecret);
+      mockPrismaService.webhook.create.mockResolvedValue(
+        webhookWithCustomSecret,
+      );
 
       const result = await service.create(mockTenantId, createDto);
 
@@ -373,6 +443,254 @@ describe('WebhooksService', () => {
       await expect(
         service.update(mockTenantId, 'non-existent', updateDto),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('trigger - envio real com retry', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('deve enviar webhook com sucesso na primeira tentativa', async () => {
+      const webhooks = [mockWebhook];
+      mockPrismaService.webhook.findMany.mockResolvedValue(webhooks);
+      mockPrismaService.webhookAttempt.create.mockResolvedValue({
+        id: 'attempt-id',
+        webhookId: 'webhook-id',
+        event: 'quote.approved',
+        payload: {},
+        status: 'pending',
+        attemptedAt: new Date(),
+      });
+      mockPrismaService.webhookAttempt.update.mockResolvedValue({
+        id: 'attempt-id',
+        status: 'success',
+        statusCode: 200,
+      });
+      mockPrismaService.webhook.update.mockResolvedValue(mockWebhook);
+
+      mockedAxios.post.mockResolvedValue({
+        status: 200,
+        data: { success: true },
+      });
+
+      await service.trigger(mockTenantId, 'quote.approved', {
+        quoteId: 'quote-123',
+      });
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+      expect(mockPrismaService.webhookAttempt.update).toHaveBeenCalledWith({
+        where: { id: expect.any(String) }, // UUID gerado dinamicamente
+        data: {
+          status: 'success',
+          statusCode: 200,
+          response: expect.any(String),
+        },
+      });
+    });
+
+    it('deve fazer retry em caso de erro retryable (5xx)', async () => {
+      const webhooks = [mockWebhook];
+      mockPrismaService.webhook.findMany.mockResolvedValue(webhooks);
+      mockPrismaService.webhookAttempt.create.mockResolvedValue({
+        id: 'attempt-id',
+        webhookId: 'webhook-id',
+        event: 'quote.approved',
+        payload: {},
+        status: 'pending',
+        attemptedAt: new Date(),
+      });
+
+      // Primeira tentativa falha com 500
+      mockedAxios.post
+        .mockRejectedValueOnce({
+          response: { status: 500 },
+          isAxiosError: true,
+        } as AxiosError)
+        // Segunda tentativa falha com 503
+        .mockRejectedValueOnce({
+          response: { status: 503 },
+          isAxiosError: true,
+        } as AxiosError)
+        // Terceira tentativa sucesso
+        .mockResolvedValueOnce({
+          status: 200,
+          data: { success: true },
+        });
+
+      mockPrismaService.webhookAttempt.update.mockResolvedValue({
+        id: 'attempt-id',
+        status: 'success',
+      });
+      mockPrismaService.webhook.update.mockResolvedValue(mockWebhook);
+
+      const triggerPromise = service.trigger(mockTenantId, 'quote.approved', {
+        quoteId: 'quote-123',
+      });
+
+      // Avançar timers para processar retries
+      await jest.runAllTimersAsync();
+      await triggerPromise;
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockedAxios.post).toHaveBeenCalledTimes(3);
+    });
+
+    it('deve marcar como failed após todas as tentativas falharem', async () => {
+      const webhooks = [mockWebhook];
+      mockPrismaService.webhook.findMany.mockResolvedValue(webhooks);
+      mockPrismaService.webhookAttempt.create.mockResolvedValue({
+        id: 'attempt-id',
+        webhookId: 'webhook-id',
+        event: 'quote.approved',
+        payload: {},
+        status: 'pending',
+        attemptedAt: new Date(),
+      });
+
+      // Todas as tentativas falham
+      mockedAxios.post.mockRejectedValue({
+        response: { status: 500 },
+        isAxiosError: true,
+      } as AxiosError);
+
+      mockPrismaService.webhookAttempt.update.mockResolvedValue({
+        id: 'attempt-id',
+        status: 'failed',
+      });
+
+      const triggerPromise = service.trigger(mockTenantId, 'quote.approved', {
+        quoteId: 'quote-123',
+      });
+
+      await jest.runAllTimersAsync();
+      await triggerPromise;
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockedAxios.post).toHaveBeenCalledTimes(3);
+      // Verificar que foi chamado com status 'failed' na última tentativa
+      expect(mockPrismaService.webhookAttempt.update).toHaveBeenCalled();
+      const updateCalls = mockPrismaService.webhookAttempt.update.mock.calls;
+      const lastCall = updateCalls.at(-1);
+      if (lastCall && lastCall[0] && 'data' in lastCall[0]) {
+        expect((lastCall[0] as { data: { status: string } }).data.status).toBe(
+          'failed',
+        );
+      } else {
+        // Verificar se alguma chamada tem status 'failed'
+        const hasFailedStatus = updateCalls.some(
+          (call) =>
+            call[0] &&
+            'data' in call[0] &&
+            (call[0] as { data: { status: string } }).data.status === 'failed',
+        );
+        expect(hasFailedStatus).toBe(true);
+      }
+    });
+
+    it('não deve fazer retry para erros não retryable (4xx)', async () => {
+      const webhooks = [mockWebhook];
+      mockPrismaService.webhook.findMany.mockResolvedValue(webhooks);
+      mockPrismaService.webhookAttempt.create.mockResolvedValue({
+        id: 'attempt-id',
+        webhookId: 'webhook-id',
+        event: 'quote.approved',
+        payload: {},
+        status: 'pending',
+        attemptedAt: new Date(),
+      });
+
+      // Erro 400 (não retryable)
+      mockedAxios.post.mockRejectedValue({
+        response: { status: 400 },
+        isAxiosError: true,
+      } as AxiosError);
+
+      mockPrismaService.webhookAttempt.update.mockResolvedValue({
+        id: 'attempt-id',
+        status: 'failed',
+      });
+
+      await service.trigger(mockTenantId, 'quote.approved', {
+        quoteId: 'quote-123',
+      });
+
+      // Apenas 1 tentativa (sem retry)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('retryFailedWebhooks', () => {
+    it('deve reprocessar webhooks falhos', async () => {
+      const failedAttempt = {
+        id: 'attempt-id',
+        webhookId: 'webhook-id',
+        event: 'quote.approved',
+        payload: { quoteId: 'quote-123' },
+        status: 'failed',
+        error: 'Connection timeout',
+        attemptedAt: new Date(),
+        webhook: mockWebhook,
+      };
+
+      mockPrismaService.webhookAttempt.findMany.mockResolvedValue([
+        failedAttempt,
+      ]);
+      mockPrismaService.webhookAttempt.create.mockResolvedValue({
+        id: 'new-attempt-id',
+        status: 'success',
+      });
+      mockPrismaService.webhook.update.mockResolvedValue(mockWebhook);
+
+      mockedAxios.post.mockResolvedValue({
+        status: 200,
+        data: { success: true },
+      });
+
+      const result: {
+        retried: number;
+        succeeded: number;
+        failed: number;
+      } = await service.retryFailedWebhooks(mockTenantId, 10);
+
+      expect(result.retried).toBe(1);
+      expect(result.succeeded).toBe(1);
+      expect(result.failed).toBe(0);
+    });
+
+    it('deve lidar com falhas ao reprocessar', async () => {
+      const failedAttempt = {
+        id: 'attempt-id',
+        webhookId: 'webhook-id',
+        event: 'quote.approved',
+        payload: { quoteId: 'quote-123' },
+        status: 'failed',
+        error: 'Connection timeout',
+        attemptedAt: new Date(),
+        webhook: mockWebhook,
+      };
+
+      mockPrismaService.webhookAttempt.findMany.mockResolvedValue([
+        failedAttempt,
+      ]);
+      mockPrismaService.webhookAttempt.create.mockResolvedValue({
+        id: 'new-attempt-id',
+        status: 'failed',
+      });
+
+      mockedAxios.post.mockRejectedValue(new Error('Network error'));
+
+      const result = await service.retryFailedWebhooks(mockTenantId, 10);
+
+      expect(result.retried).toBe(1);
+      expect(result.succeeded).toBe(0);
+      expect(result.failed).toBe(1);
     });
   });
 });

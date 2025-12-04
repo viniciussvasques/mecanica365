@@ -95,9 +95,7 @@ describe('FeatureFlagsService', () => {
         false,
       );
       expect(await service.isFeatureEnabled(tenantId, 'reports')).toBe(false);
-      expect(await service.isFeatureEnabled(tenantId, 'suppliers')).toBe(
-        false,
-      );
+      expect(await service.isFeatureEnabled(tenantId, 'suppliers')).toBe(false);
       expect(await service.isFeatureEnabled(tenantId, 'parts_catalog')).toBe(
         false,
       );
@@ -156,7 +154,9 @@ describe('FeatureFlagsService', () => {
 
       expect(await service.getFeatureLimit(tenantId, 'elevators')).toBe(2);
       expect(await service.getFeatureLimit(tenantId, 'inventory')).toBe(100);
-      expect(await service.getFeatureLimit(tenantId, 'service_orders')).toBe(50);
+      expect(await service.getFeatureLimit(tenantId, 'service_orders')).toBe(
+        50,
+      );
       expect(await service.getFeatureLimit(tenantId, 'customers')).toBe(100);
       expect(await service.getFeatureLimit(tenantId, 'quotes')).toBeNull(); // unlimited
       expect(await service.getFeatureLimit(tenantId, 'vehicles')).toBeNull(); // unlimited
@@ -368,7 +368,9 @@ describe('FeatureFlagsService', () => {
     });
 
     it('deve retornar features habilitadas para workshops_enterprise', () => {
-      const features = service.getEnabledFeaturesForPlan('workshops_enterprise');
+      const features = service.getEnabledFeaturesForPlan(
+        'workshops_enterprise',
+      );
 
       expect(features).toBeDefined();
       expect(features.reports).toBeDefined();

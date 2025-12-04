@@ -285,4 +285,196 @@ describe('BillingService', () => {
       expect(plans[2].id).toBe(SubscriptionPlan.WORKSHOPS_ENTERPRISE);
     });
   });
+
+  describe('create - casos adicionais', () => {
+    it('deve criar subscription com billing cycle ANNUAL', async () => {
+      const createDto: CreateSubscriptionDto = {
+        tenantId: 'tenant-id',
+        plan: SubscriptionPlan.WORKSHOPS_STARTER,
+        billingCycle: BillingCycle.ANNUAL,
+      };
+
+      mockPrismaService.tenant.findUnique.mockResolvedValue(mockTenant);
+      mockPrismaService.subscription.findUnique.mockResolvedValue(null);
+      mockPrismaService.subscription.create.mockResolvedValue({
+        ...mockSubscription,
+        billingCycle: BillingCycle.ANNUAL,
+      });
+      mockPrismaService.tenant.update.mockResolvedValue(mockTenant);
+
+      const result = await service.create(createDto);
+
+      expect(result).toHaveProperty('id');
+      expect(mockPrismaService.subscription.create).toHaveBeenCalled();
+    });
+
+    it('deve lançar BadRequestException se plano inválido', async () => {
+      const createDto = {
+        tenantId: 'tenant-id',
+        plan: 'invalid_plan' as SubscriptionPlan,
+        billingCycle: BillingCycle.MONTHLY,
+      };
+
+      mockPrismaService.tenant.findUnique.mockResolvedValue(mockTenant);
+      mockPrismaService.subscription.findUnique.mockResolvedValue(null);
+
+      await expect(service.create(createDto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('update', () => {
+    it('deve atualizar subscription com sucesso', async () => {
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        mockSubscription,
+      );
+      mockPrismaService.subscription.update.mockResolvedValue({
+        ...mockSubscription,
+        serviceOrdersLimit: 100,
+      });
+
+      const result = await service.update('tenant-id', {
+        serviceOrdersLimit: 100,
+      });
+
+      expect(result).toHaveProperty('id');
+      expect(mockPrismaService.subscription.update).toHaveBeenCalled();
+    });
+
+    it('deve atualizar plano e limites', async () => {
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        mockSubscription,
+      );
+      mockFeatureFlagsService.getEnabledFeaturesForPlan.mockReturnValue({
+        basic_service_orders: { enabled: true, limit: 200 },
+      });
+      mockPrismaService.subscription.update.mockResolvedValue({
+        ...mockSubscription,
+        plan: SubscriptionPlan.WORKSHOPS_PROFESSIONAL,
+      });
+      mockPrismaService.tenant.update.mockResolvedValue(mockTenant);
+
+      const result = await service.update('tenant-id', {
+        plan: SubscriptionPlan.WORKSHOPS_PROFESSIONAL,
+      });
+
+      expect(result).toHaveProperty('id');
+    });
+
+    it('deve lançar NotFoundException se subscription não existe', async () => {
+      mockPrismaService.subscription.findUnique.mockResolvedValue(null);
+
+      await expect(service.update('tenant-id', {})).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('upgrade - casos adicionais', () => {
+    it('deve fazer upgrade de Starter para Enterprise', async () => {
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        mockSubscription,
+      );
+      mockFeatureFlagsService.getEnabledFeaturesForPlan.mockReturnValue({
+        basic_service_orders: { enabled: true, limit: null },
+      });
+      mockPrismaService.subscription.update.mockResolvedValue({
+        ...mockSubscription,
+        plan: SubscriptionPlan.WORKSHOPS_ENTERPRISE,
+      });
+      mockPrismaService.tenant.update.mockResolvedValue(mockTenant);
+
+      const result = await service.upgrade(
+        'tenant-id',
+        SubscriptionPlan.WORKSHOPS_ENTERPRISE,
+      );
+
+      expect(result).toHaveProperty('id');
+    });
+
+    it('deve lançar NotFoundException se subscription não existe', async () => {
+      mockPrismaService.subscription.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.upgrade('tenant-id', SubscriptionPlan.WORKSHOPS_PROFESSIONAL),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('deve lançar BadRequestException se plano inválido', async () => {
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        mockSubscription,
+      );
+
+      await expect(
+        service.upgrade('tenant-id', 'invalid_plan' as SubscriptionPlan),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('downgrade - casos adicionais', () => {
+    it('deve fazer downgrade de Enterprise para Starter', async () => {
+      const enterpriseSubscription = {
+        ...mockSubscription,
+        plan: SubscriptionPlan.WORKSHOPS_ENTERPRISE,
+      };
+
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        enterpriseSubscription,
+      );
+      mockFeatureFlagsService.getEnabledFeaturesForPlan.mockReturnValue({
+        basic_service_orders: { enabled: true, limit: 50 },
+      });
+      mockPrismaService.subscription.update.mockResolvedValue({
+        ...enterpriseSubscription,
+        plan: SubscriptionPlan.WORKSHOPS_STARTER,
+      });
+      mockPrismaService.tenant.update.mockResolvedValue(mockTenant);
+
+      const result = await service.downgrade(
+        'tenant-id',
+        SubscriptionPlan.WORKSHOPS_STARTER,
+      );
+
+      expect(result).toHaveProperty('id');
+    });
+
+    it('deve lançar NotFoundException se subscription não existe', async () => {
+      mockPrismaService.subscription.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.downgrade('tenant-id', SubscriptionPlan.WORKSHOPS_STARTER),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('deve lançar BadRequestException se plano inválido', async () => {
+      mockPrismaService.subscription.findUnique.mockResolvedValue(
+        mockSubscription,
+      );
+
+      await expect(
+        service.downgrade('tenant-id', 'invalid_plan' as SubscriptionPlan),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('cancel - casos adicionais', () => {
+    it('deve lançar NotFoundException se subscription não existe', async () => {
+      mockPrismaService.subscription.findUnique.mockResolvedValue(null);
+
+      await expect(service.cancel('tenant-id')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('reactivate - casos adicionais', () => {
+    it('deve lançar NotFoundException se subscription não existe', async () => {
+      mockPrismaService.subscription.findUnique.mockResolvedValue(null);
+
+      await expect(service.reactivate('tenant-id')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });

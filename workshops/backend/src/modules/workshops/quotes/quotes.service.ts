@@ -323,7 +323,7 @@ export class QuotesService {
       return {
         data: quotes.map((quote) => {
           try {
-            return this.toResponseDto(quote);
+            return this.toResponseDto.bind(this)(quote);
           } catch (error) {
             this.logger.error(
               `Erro ao converter orçamento ${quote.id} para DTO: ${getErrorMessage(error)}`,

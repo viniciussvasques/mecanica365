@@ -181,3 +181,11 @@ Write-Host "Memória total usada pelos processos: $([math]::Round($totalProcessM
 
 
 
+
+
+
+
+
+
+
+

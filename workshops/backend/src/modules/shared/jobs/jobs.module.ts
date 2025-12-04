@@ -1,24 +1,34 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
 import { JobsService } from './jobs.service';
 import { JobsController } from './jobs.controller';
+import { JobsProcessor } from './jobs.processor';
 import { PrismaModule } from '@database/prisma.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 /**
- * JobsModule - Módulo para processamento assíncrono
- *
- * Estrutura básica implementada.
- * TODO: Adicionar Bull + Redis para processamento assíncrono real quando necessário.
- *
- * Para implementar Bull:
- * 1. npm install @nestjs/bull bull
- * 2. Configurar BullModule com Redis
- * 3. Criar processadores de fila
- * 4. Atualizar JobsService para usar Bull
+ * JobsModule - Módulo para processamento assíncrono com Bull + Redis
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [
+    PrismaModule,
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+          password: configService.get<string>('REDIS_PASSWORD'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
+    BullModule.registerQueue({
+      name: 'jobs',
+    }),
+  ],
   controllers: [JobsController],
-  providers: [JobsService],
+  providers: [JobsService, JobsProcessor],
   exports: [JobsService],
 })
 export class JobsModule {}

@@ -1,16 +1,16 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
 import { CreateWebhookDto, UpdateWebhookDto, WebhookResponseDto } from './dto';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
+import axios, { AxiosError } from 'axios';
+import * as crypto from 'node:crypto';
 
 @Injectable()
 export class WebhooksService {
   private readonly logger = new Logger(WebhooksService.name);
+  private readonly MAX_RETRIES = 3;
+  private readonly RETRY_DELAY_MS = 1000; // 1 segundo base
+  private readonly TIMEOUT_MS = 10000; // 10 segundos
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -185,46 +185,270 @@ export class WebhooksService {
   }
 
   /**
-   * Envia webhook
+   * Envia webhook com retry automático
    */
   private async sendWebhook(
     webhook: { id: string; url: string; secret: string },
     event: string,
     payload: Record<string, unknown>,
   ): Promise<void> {
-    try {
-      // TODO: Implementar envio real de webhook com retry
-      // Por enquanto, apenas registra a tentativa
-      await this.prisma.webhookAttempt.create({
-        data: {
-          webhookId: webhook.id,
+    const attemptId = crypto.randomUUID();
+    let lastError: unknown;
+
+    // Criar tentativa inicial
+    await this.prisma.webhookAttempt.create({
+      data: {
+        id: attemptId,
+        webhookId: webhook.id,
+        event,
+        payload: payload as never,
+        status: 'pending',
+      },
+    });
+
+    // Tentar enviar com retry
+    for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
+      try {
+        await this.attemptSendWebhook(
+          webhook,
           event,
-          payload: payload as never,
-          status: 'pending',
+          payload,
+          attemptId,
+          attempt,
+        );
+        return; // Sucesso
+      } catch (error: unknown) {
+        lastError = error;
+        const shouldContinue = await this.handleWebhookError(
+          error,
+          webhook.id,
+          attemptId,
+          attempt,
+        );
+        if (!shouldContinue) {
+          break;
+        }
+      }
+    }
+
+    // Todas as tentativas falharam - adicionar à fila de retry manual se necessário
+    this.logger.error(
+      `Webhook ${webhook.id} falhou após ${this.MAX_RETRIES} tentativas`,
+    );
+    // Lançar erro para que o chamador saiba que falhou
+    if (lastError instanceof Error) {
+      throw lastError;
+    }
+    throw new Error(
+      `Webhook ${webhook.id} falhou após ${this.MAX_RETRIES} tentativas`,
+    );
+  }
+
+  /**
+   * Tenta enviar webhook uma vez
+   */
+  private async attemptSendWebhook(
+    webhook: { id: string; url: string; secret: string },
+    event: string,
+    payload: Record<string, unknown>,
+    attemptId: string,
+    attempt: number,
+  ): Promise<void> {
+    const signature = this.generateSignature(
+      JSON.stringify(payload),
+      webhook.secret,
+    );
+
+    const response = await axios.post<unknown>(
+      webhook.url,
+      {
+        event,
+        payload,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        headers: {
+          'X-Webhook-Signature': signature,
+          'X-Webhook-Event': event,
+          'Content-Type': 'application/json',
+        },
+        timeout: this.TIMEOUT_MS,
+        validateStatus: (status) => status >= 200 && status < 300,
+      },
+    );
+
+    // Sucesso - atualizar tentativa e webhook
+    const responseData = response as { status: number; data: unknown };
+    await this.prisma.webhookAttempt.update({
+      where: { id: attemptId },
+      data: {
+        status: 'success',
+        statusCode: responseData.status,
+        response: JSON.stringify(responseData.data),
+      },
+    });
+
+    await this.prisma.webhook.update({
+      where: { id: webhook.id },
+      data: { lastTriggeredAt: new Date() },
+    });
+
+    this.logger.log(
+      `Webhook ${webhook.id} enviado com sucesso (tentativa ${attempt}/${this.MAX_RETRIES})`,
+    );
+  }
+
+  /**
+   * Trata erro ao enviar webhook e decide se deve continuar tentando
+   */
+  private async handleWebhookError(
+    error: unknown,
+    webhookId: string,
+    attemptId: string,
+    attempt: number,
+  ): Promise<boolean> {
+    const isLastAttempt = attempt === this.MAX_RETRIES;
+    const isRetryable = this.isRetryableError(error);
+
+    this.logger.warn(
+      `Tentativa ${attempt}/${this.MAX_RETRIES} falhou para webhook ${webhookId}: ${getErrorMessage(error)}`,
+    );
+
+    // Atualizar tentativa com erro
+    const axiosError = error as AxiosError;
+    await this.prisma.webhookAttempt.update({
+      where: { id: attemptId },
+      data: {
+        status: isLastAttempt || !isRetryable ? 'failed' : 'pending',
+        error: getErrorMessage(error),
+        statusCode:
+          axiosError.response && 'status' in axiosError.response
+            ? axiosError.response.status
+            : null,
+      },
+    });
+
+    // Se não for última tentativa e for retryable, aguardar antes de tentar novamente
+    if (!isLastAttempt && isRetryable) {
+      const delay = this.RETRY_DELAY_MS * Math.pow(2, attempt - 1); // Backoff exponencial
+      await this.sleep(delay);
+      return true;
+    }
+
+    if (!isRetryable) {
+      // Erro não retryable, parar tentativas
+      this.logger.error(
+        `Erro não retryable para webhook ${webhookId}, parando tentativas`,
+      );
+      return false;
+    }
+
+    return false;
+  }
+
+  /**
+   * Verifica se o erro é retryable
+   */
+  private isRetryableError(error: unknown): boolean {
+    const axiosError = error as AxiosError;
+    // Erros de rede ou timeout são retryable
+    if (axiosError && !axiosError.response) {
+      return true; // Erro de rede
+    }
+
+    if (axiosError?.response && 'status' in axiosError.response) {
+      // Status codes 5xx são retryable
+      const status = axiosError.response.status;
+      if (status >= 500 && status < 600) {
+        return true;
+      }
+
+      // 429 (Too Many Requests) é retryable
+      if (status === 429) {
+        return true;
+      }
+
+      // 408 (Request Timeout) é retryable
+      if (status === 408) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Gera assinatura HMAC para webhook
+   */
+  private generateSignature(payload: string, secret: string): string {
+    return crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  }
+
+  /**
+   * Sleep helper
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Reprocessa webhooks falhos (para retry manual)
+   */
+  async retryFailedWebhooks(
+    tenantId: string,
+    limit = 10,
+  ): Promise<{ retried: number; succeeded: number; failed: number }> {
+    try {
+      const failedAttempts = await this.prisma.webhookAttempt.findMany({
+        where: {
+          status: 'failed',
+          webhook: {
+            tenantId,
+            isActive: true,
+          },
+        },
+        include: {
+          webhook: true,
+        },
+        take: limit,
+        orderBy: {
+          attemptedAt: 'desc',
         },
       });
 
-      // Atualizar lastTriggeredAt
-      await this.prisma.webhook.update({
-        where: { id: webhook.id },
-        data: { lastTriggeredAt: new Date() },
-      });
+      let succeeded = 0;
+      let failed = 0;
+
+      for (const attempt of failedAttempts) {
+        if (!attempt.webhook) {
+          continue;
+        }
+        try {
+          await this.sendWebhook(
+            attempt.webhook,
+            attempt.event,
+            attempt.payload as Record<string, unknown>,
+          );
+          succeeded++;
+        } catch (error: unknown) {
+          failed++;
+          this.logger.error(
+            `Erro ao reprocessar webhook ${attempt.webhookId}: ${getErrorMessage(error)}`,
+          );
+        }
+      }
+
+      return {
+        retried: failedAttempts.length,
+        succeeded,
+        failed,
+      };
     } catch (error: unknown) {
       this.logger.error(
-        `Erro ao enviar webhook: ${getErrorMessage(error)}`,
+        `Erro ao reprocessar webhooks falhos: ${getErrorMessage(error)}`,
         getErrorStack(error),
       );
-
-      // Registrar tentativa falha
-      await this.prisma.webhookAttempt.create({
-        data: {
-          webhookId: webhook.id,
-          event,
-          payload: payload as never,
-          status: 'failed',
-          error: getErrorMessage(error),
-        },
-      });
+      throw error;
     }
   }
 

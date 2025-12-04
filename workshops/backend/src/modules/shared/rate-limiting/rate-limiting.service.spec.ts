@@ -4,7 +4,6 @@ import { RateLimitingService } from './rate-limiting.service';
 
 describe('RateLimitingService', () => {
   let service: RateLimitingService;
-  let configService: ConfigService;
 
   const mockConfigService = {
     get: jest.fn(),
@@ -22,7 +21,6 @@ describe('RateLimitingService', () => {
     }).compile();
 
     service = module.get<RateLimitingService>(RateLimitingService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   afterEach(() => {
@@ -41,7 +39,10 @@ describe('RateLimitingService', () => {
 
       expect(config.ttl).toBe(60000); // 1 minuto padrão
       expect(config.limit).toBe(100); // 100 requisições padrão
-      expect(mockConfigService.get).toHaveBeenCalledWith('RATE_LIMIT_TTL', 60000);
+      expect(mockConfigService.get).toHaveBeenCalledWith(
+        'RATE_LIMIT_TTL',
+        60000,
+      );
       expect(mockConfigService.get).toHaveBeenCalledWith('RATE_LIMIT_MAX', 100);
     });
 
@@ -120,6 +121,3 @@ describe('RateLimitingService', () => {
     });
   });
 });
-
-
-

@@ -1025,6 +1025,12 @@ export class ServiceOrdersService {
       throw new BadRequestException('Não é possível iniciar uma OS cancelada');
     }
 
+    if (serviceOrderStatus === ServiceOrderStatus.IN_PROGRESS) {
+      throw new BadRequestException(
+        'Não é possível iniciar uma OS que já está em progresso',
+      );
+    }
+
     // Buscar reserva de elevador e iniciar uso
     const reservation = await this.prisma.elevatorUsage.findFirst({
       where: {
@@ -1154,6 +1160,12 @@ export class ServiceOrdersService {
     if (serviceOrderStatus === ServiceOrderStatus.CANCELLED) {
       throw new BadRequestException(
         'Não é possível finalizar uma OS cancelada',
+      );
+    }
+
+    if (serviceOrderStatus !== ServiceOrderStatus.IN_PROGRESS) {
+      throw new BadRequestException(
+        'Não é possível finalizar uma OS que não está em progresso',
       );
     }
 

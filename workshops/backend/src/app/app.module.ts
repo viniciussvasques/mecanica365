@@ -33,6 +33,7 @@ import { JobsModule } from '../modules/shared/jobs/jobs.module';
 import { RateLimitingModule } from '../modules/shared/rate-limiting/rate-limiting.module';
 import { IntegrationsModule } from '../modules/shared/integrations/integrations.module';
 import { AutomationsModule } from '../modules/shared/automations/automations.module';
+import { NotificationsModule } from '../modules/core/notifications/notifications.module';
 import { TenantResolverMiddleware } from '../common/middleware/tenant-resolver.middleware';
 import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
 import { ValidationPipe } from '../common/pipes/validation.pipe';
@@ -74,6 +75,7 @@ import appConfig from '../config/app.config';
     RateLimitingModule,
     IntegrationsModule,
     AutomationsModule,
+    NotificationsModule,
     // Módulos adicionais serão adicionados conforme necessário
   ],
   controllers: [AppController],

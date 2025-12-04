@@ -77,6 +77,7 @@ describe('VehiclesController', () => {
       const result = await controller.create(mockTenantId, createDto);
 
       expect(result).toEqual(mockVehicle);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(vehiclesService.create).toHaveBeenCalledWith(
         mockTenantId,
         createDto,
@@ -97,6 +98,7 @@ describe('VehiclesController', () => {
       const result = await controller.findAll(mockTenantId, {});
 
       expect(result.data).toHaveLength(1);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(vehiclesService.findAll).toHaveBeenCalledWith(mockTenantId, {});
     });
   });
@@ -108,6 +110,7 @@ describe('VehiclesController', () => {
       const result = await controller.findOne(mockTenantId, 'vehicle-123');
 
       expect(result).toEqual(mockVehicle);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(vehiclesService.findOne).toHaveBeenCalledWith(
         mockTenantId,
         'vehicle-123',
@@ -133,6 +136,7 @@ describe('VehiclesController', () => {
       );
 
       expect(result.make).toBe('Volkswagen');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(vehiclesService.update).toHaveBeenCalledWith(
         mockTenantId,
         'vehicle-123',
@@ -147,6 +151,7 @@ describe('VehiclesController', () => {
 
       await controller.remove(mockTenantId, 'vehicle-123');
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(vehiclesService.remove).toHaveBeenCalledWith(
         mockTenantId,
         'vehicle-123',
@@ -166,6 +171,7 @@ describe('VehiclesController', () => {
       const result = await controller.queryByPlaca('ABC1234');
 
       expect(result).toEqual(mockQueryResult);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(vehicleQueryService.queryByPlaca).toHaveBeenCalledWith('ABC1234');
     });
   });

@@ -62,6 +62,7 @@ describe('DiagnosticService', () => {
       const result = await service.suggestProblems([]);
 
       expect(result).toEqual([]);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prismaService.commonProblem.findMany).not.toHaveBeenCalled();
     });
 
@@ -87,13 +88,14 @@ describe('DiagnosticService', () => {
         ProblemCategory.MOTOR,
       );
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prismaService.commonProblem.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             isActive: true,
             category: ProblemCategory.MOTOR,
           }),
-        }),
+        }) as never,
       );
       expect(result.length).toBeGreaterThan(0);
     });
@@ -105,6 +107,7 @@ describe('DiagnosticService', () => {
 
       await service.suggestProblems(['MOTOR', 'Ruído', 'barulho']);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prismaService.commonProblem.findMany).toHaveBeenCalled();
     });
   });

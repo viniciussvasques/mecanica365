@@ -165,9 +165,9 @@ describe('SuppliersService', () => {
         new Error('Database error'),
       );
 
-      await expect(service.create(mockTenantId, createSupplierDto)).rejects.toThrow(
-        Error,
-      );
+      await expect(
+        service.create(mockTenantId, createSupplierDto),
+      ).rejects.toThrow(Error);
     });
   });
 
@@ -320,9 +320,9 @@ describe('SuppliersService', () => {
         new Error('Database error'),
       );
 
-      await expect(service.findOne(mockTenantId, 'supplier-id')).rejects.toThrow(
-        Error,
-      );
+      await expect(
+        service.findOne(mockTenantId, 'supplier-id'),
+      ).rejects.toThrow(Error);
     });
   });
 

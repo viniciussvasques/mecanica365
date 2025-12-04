@@ -256,5 +256,219 @@ describe('PaymentsService', () => {
         BadRequestException,
       );
     });
+
+    it('deve lançar erro se tentar remover pagamento reembolsado', async () => {
+      mockPrismaService.payment.findFirst.mockResolvedValue({
+        ...mockPayment,
+        status: PaymentStatus.REFUNDED,
+      });
+
+      await expect(service.remove(mockTenantId, mockPaymentId)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('create - casos adicionais', () => {
+    it('deve criar pagamento sem fatura', async () => {
+      const createPaymentDto: CreatePaymentDto = {
+        amount: 1000.0,
+        method: PaymentMethod.CREDIT_CARD,
+        status: PaymentStatus.PENDING,
+        installments: 1,
+      };
+
+      mockPrismaService.payment.create.mockResolvedValueOnce({
+        ...mockPayment,
+        invoiceId: null,
+      });
+
+      const result = await service.create(mockTenantId, createPaymentDto);
+
+      expect(result).toHaveProperty('id', mockPaymentId);
+      expect(result.invoiceId).toBeUndefined();
+    });
+
+    it('deve criar pagamento com status COMPLETED e atualizar fatura', async () => {
+      const createPaymentDto: CreatePaymentDto = {
+        invoiceId: mockInvoiceId,
+        amount: 1000.0,
+        method: PaymentMethod.CREDIT_CARD,
+        status: PaymentStatus.COMPLETED,
+        installments: 1,
+      };
+
+      mockPrismaService.invoice.findFirst.mockResolvedValueOnce({
+        id: mockInvoiceId,
+        total: new Decimal(1000.0),
+      });
+      mockPrismaService.payment.findMany.mockResolvedValueOnce([]);
+      mockPrismaService.payment.create.mockResolvedValueOnce({
+        ...mockPayment,
+        status: PaymentStatus.COMPLETED,
+        paidAt: new Date(),
+      });
+      mockPrismaService.invoice.findFirst.mockResolvedValueOnce({
+        id: mockInvoiceId,
+        total: new Decimal(1000.0),
+        payments: [
+          {
+            id: mockPaymentId,
+            amount: new Decimal(1000.0),
+            status: PaymentStatus.COMPLETED,
+          },
+        ],
+      });
+      mockPrismaService.invoice.update.mockResolvedValueOnce({});
+
+      const result = await service.create(mockTenantId, createPaymentDto);
+
+      expect(result.status).toBe(PaymentStatus.COMPLETED);
+      expect(mockPrismaService.invoice.update).toHaveBeenCalled();
+    });
+
+    it('deve validar que pagamentos existentes não excedem fatura', async () => {
+      const createPaymentDto: CreatePaymentDto = {
+        invoiceId: mockInvoiceId,
+        amount: 500.0,
+        method: PaymentMethod.CREDIT_CARD,
+        status: PaymentStatus.PENDING,
+        installments: 1,
+      };
+
+      mockPrismaService.invoice.findFirst.mockResolvedValueOnce({
+        id: mockInvoiceId,
+        total: new Decimal(1000.0),
+      });
+      mockPrismaService.payment.findMany.mockResolvedValueOnce([
+        {
+          id: 'existing-payment',
+          amount: new Decimal(600.0),
+          status: PaymentStatus.COMPLETED,
+        },
+      ]);
+
+      await expect(
+        service.create(mockTenantId, createPaymentDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('findAll - casos adicionais', () => {
+    it('deve filtrar pagamentos por fatura', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockPayment], 1]);
+
+      const result = await service.findAll(mockTenantId, {
+        invoiceId: mockInvoiceId,
+        page: 1,
+        limit: 20,
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('deve filtrar pagamentos por método', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockPayment], 1]);
+
+      const result = await service.findAll(mockTenantId, {
+        method: PaymentMethod.CREDIT_CARD,
+        page: 1,
+        limit: 20,
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('deve filtrar pagamentos por status', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockPayment], 1]);
+
+      const result = await service.findAll(mockTenantId, {
+        status: PaymentStatus.PENDING,
+        page: 1,
+        limit: 20,
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('deve filtrar pagamentos por período', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockPayment], 1]);
+
+      const result = await service.findAll(mockTenantId, {
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
+        page: 1,
+        limit: 20,
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+  });
+
+  describe('update - casos adicionais', () => {
+    it('deve atualizar apenas amount', async () => {
+      const updatePaymentDto: UpdatePaymentDto = {
+        amount: 1500.0,
+      };
+
+      mockPrismaService.payment.findFirst.mockResolvedValueOnce({
+        ...mockPayment,
+        status: PaymentStatus.PENDING,
+      });
+      mockPrismaService.payment.update.mockResolvedValue({
+        ...mockPayment,
+        amount: new Decimal(1500.0),
+      });
+
+      const result = await service.update(
+        mockTenantId,
+        mockPaymentId,
+        updatePaymentDto,
+      );
+
+      expect(result.amount).toBe(1500.0);
+    });
+
+    it('deve atualizar apenas method', async () => {
+      const updatePaymentDto: UpdatePaymentDto = {
+        method: PaymentMethod.PIX,
+      };
+
+      mockPrismaService.payment.findFirst.mockResolvedValueOnce({
+        ...mockPayment,
+        status: PaymentStatus.PENDING,
+      });
+      mockPrismaService.payment.update.mockResolvedValue({
+        ...mockPayment,
+        method: PaymentMethod.PIX,
+      });
+
+      const result = await service.update(
+        mockTenantId,
+        mockPaymentId,
+        updatePaymentDto,
+      );
+
+      expect(result.method).toBe(PaymentMethod.PIX);
+    });
+
+    it('não deve atualizar fatura se pagamento não foi completado', async () => {
+      const updatePaymentDto: UpdatePaymentDto = {
+        status: PaymentStatus.PENDING,
+      };
+
+      mockPrismaService.payment.findFirst.mockResolvedValueOnce({
+        ...mockPayment,
+        status: PaymentStatus.PENDING,
+      });
+      mockPrismaService.payment.update.mockResolvedValue({
+        ...mockPayment,
+        status: PaymentStatus.PENDING,
+      });
+
+      await service.update(mockTenantId, mockPaymentId, updatePaymentDto);
+
+      expect(mockPrismaService.invoice.update).not.toHaveBeenCalled();
+    });
   });
 });

@@ -36,6 +36,9 @@ model Tenant {
   payments         Payment[]
   partMovements    PartMovement[]
   attachments      Attachment[]
+  integrations     Integration[]
+  automations      Automation[]
+  jobs             Job[]
 
   @@map("tenants")
 }
@@ -459,6 +462,70 @@ model WebhookAttempt {
 
   @@index([webhookId, attemptedAt])
   @@map("webhook_attempts")
+}
+
+// Integration - Integrações externas configuráveis via admin
+model Integration {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String   @db.VarChar(255)
+  type      String   @db.VarChar(50) // renavan, vin, cep, custom
+  apiUrl    String   @map("api_url") @db.VarChar(500)
+  apiKey    String?  @map("api_key") @db.VarChar(255)
+  config    Json?    // Configurações adicionais
+  status    String   @default("active") @db.VarChar(50) // active, inactive, error
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, type])
+  @@index([tenantId, isActive])
+  @@map("integrations")
+}
+
+// Automation - Automações e workflows configuráveis via admin
+model Automation {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  name         String   @db.VarChar(255)
+  description  String   @db.VarChar(500)
+  trigger      String   @db.VarChar(100) // quote.approved, service_order.completed, etc.
+  action       String   @db.VarChar(100) // send_email, send_sms, create_notification, etc.
+  conditions   Json?    // Condições para execução
+  actionConfig Json     @map("action_config") // Configuração da ação
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, trigger])
+  @@index([tenantId, isActive])
+  @@map("automations")
+}
+
+// Job - Jobs para processamento assíncrono
+model Job {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  type        String   @db.VarChar(50) // email, report, webhook, cleanup, export
+  status      String   @default("pending") @db.VarChar(50) // pending, processing, completed, failed, cancelled
+  data        Json     // Dados do job
+  priority    Int      @default(5) // 1-10, 10 = mais alta
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(3) @map("max_attempts")
+  error       String?  @db.Text
+  result      Json?    // Resultado do processamento
+  createdAt   DateTime @default(now()) @map("created_at")
+  processedAt DateTime? @map("processed_at")
+  completedAt DateTime? @map("completed_at")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([tenantId, type])
+  @@index([tenantId, createdAt])
+  @@index([status, priority])
+  @@map("jobs")
 }
 
 model WorkshopService {

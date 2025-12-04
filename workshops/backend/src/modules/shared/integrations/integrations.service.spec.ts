@@ -33,7 +33,13 @@ describe('IntegrationsService', () => {
   };
 
   const mockPrismaService = {
-    // Por enquanto, sem mocks necessários
+    integration: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -64,6 +70,8 @@ describe('IntegrationsService', () => {
     };
 
     it('deve criar uma integração com sucesso', async () => {
+      mockPrismaService.integration.create.mockResolvedValue(mockIntegration);
+
       const result = await service.create(mockTenantId, createIntegrationDto);
 
       expect(result).toHaveProperty('id');
@@ -72,6 +80,18 @@ describe('IntegrationsService', () => {
       expect(result.apiUrl).toBe('https://api.example.com');
       expect(result.status).toBe(IntegrationStatus.ACTIVE);
       expect(result.isActive).toBe(true);
+      expect(mockPrismaService.integration.create).toHaveBeenCalledWith({
+        data: {
+          tenantId: mockTenantId,
+          name: createIntegrationDto.name,
+          type: createIntegrationDto.type,
+          apiUrl: createIntegrationDto.apiUrl,
+          apiKey: createIntegrationDto.apiKey,
+          config: {},
+          status: IntegrationStatus.ACTIVE,
+          isActive: true,
+        },
+      });
     });
 
     it('deve criar integração sem API key', async () => {
@@ -80,6 +100,19 @@ describe('IntegrationsService', () => {
         type: IntegrationType.CEP,
         apiUrl: 'https://api.cep.com',
       };
+
+      const mockIntegrationWithoutKey = {
+        ...mockIntegration,
+        id: 'integration-cep',
+        name: 'API CEP',
+        type: IntegrationType.CEP,
+        apiUrl: 'https://api.cep.com',
+        apiKey: null,
+      };
+
+      mockPrismaService.integration.create.mockResolvedValue(
+        mockIntegrationWithoutKey,
+      );
 
       const result = await service.create(mockTenantId, dtoWithoutKey);
 
@@ -98,6 +131,19 @@ describe('IntegrationsService', () => {
         },
       };
 
+      const mockIntegrationWithConfig = {
+        ...mockIntegration,
+        id: 'integration-custom',
+        name: 'API Custom',
+        type: IntegrationType.CUSTOM,
+        apiUrl: 'https://api.custom.com',
+        config: dtoWithConfig.config,
+      };
+
+      mockPrismaService.integration.create.mockResolvedValue(
+        mockIntegrationWithConfig,
+      );
+
       const result = await service.create(mockTenantId, dtoWithConfig);
 
       expect(result.config).toEqual(dtoWithConfig.config);
@@ -111,6 +157,19 @@ describe('IntegrationsService', () => {
         isActive: false,
       };
 
+      const mockIntegrationInactive = {
+        ...mockIntegration,
+        id: 'integration-inactive',
+        name: 'API Inativa',
+        type: IntegrationType.VIN,
+        apiUrl: 'https://api.vin.com',
+        isActive: false,
+      };
+
+      mockPrismaService.integration.create.mockResolvedValue(
+        mockIntegrationInactive,
+      );
+
       const result = await service.create(mockTenantId, dtoInactive);
 
       expect(result.isActive).toBe(false);
@@ -122,6 +181,19 @@ describe('IntegrationsService', () => {
         type: IntegrationType.CEP,
         apiUrl: 'https://api.default.com',
       };
+
+      const mockIntegrationDefault = {
+        ...mockIntegration,
+        id: 'integration-default',
+        name: 'API Default',
+        type: IntegrationType.CEP,
+        apiUrl: 'https://api.default.com',
+        isActive: true,
+      };
+
+      mockPrismaService.integration.create.mockResolvedValue(
+        mockIntegrationDefault,
+      );
 
       const result = await service.create(mockTenantId, dtoWithoutActive);
 
@@ -143,6 +215,18 @@ describe('IntegrationsService', () => {
           apiUrl: `https://api.${type}.com`,
         };
 
+        const mockIntegrationForType = {
+          ...mockIntegration,
+          id: `integration-${type}`,
+          name: `API ${type}`,
+          type,
+          apiUrl: `https://api.${type}.com`,
+        };
+
+        mockPrismaService.integration.create.mockResolvedValueOnce(
+          mockIntegrationForType,
+        );
+
         const result = await service.create(mockTenantId, dto);
         expect(result.type).toBe(type);
       }
@@ -151,14 +235,33 @@ describe('IntegrationsService', () => {
 
   describe('findAll', () => {
     it('deve listar integrações com sucesso', async () => {
+      mockPrismaService.integration.findMany.mockResolvedValue([
+        mockIntegration,
+      ]);
+
       const result = await service.findAll(mockTenantId);
 
       expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toHaveProperty('id', mockIntegration.id);
     });
   });
 
   describe('findOne', () => {
+    it('deve buscar integração por ID com sucesso', async () => {
+      mockPrismaService.integration.findFirst.mockResolvedValue(
+        mockIntegration,
+      );
+
+      const result = await service.findOne(mockTenantId, 'integration-id');
+
+      expect(result).toHaveProperty('id', mockIntegration.id);
+      expect(result.name).toBe(mockIntegration.name);
+    });
+
     it('deve lançar erro se integração não encontrada', async () => {
+      mockPrismaService.integration.findFirst.mockResolvedValue(null);
+
       await expect(
         service.findOne(mockTenantId, 'non-existent'),
       ).rejects.toThrow(NotFoundException);
@@ -166,10 +269,42 @@ describe('IntegrationsService', () => {
   });
 
   describe('update', () => {
+    it('deve atualizar integração com sucesso', async () => {
+      const updateDto: UpdateIntegrationDto = {
+        name: 'Updated Name',
+        isActive: false,
+      };
+
+      const updatedIntegration = {
+        ...mockIntegration,
+        name: 'Updated Name',
+        isActive: false,
+      };
+
+      mockPrismaService.integration.findFirst.mockResolvedValue(
+        mockIntegration,
+      );
+      mockPrismaService.integration.update.mockResolvedValue(
+        updatedIntegration,
+      );
+
+      const result = await service.update(
+        mockTenantId,
+        'integration-id',
+        updateDto,
+      );
+
+      expect(result.name).toBe('Updated Name');
+      expect(result.isActive).toBe(false);
+      expect(mockPrismaService.integration.update).toHaveBeenCalled();
+    });
+
     it('deve lançar erro se integração não encontrada', async () => {
       const updateDto: UpdateIntegrationDto = {
         name: 'Updated Name',
       };
+
+      mockPrismaService.integration.findFirst.mockResolvedValue(null);
 
       await expect(
         service.update(mockTenantId, 'non-existent', updateDto),
@@ -178,7 +313,22 @@ describe('IntegrationsService', () => {
   });
 
   describe('remove', () => {
+    it('deve remover integração com sucesso', async () => {
+      mockPrismaService.integration.findFirst.mockResolvedValue(
+        mockIntegration,
+      );
+      mockPrismaService.integration.delete.mockResolvedValue(mockIntegration);
+
+      await service.remove(mockTenantId, 'integration-id');
+
+      expect(mockPrismaService.integration.delete).toHaveBeenCalledWith({
+        where: { id: 'integration-id' },
+      });
+    });
+
     it('deve lançar erro se integração não encontrada', async () => {
+      mockPrismaService.integration.findFirst.mockResolvedValue(null);
+
       await expect(
         service.remove(mockTenantId, 'non-existent'),
       ).rejects.toThrow(NotFoundException);
@@ -232,14 +382,15 @@ describe('IntegrationsService', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('sucesso');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockedAxios.post).toHaveBeenCalledWith(
         mockIntegration.apiUrl,
         testData.testData,
         expect.objectContaining({
           headers: expect.objectContaining({
             'X-API-Key': mockIntegration.apiKey,
-          }),
-        }),
+          }) as never,
+        }) as never,
       );
     });
 
@@ -267,14 +418,15 @@ describe('IntegrationsService', () => {
       );
 
       expect(result.success).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockedAxios.post).toHaveBeenCalledWith(
         integrationWithoutKey.apiUrl,
         testData.testData,
         expect.objectContaining({
           headers: expect.not.objectContaining({
-            'X-API-Key': expect.anything(),
-          }),
-        }),
+            'X-API-Key': expect.anything() as never,
+          }) as never,
+        }) as never,
       );
     });
 
@@ -352,6 +504,19 @@ describe('IntegrationsService', () => {
         apiUrl: 'https://api.test.com',
       };
 
+      const mockIntegrationWithoutKey = {
+        ...mockIntegration,
+        id: 'integration-test',
+        name: 'API Test',
+        type: IntegrationType.RENAVAN,
+        apiUrl: 'https://api.test.com',
+        apiKey: null,
+      };
+
+      mockPrismaService.integration.create.mockResolvedValue(
+        mockIntegrationWithoutKey,
+      );
+
       const result = await service.create(mockTenantId, createDto);
 
       expect(result.apiKey).toBeUndefined();
@@ -364,25 +529,26 @@ describe('IntegrationsService', () => {
         name: 'API Test',
         type: IntegrationType.RENAVAN,
         apiUrl: 'https://api.test.com',
+        apiKey: 'secret-key',
       };
 
-      // Mock para forçar erro
-      jest
-        .spyOn(service, 'create')
-        .mockRejectedValueOnce(new Error('Test error'));
+      mockPrismaService.integration.create.mockRejectedValue(
+        new Error('Database error'),
+      );
 
       await expect(service.create(mockTenantId, createDto)).rejects.toThrow(
-        'Test error',
+        'Database error',
       );
     });
 
     it('deve lidar com erros ao listar integrações', async () => {
-      // Mock para forçar erro
-      jest
-        .spyOn(service, 'findAll')
-        .mockRejectedValueOnce(new Error('Test error'));
+      mockPrismaService.integration.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      await expect(service.findAll(mockTenantId)).rejects.toThrow('Test error');
+      await expect(service.findAll(mockTenantId)).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 });

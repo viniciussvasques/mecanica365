@@ -72,6 +72,7 @@ describe('WorkshopSettingsController', () => {
       const result = await controller.findOne(mockTenantId);
 
       expect(result).toEqual(mockSettings);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.findOne).toHaveBeenCalledWith(mockTenantId);
     });
   });
@@ -87,6 +88,7 @@ describe('WorkshopSettingsController', () => {
       const result = await controller.upsert(mockTenantId, createDto);
 
       expect(result).toEqual(mockSettings);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.upsert).toHaveBeenCalledWith(mockTenantId, createDto);
     });
   });
@@ -104,6 +106,7 @@ describe('WorkshopSettingsController', () => {
       const result = await controller.update(mockTenantId, updateDto);
 
       expect(result.displayName).toBe('Oficina Atualizada');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.update).toHaveBeenCalledWith(mockTenantId, updateDto);
     });
   });
@@ -123,6 +126,7 @@ describe('WorkshopSettingsController', () => {
       const result = await controller.uploadLogo(mockFile, mockTenantId);
 
       expect(result.url).toBe('/uploads/logos/logo-1234567890-123456789.png');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.update).toHaveBeenCalledWith(mockTenantId, {
         logoUrl: '/uploads/logos/logo-1234567890-123456789.png',
       });

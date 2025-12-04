@@ -1,7 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AutomationsService } from './automations.service';
 import { AutomationsController } from './automations.controller';
 import { PrismaModule } from '@database/prisma.module';
+import { EmailModule } from '../email/email.module';
+import { NotificationsModule } from '@modules/core/notifications/notifications.module';
+import { JobsModule } from '../jobs/jobs.module';
 
 /**
  * AutomationsModule - Módulo para automações
@@ -10,11 +13,14 @@ import { PrismaModule } from '@database/prisma.module';
  * - Triggers (eventos que disparam automações)
  * - Ações (o que fazer quando trigger é disparado)
  * - Condições (quando executar)
- *
- * TODO: Criar schema Prisma para Automation quando necessário
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [
+    PrismaModule,
+    forwardRef(() => EmailModule),
+    forwardRef(() => NotificationsModule),
+    forwardRef(() => JobsModule),
+  ],
   controllers: [AutomationsController],
   providers: [AutomationsService],
   exports: [AutomationsService],

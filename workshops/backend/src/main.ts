@@ -86,7 +86,4 @@ async function bootstrap() {
   console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
 }
 
-// IIFE para suportar top-level await em CommonJS
-(async () => {
-  await bootstrap();
-})();
+void bootstrap();

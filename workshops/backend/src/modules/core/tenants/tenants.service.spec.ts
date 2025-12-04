@@ -271,5 +271,144 @@ describe('TenantsService', () => {
 
       expect(result.status).toBe(TenantStatus.CANCELLED);
     });
+
+    it('deve lançar NotFoundException se tenant não existe', async () => {
+      mockPrismaService.tenant.findUnique.mockResolvedValue(null);
+
+      await expect(service.cancel('non-existent')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('findBySubdomain', () => {
+    it('deve lançar NotFoundException se subdomain não existe', async () => {
+      mockPrismaService.tenant.findUnique.mockResolvedValue(null);
+
+      await expect(service.findBySubdomain('inexistente')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('activate', () => {
+    it('deve lançar NotFoundException se tenant não existe', async () => {
+      mockPrismaService.tenant.findUnique.mockResolvedValue(null);
+
+      await expect(service.activate('non-existent')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('suspend', () => {
+    it('deve lançar NotFoundException se tenant não existe', async () => {
+      mockPrismaService.tenant.findUnique.mockResolvedValue(null);
+
+      await expect(service.suspend('non-existent')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('update', () => {
+    it('deve atualizar status do tenant', async () => {
+      mockPrismaService.tenant.findUnique.mockResolvedValue(mockTenant);
+      mockPrismaService.tenant.update.mockResolvedValue({
+        ...mockTenant,
+        status: TenantStatus.SUSPENDED,
+      });
+
+      const result = await service.update('tenant-id', {
+        status: TenantStatus.SUSPENDED,
+      });
+
+      expect(result.status).toBe(TenantStatus.SUSPENDED);
+    });
+
+    it('deve atualizar plan do tenant', async () => {
+      mockPrismaService.tenant.findUnique.mockResolvedValue(mockTenant);
+      mockPrismaService.tenant.update.mockResolvedValue({
+        ...mockTenant,
+        plan: TenantPlan.WORKSHOPS_PROFESSIONAL,
+      });
+
+      const result = await service.update('tenant-id', {
+        plan: TenantPlan.WORKSHOPS_PROFESSIONAL,
+      });
+
+      expect(result.plan).toBe(TenantPlan.WORKSHOPS_PROFESSIONAL);
+    });
+  });
+
+  describe('create - casos adicionais', () => {
+    it('deve criar tenant com CPF válido', async () => {
+      const dtoWithCpf: CreateTenantDto = {
+        name: 'Oficina CPF',
+        documentType: DocumentType.CPF,
+        document: '11144477735',
+        subdomain: 'oficina-cpf',
+        plan: TenantPlan.WORKSHOPS_STARTER,
+        status: TenantStatus.PENDING,
+      };
+
+      mockPrismaService.tenant.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ ...mockTenant, documentType: 'cpf' });
+      mockPrismaService.tenant.create.mockResolvedValue({
+        ...mockTenant,
+        documentType: 'cpf',
+        document: '11144477735',
+      });
+      mockBillingService.create.mockResolvedValue({});
+
+      const result = await service.create(dtoWithCpf);
+
+      expect(result).toHaveProperty('id');
+      expect(mockPrismaService.tenant.create).toHaveBeenCalled();
+    });
+
+    it('deve lançar BadRequestException se CPF inválido', async () => {
+      const dtoWithInvalidCpf: CreateTenantDto = {
+        name: 'Oficina CPF',
+        documentType: DocumentType.CPF,
+        document: '12345678900',
+        subdomain: 'oficina-cpf',
+        plan: TenantPlan.WORKSHOPS_STARTER,
+        status: TenantStatus.PENDING,
+      };
+
+      await expect(service.create(dtoWithInvalidCpf)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('deve criar tenant com admin user', async () => {
+      const dtoWithAdmin: CreateTenantDto = {
+        name: 'Oficina Admin',
+        documentType: DocumentType.CNPJ,
+        document: '11222333000181',
+        subdomain: 'oficina-admin',
+        plan: TenantPlan.WORKSHOPS_STARTER,
+        status: TenantStatus.PENDING,
+        adminEmail: 'admin@teste.com',
+        adminName: 'Admin Teste',
+        adminPassword: 'senha123',
+      };
+
+      mockPrismaService.tenant.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ ...mockTenant });
+      mockPrismaService.tenant.create.mockResolvedValue(mockTenant);
+      mockBillingService.create.mockResolvedValue({});
+      mockUsersService.create.mockResolvedValue({});
+
+      const result = await service.create(dtoWithAdmin);
+
+      expect(result).toHaveProperty('id');
+      expect(mockUsersService.create).toHaveBeenCalled();
+    });
   });
 });

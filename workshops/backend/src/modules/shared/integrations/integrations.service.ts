@@ -14,6 +14,7 @@ import {
 } from './dto';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
 import axios, { AxiosError } from 'axios';
+import { Prisma } from '@prisma/client';
 
 /**
  * IntegrationsService - Serviço para gerenciamento de integrações externas
@@ -29,28 +30,24 @@ export class IntegrationsService {
 
   /**
    * Cria uma nova integração
-   * Armazena configuração para uso futuro
    */
   async create(
     tenantId: string,
     createIntegrationDto: CreateIntegrationDto,
   ): Promise<IntegrationResponseDto> {
     try {
-      // Por enquanto, apenas registra a configuração
-      // TODO: Criar schema Prisma para Integration quando necessário
-      const integration = {
-        id: `integration-${Date.now()}`,
-        tenantId,
-        name: createIntegrationDto.name,
-        type: createIntegrationDto.type,
-        apiUrl: createIntegrationDto.apiUrl,
-        apiKey: createIntegrationDto.apiKey,
-        config: createIntegrationDto.config || {},
-        status: IntegrationStatus.ACTIVE,
-        isActive: createIntegrationDto.isActive ?? true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const integration = await this.prisma.integration.create({
+        data: {
+          tenantId,
+          name: createIntegrationDto.name,
+          type: createIntegrationDto.type,
+          apiUrl: createIntegrationDto.apiUrl,
+          apiKey: createIntegrationDto.apiKey,
+          config: (createIntegrationDto.config || {}) as Prisma.InputJsonValue,
+          status: IntegrationStatus.ACTIVE,
+          isActive: createIntegrationDto.isActive ?? true,
+        },
+      });
 
       this.logger.log(
         `Integração criada: ${integration.id} (${integration.type})`,
@@ -71,8 +68,12 @@ export class IntegrationsService {
    */
   async findAll(tenantId: string): Promise<IntegrationResponseDto[]> {
     try {
-      // TODO: Buscar do banco quando schema for criado
-      return [];
+      const integrations = await this.prisma.integration.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return integrations.map((integration) => this.toResponseDto(integration));
     } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar integrações: ${getErrorMessage(error)}`,
@@ -87,8 +88,18 @@ export class IntegrationsService {
    */
   async findOne(tenantId: string, id: string): Promise<IntegrationResponseDto> {
     try {
-      // TODO: Buscar do banco quando schema for criado
-      throw new NotFoundException('Integração não encontrada');
+      const integration = await this.prisma.integration.findFirst({
+        where: {
+          id,
+          tenantId,
+        },
+      });
+
+      if (!integration) {
+        throw new NotFoundException('Integração não encontrada');
+      }
+
+      return this.toResponseDto(integration);
     } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar integração: ${getErrorMessage(error)}`,
@@ -109,8 +120,34 @@ export class IntegrationsService {
     try {
       await this.findOne(tenantId, id);
 
-      // TODO: Atualizar no banco quando schema for criado
-      throw new NotFoundException('Integração não encontrada');
+      const updateData: Prisma.IntegrationUpdateInput = {};
+
+      if (updateIntegrationDto.name !== undefined) {
+        updateData.name = updateIntegrationDto.name;
+      }
+      if (updateIntegrationDto.type !== undefined) {
+        updateData.type = updateIntegrationDto.type;
+      }
+      if (updateIntegrationDto.apiUrl !== undefined) {
+        updateData.apiUrl = updateIntegrationDto.apiUrl;
+      }
+      if (updateIntegrationDto.apiKey !== undefined) {
+        updateData.apiKey = updateIntegrationDto.apiKey;
+      }
+      if (updateIntegrationDto.config !== undefined) {
+        updateData.config =
+          updateIntegrationDto.config as Prisma.InputJsonValue;
+      }
+      if (updateIntegrationDto.isActive !== undefined) {
+        updateData.isActive = updateIntegrationDto.isActive;
+      }
+
+      const integration = await this.prisma.integration.update({
+        where: { id },
+        data: updateData,
+      });
+
+      return this.toResponseDto(integration);
     } catch (error: unknown) {
       this.logger.error(
         `Erro ao atualizar integração: ${getErrorMessage(error)}`,
@@ -126,7 +163,10 @@ export class IntegrationsService {
   async remove(tenantId: string, id: string): Promise<void> {
     try {
       await this.findOne(tenantId, id);
-      // TODO: Remover do banco quando schema for criado
+
+      await this.prisma.integration.delete({
+        where: { id },
+      });
     } catch (error: unknown) {
       this.logger.error(
         `Erro ao remover integração: ${getErrorMessage(error)}`,
@@ -195,9 +235,9 @@ export class IntegrationsService {
     name: string;
     type: string;
     apiUrl: string;
-    apiKey?: string;
-    config?: Record<string, unknown>;
-    status: IntegrationStatus;
+    apiKey?: string | null;
+    config?: unknown;
+    status: string;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -208,8 +248,8 @@ export class IntegrationsService {
       type: integration.type as never,
       apiUrl: integration.apiUrl,
       apiKey: integration.apiKey ? '***' : undefined, // Ocultar API key na resposta
-      config: integration.config,
-      status: integration.status,
+      config: integration.config as Record<string, unknown> | undefined,
+      status: integration.status as IntegrationStatus,
       isActive: integration.isActive,
       createdAt: integration.createdAt,
       updatedAt: integration.updatedAt,

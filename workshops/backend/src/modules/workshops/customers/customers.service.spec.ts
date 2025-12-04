@@ -466,4 +466,126 @@ describe('CustomersService', () => {
       );
     });
   });
+
+  describe('CNPJ validation', () => {
+    it('deve validar CNPJ válido', async () => {
+      const validCnpj = '11222333000181';
+      const dto: CreateCustomerDto = {
+        name: 'Empresa Teste',
+        phone: '(11) 98765-4321',
+        documentType: DocumentType.CNPJ,
+        cnpj: validCnpj,
+      };
+
+      mockPrismaService.customer.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
+      mockPrismaService.customer.create.mockResolvedValue({
+        ...mockCustomer,
+        cnpj: validCnpj,
+        cpf: null,
+        documentType: 'cnpj',
+      });
+
+      const result = await service.create(mockTenantId, dto);
+      expect(result).toHaveProperty('id');
+    });
+
+    it('deve rejeitar CNPJ inválido', async () => {
+      const invalidCnpj = '11222333000100';
+      const dto: CreateCustomerDto = {
+        name: 'Empresa Teste',
+        phone: '(11) 98765-4321',
+        documentType: DocumentType.CNPJ,
+        cnpj: invalidCnpj,
+      };
+
+      await expect(service.create(mockTenantId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('deve lançar ConflictException se CNPJ já existe', async () => {
+      const dto: CreateCustomerDto = {
+        name: 'Empresa Teste',
+        phone: '(11) 98765-4321',
+        documentType: DocumentType.CNPJ,
+        cnpj: '11222333000181',
+      };
+
+      mockPrismaService.customer.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ ...mockCustomer, cnpj: '11222333000181' });
+
+      await expect(service.create(mockTenantId, dto)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+  });
+
+  describe('findAll - filtros adicionais', () => {
+    it('deve aplicar filtro por email', async () => {
+      const filters = { email: 'joao', page: 1, limit: 20 };
+
+      mockPrismaService.customer.findMany.mockResolvedValue([mockCustomer]);
+      mockPrismaService.customer.count.mockResolvedValue(1);
+
+      await service.findAll(mockTenantId, filters);
+
+      expect(mockPrismaService.customer.findMany).toHaveBeenCalled();
+    });
+
+    it('deve aplicar filtro por CPF', async () => {
+      const filters = { cpf: '11144477735', page: 1, limit: 20 };
+
+      mockPrismaService.customer.findMany.mockResolvedValue([mockCustomer]);
+      mockPrismaService.customer.count.mockResolvedValue(1);
+
+      await service.findAll(mockTenantId, filters);
+
+      expect(mockPrismaService.customer.findMany).toHaveBeenCalled();
+    });
+  });
+
+  describe('update - casos adicionais', () => {
+    it('deve atualizar CNPJ com validação', async () => {
+      const updateDto: UpdateCustomerDto = {
+        cnpj: '11222333000181',
+        documentType: DocumentType.CNPJ,
+      };
+
+      mockPrismaService.customer.findFirst
+        .mockResolvedValueOnce({
+          ...mockCustomer,
+          cnpj: null,
+          documentType: 'cpf',
+        })
+        .mockResolvedValueOnce(null);
+      mockPrismaService.customer.update.mockResolvedValue({
+        ...mockCustomer,
+        cnpj: '11222333000181',
+        documentType: 'cnpj',
+      });
+
+      const result = await service.update(
+        mockTenantId,
+        'customer-id',
+        updateDto,
+      );
+
+      expect(result).toBeDefined();
+    });
+
+    it('deve lançar erro se CNPJ inválido ao atualizar', async () => {
+      const updateDto: UpdateCustomerDto = {
+        cnpj: '11222333000100',
+      };
+
+      mockPrismaService.customer.findFirst.mockResolvedValue(mockCustomer);
+
+      await expect(
+        service.update(mockTenantId, 'customer-id', updateDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
 });

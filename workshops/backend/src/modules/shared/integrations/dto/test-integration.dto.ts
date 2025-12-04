@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsObject } from 'class-validator';
+import { IsOptional, IsObject } from 'class-validator';
 
 export class TestIntegrationDto {
   @ApiProperty({ description: 'Dados de teste' })
