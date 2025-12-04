@@ -88,6 +88,7 @@ describe('PartsService', () => {
 
     it('deve criar uma peça com sucesso', async () => {
       // Mock: partNumber não existe
+      mockPrismaService.part.findFirst.mockReset();
       mockPrismaService.part.findFirst.mockResolvedValueOnce(null);
       mockPrismaService.part.create.mockResolvedValue(mockPart);
 
@@ -187,6 +188,17 @@ describe('PartsService', () => {
             isActive: true,
           }),
         }),
+      );
+    });
+
+    it('deve lidar com erros genéricos ao criar peça', async () => {
+      mockPrismaService.part.findFirst.mockResolvedValueOnce(null);
+      mockPrismaService.part.create.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.create(mockTenantId, createPartDto)).rejects.toThrow(
+        BadRequestException,
       );
     });
   });
@@ -301,6 +313,56 @@ describe('PartsService', () => {
         }),
       );
     });
+
+    it('deve filtrar por brand', async () => {
+      const filters = { brand: 'Bosch' };
+      const mockParts = [mockPart];
+
+      mockPrismaService.part.findMany.mockResolvedValue(mockParts);
+      mockPrismaService.part.count.mockResolvedValue(1);
+
+      await service.findAll(mockTenantId, filters);
+
+      expect(mockPrismaService.part.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            brand: {
+              contains: 'Bosch',
+              mode: 'insensitive',
+            },
+          }),
+        }),
+      );
+    });
+
+    it('deve filtrar por supplierId', async () => {
+      const filters = { supplierId: mockSupplierId };
+      const mockParts = [mockPart];
+
+      mockPrismaService.part.findMany.mockResolvedValue(mockParts);
+      mockPrismaService.part.count.mockResolvedValue(1);
+
+      await service.findAll(mockTenantId, filters);
+
+      expect(mockPrismaService.part.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            supplierId: mockSupplierId,
+          }),
+        }),
+      );
+    });
+
+    it('deve lidar com erros ao listar peças', async () => {
+      const filters = { page: 1, limit: 10 };
+      mockPrismaService.part.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.findAll(mockTenantId, filters)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 
   describe('findOne', () => {
@@ -341,6 +403,16 @@ describe('PartsService', () => {
       await expect(
         service.findOne('other-tenant-id', mockPartId),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('deve lidar com erros genéricos ao buscar peça', async () => {
+      mockPrismaService.part.findFirst.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.findOne(mockTenantId, mockPartId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -437,10 +509,54 @@ describe('PartsService', () => {
       const updateCall = mockPrismaService.part.update.mock.calls[0][0];
       expect(updateCall.data).not.toHaveProperty('supplier');
     });
+
+    it('deve desconectar supplier quando supplierId é string vazia', async () => {
+      // Quando supplierId é string vazia, deve desconectar
+      const updateWithEmptySupplier: UpdatePartDto = {
+        supplierId: '',
+      };
+
+      mockPrismaService.part.findFirst.mockResolvedValueOnce(mockPart);
+      mockPrismaService.part.findFirst.mockResolvedValueOnce(null);
+      mockPrismaService.part.update.mockResolvedValue({
+        ...mockPart,
+        supplierId: null,
+        supplier: null,
+      });
+
+      await service.update(mockTenantId, mockPartId, updateWithEmptySupplier);
+
+      expect(mockPrismaService.part.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            supplier: { disconnect: true },
+          }),
+        }),
+      );
+    });
+
+    it('deve lidar com erros genéricos ao atualizar', async () => {
+      // Resetar mock para garantir estado limpo
+      mockPrismaService.part.findFirst.mockReset();
+      // Primeiro findFirst retorna a peça (findPartByIdAndTenant)
+      // Segundo findFirst retorna null (validatePartNumberUniqueness - não há duplicado)
+      mockPrismaService.part.findFirst
+        .mockResolvedValueOnce(mockPart) // findPartByIdAndTenant
+        .mockResolvedValueOnce(null); // validatePartNumberUniqueness
+      mockPrismaService.part.update.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(
+        service.update(mockTenantId, mockPartId, updatePartDto),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('remove', () => {
     it('deve deletar peça se não estiver sendo usada', async () => {
+      // Resetar mock para garantir estado limpo
+      mockPrismaService.part.findFirst.mockReset();
       mockPrismaService.part.findFirst.mockResolvedValue(mockPart);
       mockPrismaService.serviceOrderPart.findFirst.mockResolvedValue(null);
       mockPrismaService.quoteItem.findFirst.mockResolvedValue(null);
@@ -455,6 +571,8 @@ describe('PartsService', () => {
     });
 
     it('deve marcar como inativa se estiver sendo usada em ServiceOrder', async () => {
+      // Resetar mock para garantir estado limpo
+      mockPrismaService.part.findFirst.mockReset();
       mockPrismaService.part.findFirst.mockResolvedValue(mockPart);
       mockPrismaService.serviceOrderPart.findFirst.mockResolvedValue({
         id: 'service-order-part-id',
@@ -499,6 +617,19 @@ describe('PartsService', () => {
 
       await expect(service.remove(mockTenantId, mockPartId)).rejects.toThrow(
         NotFoundException,
+      );
+    });
+
+    it('deve lidar com erros genéricos ao remover peça', async () => {
+      mockPrismaService.part.findFirst.mockResolvedValue(mockPart);
+      mockPrismaService.serviceOrderPart.findFirst.mockResolvedValue(null);
+      mockPrismaService.quoteItem.findFirst.mockResolvedValue(null);
+      mockPrismaService.part.delete.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.remove(mockTenantId, mockPartId)).rejects.toThrow(
+        BadRequestException,
       );
     });
   });

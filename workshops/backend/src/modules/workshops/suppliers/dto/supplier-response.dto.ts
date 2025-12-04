@@ -9,7 +9,7 @@ export class SupplierResponseDto {
   name: string;
 
   @ApiPropertyOptional({ description: 'Tipo de documento', enum: DocumentType })
-  documentType?: DocumentType | string;
+  documentType?: DocumentType;
 
   @ApiPropertyOptional({ description: 'CNPJ ou CPF' })
   document?: string;

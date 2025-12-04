@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsEmail,
   IsBoolean,
+  IsEnum,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -22,8 +23,8 @@ export class CreateSupplierDto {
 
   @ApiPropertyOptional({ description: 'Tipo de documento', enum: DocumentType })
   @IsOptional()
-  @IsString()
-  documentType?: DocumentType | string;
+  @IsEnum(DocumentType)
+  documentType?: DocumentType;
 
   @ApiPropertyOptional({ description: 'CNPJ ou CPF' })
   @IsOptional()

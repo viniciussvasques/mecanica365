@@ -314,7 +314,7 @@ export class SuppliersService {
     return {
       id: supplier.id,
       name: supplier.name,
-      documentType: supplier.documentType as DocumentType | undefined,
+      documentType: (supplier.documentType as DocumentType) || undefined,
       document: supplier.document || undefined,
       phone: supplier.phone || undefined,
       email: supplier.email || undefined,
