@@ -388,7 +388,7 @@ export default function SubscriptionPage() {
 
                   {/* Features */}
                   <div className="space-y-2 mb-6">
-                    {plan.features.slice(0, 5).map((feature) => (
+                    {(plan.features || []).slice(0, 5).map((feature) => (
                       <div key={feature} className="flex items-center gap-2 text-sm">
                         <svg className="w-4 h-4 text-[#00E0B8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -396,8 +396,8 @@ export default function SubscriptionPage() {
                         <span className="text-[#D0D6DE]">{getFeatureLabel(feature)}</span>
                       </div>
                     ))}
-                    {plan.features.length > 5 && (
-                      <p className="text-[#7E8691] text-xs">+{plan.features.length - 5} recursos</p>
+                    {(plan.features || []).length > 5 && (
+                      <p className="text-[#7E8691] text-xs">+{(plan.features || []).length - 5} recursos</p>
                     )}
                   </div>
 
