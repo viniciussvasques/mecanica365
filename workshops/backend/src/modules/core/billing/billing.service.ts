@@ -15,14 +15,21 @@ import {
   SubscriptionStatus,
   BillingCycle,
 } from './dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, Plan } from '@prisma/client';
+
+export interface PlanConfig {
+  serviceOrdersLimit: number | null;
+  partsLimit: number | null;
+  usersLimit: number | null;
+  features: string[];
+}
 
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
 
-  // Configuração de planos e limites
-  private readonly planLimits = {
+  // Fallback: Configuração de planos e limites (usado quando não há planos no banco)
+  private readonly fallbackPlanLimits: Record<string, PlanConfig> = {
     [SubscriptionPlan.WORKSHOPS_STARTER]: {
       serviceOrdersLimit: 50,
       partsLimit: 100,
@@ -42,9 +49,9 @@ export class BillingService {
       ],
     },
     [SubscriptionPlan.WORKSHOPS_ENTERPRISE]: {
-      serviceOrdersLimit: null, // Ilimitado
-      partsLimit: null, // Ilimitado
-      usersLimit: null, // Ilimitado
+      serviceOrdersLimit: null,
+      partsLimit: null,
+      usersLimit: null,
       features: [
         'basic_service_orders',
         'basic_customers',
@@ -62,6 +69,47 @@ export class BillingService {
     private readonly prisma: PrismaService,
     private readonly featureFlagsService: FeatureFlagsService,
   ) {}
+
+  /**
+   * Busca configuração do plano do banco de dados ou usa fallback
+   */
+  private async getPlanConfig(planCode: string): Promise<PlanConfig | null> {
+    try {
+      const plan = await this.prisma.plan.findUnique({
+        where: { code: planCode },
+      });
+
+      if (plan) {
+        return {
+          serviceOrdersLimit: plan.serviceOrdersLimit,
+          partsLimit: plan.partsLimit,
+          usersLimit: plan.usersLimit,
+          features: plan.features,
+        };
+      }
+
+      // Fallback para configuração estática
+      return this.fallbackPlanLimits[planCode] ?? null;
+    } catch (error) {
+      this.logger.warn(
+        `Erro ao buscar plano do banco, usando fallback: ${getErrorMessage(error)}`,
+      );
+      return this.fallbackPlanLimits[planCode] ?? null;
+    }
+  }
+
+  /**
+   * Busca plano do banco por código
+   */
+  private async getPlanFromDb(planCode: string): Promise<Plan | null> {
+    try {
+      return await this.prisma.plan.findUnique({
+        where: { code: planCode },
+      });
+    } catch {
+      return null;
+    }
+  }
 
   async create(
     createSubscriptionDto: CreateSubscriptionDto,
@@ -85,18 +133,14 @@ export class BillingService {
         throw new BadRequestException('Tenant já possui uma subscription');
       }
 
-      // Obter limites do plano
-      const planConfig = this.planLimits[createSubscriptionDto.plan] as
-        | {
-            serviceOrdersLimit: number | null;
-            partsLimit: number | null;
-            usersLimit: number | null;
-            features: string[];
-          }
-        | undefined;
+      // Obter limites do plano (do banco ou fallback)
+      const planConfig = await this.getPlanConfig(createSubscriptionDto.plan);
       if (!planConfig) {
         throw new BadRequestException('Plano inválido');
       }
+
+      // Buscar plano do banco para obter o ID
+      const planFromDb = await this.getPlanFromDb(createSubscriptionDto.plan);
 
       // Calcular período (30 dias para monthly, 365 para annual)
       const billingCycle =
@@ -111,6 +155,7 @@ export class BillingService {
         data: {
           tenantId: createSubscriptionDto.tenantId,
           plan: createSubscriptionDto.plan,
+          planId: planFromDb?.id ?? null,
           status: SubscriptionStatus.ACTIVE,
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
@@ -180,22 +225,20 @@ export class BillingService {
 
       if (updateSubscriptionDto.plan) {
         // Atualizar limites e features quando o plano muda
-        const planConfig = this.planLimits[updateSubscriptionDto.plan] as
-          | {
-              serviceOrdersLimit: number | null;
-              partsLimit: number | null;
-              usersLimit: number | null;
-              features: string[];
-            }
-          | undefined;
+        const planConfig = await this.getPlanConfig(updateSubscriptionDto.plan);
         if (!planConfig) {
           throw new BadRequestException('Plano inválido');
         }
+
+        // Buscar plano do banco para obter o ID
+        const planFromDb = await this.getPlanFromDb(updateSubscriptionDto.plan);
+
         // Obter features habilitadas do FeatureFlagsService baseado no plano
         const enabledFeatures = this.getEnabledFeaturesForPlan(
           updateSubscriptionDto.plan,
         );
         updateData.plan = updateSubscriptionDto.plan;
+        updateData.planRef = planFromDb ? { connect: { id: planFromDb.id } } : undefined;
         updateData.activeFeatures = enabledFeatures;
         updateData.serviceOrdersLimit = planConfig.serviceOrdersLimit;
         updateData.partsLimit = planConfig.partsLimit;
@@ -258,10 +301,8 @@ export class BillingService {
       }
 
       // Validar upgrade (só pode fazer upgrade, não downgrade)
-      const currentPlanOrder = this.getPlanOrder(
-        subscription.plan as SubscriptionPlan,
-      );
-      const newPlanOrder = this.getPlanOrder(newPlan);
+      const currentPlanOrder = await this.getPlanOrderFromDb(subscription.plan);
+      const newPlanOrder = await this.getPlanOrderFromDb(newPlan);
 
       if (newPlanOrder <= currentPlanOrder) {
         throw new BadRequestException(
@@ -270,17 +311,13 @@ export class BillingService {
       }
 
       // Obter configuração do novo plano
-      const planConfig = this.planLimits[newPlan] as
-        | {
-            serviceOrdersLimit: number | null;
-            partsLimit: number | null;
-            usersLimit: number | null;
-            features: string[];
-          }
-        | undefined;
+      const planConfig = await this.getPlanConfig(newPlan);
       if (!planConfig) {
         throw new BadRequestException('Plano inválido');
       }
+
+      // Buscar plano do banco para obter o ID
+      const planFromDb = await this.getPlanFromDb(newPlan);
 
       // Obter features habilitadas do FeatureFlagsService baseado no plano
       const enabledFeatures = this.getEnabledFeaturesForPlan(newPlan);
@@ -290,6 +327,7 @@ export class BillingService {
         where: { tenantId },
         data: {
           plan: newPlan,
+          planId: planFromDb?.id ?? null,
           activeFeatures: enabledFeatures,
           serviceOrdersLimit: planConfig.serviceOrdersLimit,
           partsLimit: planConfig.partsLimit,
@@ -327,10 +365,8 @@ export class BillingService {
       }
 
       // Validar downgrade
-      const currentPlanOrder = this.getPlanOrder(
-        subscription.plan as SubscriptionPlan,
-      );
-      const newPlanOrder = this.getPlanOrder(newPlan);
+      const currentPlanOrder = await this.getPlanOrderFromDb(subscription.plan);
+      const newPlanOrder = await this.getPlanOrderFromDb(newPlan);
 
       if (newPlanOrder >= currentPlanOrder) {
         throw new BadRequestException(
@@ -339,17 +375,13 @@ export class BillingService {
       }
 
       // Obter configuração do novo plano
-      const planConfig = this.planLimits[newPlan] as
-        | {
-            serviceOrdersLimit: number | null;
-            partsLimit: number | null;
-            usersLimit: number | null;
-            features: string[];
-          }
-        | undefined;
+      const planConfig = await this.getPlanConfig(newPlan);
       if (!planConfig) {
         throw new BadRequestException('Plano inválido');
       }
+
+      // Buscar plano do banco para obter o ID
+      const planFromDb = await this.getPlanFromDb(newPlan);
 
       // Obter features habilitadas do FeatureFlagsService baseado no plano
       const enabledFeatures = this.getEnabledFeaturesForPlan(newPlan);
@@ -359,6 +391,7 @@ export class BillingService {
         where: { tenantId },
         data: {
           plan: newPlan,
+          planId: planFromDb?.id ?? null,
           activeFeatures: enabledFeatures,
           serviceOrdersLimit: planConfig.serviceOrdersLimit,
           partsLimit: planConfig.partsLimit,
@@ -434,42 +467,141 @@ export class BillingService {
     }
   }
 
-  getAvailablePlans(): Array<{
-    id: SubscriptionPlan;
-    name: string;
-    price: { monthly: number; annual: number };
-    limits: unknown;
-  }> {
-    return [
-      {
-        id: SubscriptionPlan.WORKSHOPS_STARTER,
-        name: 'Starter',
-        price: { monthly: 99, annual: 990 },
-        limits: this.planLimits[SubscriptionPlan.WORKSHOPS_STARTER],
-      },
-      {
-        id: SubscriptionPlan.WORKSHOPS_PROFESSIONAL,
-        name: 'Professional',
-        price: { monthly: 299, annual: 2990 },
-        limits: this.planLimits[SubscriptionPlan.WORKSHOPS_PROFESSIONAL],
-      },
-      {
-        id: SubscriptionPlan.WORKSHOPS_ENTERPRISE,
-        name: 'Enterprise',
-        price: { monthly: 999, annual: 9990 },
-        limits: this.planLimits[SubscriptionPlan.WORKSHOPS_ENTERPRISE],
-      },
-    ];
+  /**
+   * Retorna planos disponíveis do banco de dados
+   * Com fallback para planos estáticos se o banco não tiver dados
+   */
+  async getAvailablePlans(): Promise<
+    Array<{
+      id: string;
+      name: string;
+      description?: string;
+      price: { monthly: number; annual: number };
+      limits: PlanConfig;
+      highlightText?: string | null;
+      isDefault: boolean;
+    }>
+  > {
+    try {
+      const plansFromDb = await this.prisma.plan.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: 'asc' },
+      });
+
+      if (plansFromDb.length > 0) {
+        return plansFromDb.map((plan) => ({
+          id: plan.code,
+          name: plan.name,
+          description: plan.description ?? undefined,
+          price: {
+            monthly: Number(plan.monthlyPrice),
+            annual: Number(plan.annualPrice),
+          },
+          limits: {
+            serviceOrdersLimit: plan.serviceOrdersLimit,
+            partsLimit: plan.partsLimit,
+            usersLimit: plan.usersLimit,
+            features: plan.features,
+          },
+          highlightText: plan.highlightText,
+          isDefault: plan.isDefault,
+        }));
+      }
+
+      // Fallback para planos estáticos
+      return [
+        {
+          id: SubscriptionPlan.WORKSHOPS_STARTER,
+          name: 'Starter',
+          description: 'Para pequenas oficinas',
+          price: { monthly: 99, annual: 990 },
+          limits: this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_STARTER],
+          highlightText: null,
+          isDefault: true,
+        },
+        {
+          id: SubscriptionPlan.WORKSHOPS_PROFESSIONAL,
+          name: 'Professional',
+          description: 'Para oficinas em crescimento',
+          price: { monthly: 299, annual: 2990 },
+          limits: this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_PROFESSIONAL],
+          highlightText: 'Popular',
+          isDefault: false,
+        },
+        {
+          id: SubscriptionPlan.WORKSHOPS_ENTERPRISE,
+          name: 'Enterprise',
+          description: 'Para grandes operações',
+          price: { monthly: 999, annual: 9990 },
+          limits: this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_ENTERPRISE],
+          highlightText: null,
+          isDefault: false,
+        },
+      ];
+    } catch (error) {
+      this.logger.warn(
+        `Erro ao buscar planos do banco, usando fallback: ${getErrorMessage(error)}`,
+      );
+      // Fallback para planos estáticos
+      return [
+        {
+          id: SubscriptionPlan.WORKSHOPS_STARTER,
+          name: 'Starter',
+          description: 'Para pequenas oficinas',
+          price: { monthly: 99, annual: 990 },
+          limits: this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_STARTER],
+          highlightText: null,
+          isDefault: true,
+        },
+        {
+          id: SubscriptionPlan.WORKSHOPS_PROFESSIONAL,
+          name: 'Professional',
+          description: 'Para oficinas em crescimento',
+          price: { monthly: 299, annual: 2990 },
+          limits: this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_PROFESSIONAL],
+          highlightText: 'Popular',
+          isDefault: false,
+        },
+        {
+          id: SubscriptionPlan.WORKSHOPS_ENTERPRISE,
+          name: 'Enterprise',
+          description: 'Para grandes operações',
+          price: { monthly: 999, annual: 9990 },
+          limits: this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_ENTERPRISE],
+          highlightText: null,
+          isDefault: false,
+        },
+      ];
+    }
   }
 
   // Helper methods
-  private getPlanOrder(plan: SubscriptionPlan): number {
-    const order = {
+  private getFallbackPlanOrder(plan: string): number {
+    const order: Record<string, number> = {
       [SubscriptionPlan.WORKSHOPS_STARTER]: 1,
       [SubscriptionPlan.WORKSHOPS_PROFESSIONAL]: 2,
       [SubscriptionPlan.WORKSHOPS_ENTERPRISE]: 3,
     };
     return order[plan] || 0;
+  }
+
+  /**
+   * Obtém a ordem do plano do banco de dados ou usa fallback
+   */
+  private async getPlanOrderFromDb(planCode: string): Promise<number> {
+    try {
+      const plan = await this.prisma.plan.findUnique({
+        where: { code: planCode },
+      });
+
+      if (plan) {
+        return plan.sortOrder;
+      }
+
+      return this.getFallbackPlanOrder(planCode);
+    } catch {
+      return this.getFallbackPlanOrder(planCode);
+    }
   }
 
   /**
@@ -524,7 +656,7 @@ export class BillingService {
       this.logger.warn(
         `Erro ao obter features do FeatureFlagsService: ${getErrorMessage(error)}`,
       );
-      return this.planLimits[plan as SubscriptionPlan]?.features || [];
+      return this.fallbackPlanLimits[plan]?.features || [];
     }
 
     this.logger.log(

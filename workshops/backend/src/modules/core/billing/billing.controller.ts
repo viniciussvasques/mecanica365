@@ -22,16 +22,19 @@ import {
   UpgradeSubscriptionDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { TenantId } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('Billing')
 @Controller('billing')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
   @Get('subscription')
+  @Roles('admin', 'manager', 'superadmin')
   @ApiOperation({ summary: 'Obter subscription atual do tenant' })
   @ApiResponse({
     status: 200,
@@ -49,16 +52,18 @@ export class BillingController {
   }
 
   @Get('plans')
+  @Roles('admin', 'manager', 'superadmin', 'user')
   @ApiOperation({ summary: 'Listar planos disponíveis' })
   @ApiResponse({
     status: 200,
     description: 'Lista de planos disponíveis',
   })
-  getAvailablePlans() {
+  async getAvailablePlans() {
     return this.billingService.getAvailablePlans();
   }
 
   @Post('subscription')
+  @Roles('admin', 'superadmin')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Criar nova subscription (admin only)' })
   @ApiResponse({
@@ -75,6 +80,7 @@ export class BillingController {
   }
 
   @Patch('subscription')
+  @Roles('admin', 'superadmin')
   @ApiOperation({ summary: 'Atualizar subscription atual' })
   @ApiResponse({
     status: 200,
@@ -93,6 +99,7 @@ export class BillingController {
   }
 
   @Post('subscription/upgrade')
+  @Roles('admin', 'superadmin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Fazer upgrade de plano' })
   @ApiResponse({
@@ -113,6 +120,7 @@ export class BillingController {
   }
 
   @Post('subscription/downgrade')
+  @Roles('admin', 'superadmin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Fazer downgrade de plano' })
   @ApiResponse({
@@ -133,6 +141,7 @@ export class BillingController {
   }
 
   @Post('subscription/cancel')
+  @Roles('admin', 'superadmin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancelar subscription' })
   @ApiResponse({
@@ -151,6 +160,7 @@ export class BillingController {
   }
 
   @Post('subscription/reactivate')
+  @Roles('admin', 'superadmin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reativar subscription cancelada' })
   @ApiResponse({

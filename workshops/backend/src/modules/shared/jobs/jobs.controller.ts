@@ -18,16 +18,24 @@ import {
 import { JobsService } from './jobs.service';
 import { CreateJobDto, JobResponseDto, JobFiltersDto } from './dto';
 import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
-import { TenantGuard } from '@common/guards/tenant.guard';
 import { Roles } from '@core/auth/decorators/roles.decorator';
 import { RolesGuard } from '@core/auth/guards/roles.guard';
+import { CurrentUser } from '@core/auth/decorators/current-user.decorator';
 import { TenantId } from '@common/decorators/tenant.decorator';
+
+interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  tenantId: string;
+}
 
 @ApiTags('Jobs')
 @ApiBearerAuth()
 @Controller('jobs')
-@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
-@Roles('admin', 'manager')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin', 'manager', 'superadmin')
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
@@ -53,8 +61,14 @@ export class JobsController {
     description: 'Lista de jobs',
     type: [JobResponseDto],
   })
-  findAll(@TenantId() tenantId: string, @Query() filters: JobFiltersDto) {
-    return this.jobsService.findAll(tenantId, filters);
+  findAll(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Query() filters: JobFiltersDto,
+  ) {
+    // Superadmin pode ver jobs de todos os tenants
+    const effectiveTenantId = user.role === 'superadmin' ? undefined : tenantId;
+    return this.jobsService.findAll(effectiveTenantId, filters);
   }
 
   @Get(':id')
@@ -67,8 +81,11 @@ export class JobsController {
   @ApiResponse({ status: 404, description: 'Job não encontrado' })
   findOne(
     @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
     @Param('id') id: string,
   ): Promise<JobResponseDto> {
-    return this.jobsService.findOne(tenantId, id);
+    // Superadmin pode ver qualquer job
+    const effectiveTenantId = user.role === 'superadmin' ? undefined : tenantId;
+    return this.jobsService.findOne(effectiveTenantId, id);
   }
 }

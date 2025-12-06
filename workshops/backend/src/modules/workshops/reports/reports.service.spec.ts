@@ -32,6 +32,15 @@ describe('ReportsService', () => {
     quote: {
       findMany: jest.fn(),
     },
+    workshopSettings: {
+      findUnique: jest.fn(),
+    },
+    report: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
+      findFirst: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -46,6 +55,12 @@ describe('ReportsService', () => {
     }).compile();
 
     service = module.get<ReportsService>(ReportsService);
+
+    mockPrismaService.workshopSettings.findUnique.mockResolvedValue(null);
+    mockPrismaService.report.create.mockResolvedValue({
+      id: 'report-id',
+      createdAt: new Date(),
+    });
   });
 
   afterEach(() => {

@@ -8,13 +8,11 @@ import { notificationsApi } from '@/lib/api/notifications';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useNotification } from '@/components/NotificationProvider';
 
 export const dynamic = 'force-dynamic';
 
 export default function QuotesPage() {
   const router = useRouter();
-  const { showNotification } = useNotification();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +84,7 @@ export default function QuotesPage() {
   const loadUnreadCount = async () => {
     try {
       const result = await notificationsApi.getUnreadCount();
-      setUnreadCount(result.unreadCount || 0);
+      setUnreadCount(result || 0);
     } catch (err) {
       console.error('Erro ao carregar contador de notificações:', err);
     }
@@ -170,7 +168,7 @@ export default function QuotesPage() {
               <span className="text-4xl animate-bounce">🔔</span>
               <div className="flex-1">
                 <p className="font-bold text-xl text-[#D0D6DE] mb-1">
-                  ⚡ {diagnosedCount} orçamento{diagnosedCount !== 1 ? 's' : ''} diagnosticado{diagnosedCount !== 1 ? 's' : ''} aguardando preenchimento!
+                  ⚡ {diagnosedCount === 1 ? '1 orçamento diagnosticado aguardando preenchimento!' : `${diagnosedCount} orçamentos diagnosticados aguardando preenchimento!`}
                 </p>
                 <p className="text-sm text-[#7E8691]">
                   Clique em um orçamento com status "Diagnosticado" abaixo para preencher e enviar ao cliente
@@ -232,16 +230,23 @@ export default function QuotesPage() {
 
         {/* Tabela */}
         <div className="bg-[#1A1E23] border border-[#2A3038] rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E0B8] mx-auto"></div>
-              <p className="mt-4 text-[#7E8691]">Carregando orçamentos...</p>
-            </div>
-          ) : quotes.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-[#7E8691]">Nenhum orçamento encontrado</p>
-            </div>
-          ) : (
+          {(() => {
+            if (loading) {
+              return (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E0B8] mx-auto"></div>
+                  <p className="mt-4 text-[#7E8691]">Carregando orçamentos...</p>
+                </div>
+              );
+            }
+            if (quotes.length === 0) {
+              return (
+                <div className="p-8 text-center">
+                  <p className="text-[#7E8691]">Nenhum orçamento encontrado</p>
+                </div>
+              );
+            }
+            return (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -260,13 +265,15 @@ export default function QuotesPage() {
                     {quotes.map((quote) => (
                       <tr
                         key={quote.id}
-                        className={`hover:bg-[#2A3038]/50 transition-colors ${
-                          quote.status === QuoteStatus.DIAGNOSED
-                            ? 'bg-[#3ABFF8]/10 border-l-4 border-[#3ABFF8] animate-pulse-glow'
-                            : quote.status === QuoteStatus.ACCEPTED && !quote.serviceOrderId
-                            ? 'bg-[#00E0B8]/5 border-l-4 border-[#00E0B8]'
-                            : ''
-                        }`}
+                        className={(() => {
+                          if (quote.status === QuoteStatus.DIAGNOSED) {
+                            return 'hover:bg-[#2A3038]/50 transition-colors bg-[#3ABFF8]/10 border-l-4 border-[#3ABFF8] animate-pulse-glow';
+                          }
+                          if (quote.status === QuoteStatus.ACCEPTED && !quote.serviceOrderId) {
+                            return 'hover:bg-[#2A3038]/50 transition-colors bg-[#00E0B8]/5 border-l-4 border-[#00E0B8]';
+                          }
+                          return 'hover:bg-[#2A3038]/50 transition-colors';
+                        })()}
                       >
                         <td className="px-6 py-4 text-sm text-[#D0D6DE] font-medium">{quote.number}</td>
                         <td className="px-6 py-4 text-sm text-[#7E8691]">
@@ -336,7 +343,8 @@ export default function QuotesPage() {
                 </div>
               )}
             </>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>

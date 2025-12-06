@@ -51,7 +51,7 @@ export class TenantsController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'superadmin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar todos os tenants (admin only)' })
   @ApiResponse({
@@ -99,7 +99,7 @@ export class TenantsController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'superadmin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Buscar tenant por ID (admin only)' })
   @ApiResponse({
@@ -114,7 +114,7 @@ export class TenantsController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'superadmin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Atualizar tenant (admin only)' })
   @ApiResponse({
@@ -132,7 +132,7 @@ export class TenantsController {
 
   @Post(':id/activate')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'superadmin')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Ativar tenant (admin only)' })
@@ -148,7 +148,7 @@ export class TenantsController {
 
   @Post(':id/suspend')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'superadmin')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Suspender tenant (admin only)' })
@@ -164,7 +164,7 @@ export class TenantsController {
 
   @Post(':id/cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'superadmin')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancelar tenant (admin only)' })

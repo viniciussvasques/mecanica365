@@ -346,17 +346,6 @@ export const quotesApi = {
   },
 
   /**
-   * Aprovar orçamento manualmente (após assinatura física)
-   */
-  approveManually: async (
-    id: string,
-    data?: { customerSignature?: string; notes?: string },
-  ): Promise<{ quote: Quote; serviceOrder: any }> => {
-    const response = await api.post(`/quotes/${id}/approve-manually`, data || {});
-    return response.data;
-  },
-
-  /**
    * Regenerar token público do orçamento
    */
   regenerateToken: async (id: string): Promise<Quote> => {
@@ -367,14 +356,14 @@ export const quotesApi = {
 
 // API pública (sem autenticação)
 const getPublicApiUrl = () => {
-  if (typeof window === 'undefined') {
+  if (globalThis.window === undefined) {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     // Remover /api se existir no final
     return baseUrl.replace(/\/api\/?$/, '');
   }
   
   // Se estiver rodando no navegador, construir a URL corretamente
-  const hostname = window.location.hostname;
+  const hostname = globalThis.window.location.hostname;
   
   // Sempre usar porta 3001 para o backend (mesmo que o frontend esteja em outra porta)
   // Detectar se é localhost ou subdomain.localhost
@@ -394,7 +383,7 @@ const getPublicApiUrl = () => {
   }
   
   // Fallback: usar mesma origem mas assumir que backend está na porta 3001
-  return `${window.location.protocol}//${hostname}:3001`;
+  return `${globalThis.window.location.protocol}//${hostname}:3001`;
 };
 
 export const quotesPublicApi = {

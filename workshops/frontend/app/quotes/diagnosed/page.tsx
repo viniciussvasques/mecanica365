@@ -55,7 +55,7 @@ export default function DiagnosedQuotesPage() {
   const loadUnreadCount = async () => {
     try {
       const result = await notificationsApi.getUnreadCount();
-      setUnreadCount(result.unreadCount || 0);
+      setUnreadCount(result || 0);
     } catch (err) {
       console.error('Erro ao carregar contador de notificações:', err);
     }
@@ -104,7 +104,7 @@ export default function DiagnosedQuotesPage() {
                 Orçamentos Diagnosticados
               </h1>
               <p className="text-[#7E8691] mt-2">
-                {quotes.length} orçamento{quotes.length !== 1 ? 's' : ''} aguardando preenchimento
+                {quotes.length === 1 ? '1 orçamento aguardando preenchimento' : `${quotes.length} orçamentos aguardando preenchimento`}
               </p>
             </div>
             <Link href="/quotes">
@@ -118,7 +118,7 @@ export default function DiagnosedQuotesPage() {
                 <span className="text-4xl animate-bounce">🔔</span>
                 <div className="flex-1">
                   <p className="font-bold text-xl text-[#D0D6DE] mb-1">
-                    ⚡ {unreadCount} novo{unreadCount !== 1 ? 's' : ''} diagnóstico{unreadCount !== 1 ? 's' : ''} concluído{unreadCount !== 1 ? 's' : ''}!
+                    ⚡ {unreadCount === 1 ? '1 novo diagnóstico concluído!' : `${unreadCount} novos diagnósticos concluídos!`}
                   </p>
                   <p className="text-sm text-[#7E8691]">
                     Clique em um orçamento abaixo para preencher e enviar ao cliente
@@ -141,12 +141,20 @@ export default function DiagnosedQuotesPage() {
             {quotes.map((quote) => (
               <div
                 key={quote.id}
+                role="button"
+                tabIndex={0}
                 className={`bg-[#1A1E23] border-2 rounded-lg p-6 hover:border-[#00E0B8]/70 transition-all cursor-pointer ${
                   unreadCount > 0 
                     ? 'border-[#3ABFF8] animate-pulse-glow shadow-lg shadow-[#3ABFF8]/30' 
                     : 'border-[#2A3038]'
                 }`}
                 onClick={() => router.push(`/quotes/${quote.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    router.push(`/quotes/${quote.id}`);
+                  }
+                }}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>

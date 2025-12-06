@@ -1,0 +1,17 @@
+warning: in the working copy of 'workshops/backend/src/modules/core/auth/guards/roles.guard.ts', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/workshops/backend/src/modules/core/auth/guards/roles.guard.ts b/workshops/backend/src/modules/core/auth/guards/roles.guard.ts[m
+[1mindex 528063f..e64e4dc 100644[m
+[1m--- a/workshops/backend/src/modules/core/auth/guards/roles.guard.ts[m
+[1m+++ b/workshops/backend/src/modules/core/auth/guards/roles.guard.ts[m
+[36m@@ -29,6 +29,11 @@[m [mexport class RolesGuard implements CanActivate {[m
+       return false;[m
+     }[m
+ [m
+[32m+[m[32m    // Super admin tem acesso irrestrito em qualquer rota protegida[m
+[32m+[m[32m    if (user.role === 'superadmin') {[m
+[32m+[m[32m      return true;[m
+[32m+[m[32m    }[m
+[32m+[m
+     return requiredRoles.includes(user.role);[m
+   }[m
+ }[m

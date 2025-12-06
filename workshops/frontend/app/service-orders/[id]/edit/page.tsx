@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { serviceOrdersApi, ServiceOrder, UpdateServiceOrderDto, ServiceOrderStatus } from '@/lib/api/service-orders';
+import { serviceOrdersApi, UpdateServiceOrderDto, ServiceOrderStatus } from '@/lib/api/service-orders';
 import { ProblemCategory } from '@/lib/api/quotes';
 import { customersApi, Customer } from '@/lib/api/customers';
 import { vehiclesApi, Vehicle } from '@/lib/api/vehicles';
@@ -39,6 +39,7 @@ export default function EditServiceOrderPage() {
   const id = params.id as string;
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -128,9 +129,8 @@ export default function EditServiceOrderPage() {
     }
   };
 
-  const removeSymptom = (index: number) => {
-    const newSymptoms = [...(formData.reportedProblemSymptoms || [])];
-    newSymptoms.splice(index, 1);
+  const removeSymptom = (symptomToRemove: string) => {
+    const newSymptoms = (formData.reportedProblemSymptoms || []).filter((symptom) => symptom !== symptomToRemove);
     setFormData({ ...formData, reportedProblemSymptoms: newSymptoms });
   };
 
@@ -272,10 +272,12 @@ export default function EditServiceOrderPage() {
                 </label>
                 <div className="flex gap-2 mb-2">
                   <Input
+                    label=""
+                    id="symptoms-input"
                     placeholder="Ex: ruído no freio, barulho ao frear..."
                     value={symptomInput}
                     onChange={(e) => setSymptomInput(e.target.value)}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         addSymptom();
@@ -288,15 +290,15 @@ export default function EditServiceOrderPage() {
                 </div>
                 {formData.reportedProblemSymptoms && formData.reportedProblemSymptoms.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {formData.reportedProblemSymptoms.map((symptom, index) => (
+                    {formData.reportedProblemSymptoms.map((symptom) => (
                       <span
-                        key={index}
+                        key={symptom}
                         className="px-3 py-1 bg-[#2A3038] text-[#D0D6DE] rounded-full text-sm flex items-center gap-2"
                       >
                         {symptom}
                         <button
                           type="button"
-                          onClick={() => removeSymptom(index)}
+                          onClick={() => removeSymptom(symptom)}
                           className="text-[#FF4E3D] hover:text-[#FF6B5A]"
                         >
                           ×

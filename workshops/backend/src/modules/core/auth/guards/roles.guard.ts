@@ -29,6 +29,11 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
+    // Super admin tem acesso irrestrito em qualquer rota protegida
+    if (user.role === 'superadmin') {
+      return true;
+    }
+
     return requiredRoles.includes(user.role);
   }
 }

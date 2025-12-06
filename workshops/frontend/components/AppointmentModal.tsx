@@ -98,10 +98,10 @@ export function AppointmentModal({
         elevatorsApi.findAll(),
       ]);
 
-      setCustomers(customersRes.data);
-      setServiceOrders(serviceOrdersRes.data);
-      setMechanics(usersRes.data.filter((u) => u.isActive));
-      setElevators(elevatorsRes.data.filter((e) => e.status === 'free' || e.status === 'scheduled'));
+      setCustomers(Array.isArray(customersRes) ? customersRes : customersRes.data || []);
+      setServiceOrders(Array.isArray(serviceOrdersRes) ? serviceOrdersRes : serviceOrdersRes.data || []);
+      setMechanics(Array.isArray(usersRes) ? usersRes.filter((u) => u.isActive) : []);
+      setElevators(Array.isArray(elevatorsRes) ? elevatorsRes.filter((e) => e.status === 'free' || e.status === 'scheduled') : (elevatorsRes.data || []).filter((e) => e.status === 'free' || e.status === 'scheduled'));
     } catch (error) {
       console.error('Erro ao carregar opções:', error);
     }
@@ -158,9 +158,9 @@ export function AppointmentModal({
       };
 
       if (appointment) {
-        await appointmentsApi.update(appointment.id, appointmentData);
+        await appointmentsApi.update(appointment.id, appointmentData as UpdateAppointmentDto);
       } else {
-        await appointmentsApi.create(appointmentData);
+        await appointmentsApi.create(appointmentData as CreateAppointmentDto);
       }
 
       onSuccess?.();

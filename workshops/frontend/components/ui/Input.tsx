@@ -47,7 +47,7 @@ export const Input: React.FC<InputProps> = ({
             // Forçar estilos quando autofill é aplicado
             const target = e.currentTarget;
             if (target.matches(':-webkit-autofill')) {
-              target.style.WebkitTextFillColor = error ? '#FF4E3D' : '#F0F4F8';
+              target.style.webkitTextFillColor = error ? '#FF4E3D' : '#F0F4F8';
               target.style.color = error ? '#FF4E3D' : '#F0F4F8';
               target.style.backgroundColor = '#1A1E23';
             }

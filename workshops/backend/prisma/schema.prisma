@@ -39,6 +39,8 @@ model Tenant {
   integrations     Integration[]
   automations      Automation[]
   jobs             Job[]
+  reports          Report[]
+  supportTickets   SupportTicket[]
 
   @@map("tenants")
 }
@@ -63,6 +65,10 @@ model User {
   auditLogs              AuditLog[] // Logs de auditoria
   uploadedAttachments    Attachment[]             @relation("UploadedAttachments") // Arquivos enviados por este usuário
   completedChecklists    Checklist[]              @relation("CompletedChecklists") // Checklists completados por este usuário
+  generatedReports       Report[]                 @relation("GeneratedReports") // Relatórios gerados por este usuário
+  supportTickets         SupportTicket[]          @relation("SupportTicketAssignedTo") // Tickets atribuídos a este usuário
+  createdSupportTickets  SupportTicket[]          @relation("SupportTicketUser") // Tickets criados por este usuário
+  supportReplies         SupportReply[] // Respostas em tickets de suporte
   tenant                 Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, email])
@@ -75,6 +81,7 @@ model Subscription {
   id                   String   @id @default(uuid())
   tenantId             String   @unique
   plan                 String
+  planId               String?  @map("plan_id") // Referência ao Plan dinâmico
   status               String   @default("active")
   currentPeriodStart   DateTime
   currentPeriodEnd     DateTime
@@ -88,8 +95,51 @@ model Subscription {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planRef              Plan?    @relation(fields: [planId], references: [id], onDelete: SetNull)
 
+  @@index([planId])
   @@map("subscriptions")
+}
+
+// Plan - Planos de assinatura configuráveis dinamicamente
+model Plan {
+  id                 String   @id @default(uuid())
+  code               String   @unique @db.VarChar(50) // workshops_starter, workshops_professional, etc.
+  name               String   @db.VarChar(100)
+  description        String?  @db.Text
+  
+  // Preços
+  monthlyPrice       Decimal  @map("monthly_price") @db.Decimal(10, 2)
+  annualPrice        Decimal  @map("annual_price") @db.Decimal(10, 2)
+  
+  // Limites
+  serviceOrdersLimit Int?     @map("service_orders_limit") // null = ilimitado
+  partsLimit         Int?     @map("parts_limit") // null = ilimitado
+  usersLimit         Int?     @map("users_limit") // null = ilimitado
+  
+  // Features (array de strings com os códigos das features)
+  features           String[] // basic_service_orders, advanced_reports, api_access, etc.
+  
+  // Configurações
+  isActive           Boolean  @default(true) @map("is_active")
+  isDefault          Boolean  @default(false) @map("is_default") // Plano padrão para novos tenants
+  sortOrder          Int      @default(0) @map("sort_order") // Ordem de exibição
+  highlightText      String?  @map("highlight_text") @db.VarChar(50) // "Popular", "Recomendado", etc.
+  
+  // Stripe
+  stripePriceIdMonthly String? @map("stripe_price_id_monthly") @db.VarChar(255)
+  stripePriceIdAnnual  String? @map("stripe_price_id_annual") @db.VarChar(255)
+  stripeProductId      String? @map("stripe_product_id") @db.VarChar(255)
+  
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  
+  // Relações
+  subscriptions      Subscription[]
+
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("plans")
 }
 
 model RefreshToken {
@@ -561,6 +611,58 @@ model CommonProblem {
   @@map("common_problems")
 }
 
+// Support - Sistema de suporte/tickets
+model SupportTicket {
+  id             String   @id @default(uuid())
+  tenantId       String?  @map("tenant_id")
+  userId         String?  @map("user_id")
+  subject        String   @db.VarChar(255)
+  message        String   @db.Text
+  status         String   @default("open") @db.VarChar(50) // open, in_progress, waiting_for_user, resolved, closed
+  priority       String   @default("normal") @db.VarChar(50) // low, normal, high, urgent
+  category       String   @default("general") @db.VarChar(50) // technical, billing, account, feature_request, general
+  userEmail      String?  @db.VarChar(255)
+  userName       String?  @db.VarChar(255)
+  assignedToId   String?  @map("assigned_to_id")
+  internalNotes  String?  @db.Text @map("internal_notes")
+  lastReplyAt    DateTime? @map("last_reply_at")
+  resolvedAt     DateTime? @map("resolved_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  tenant         Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user           User?            @relation("SupportTicketUser", fields: [userId], references: [id], onDelete: SetNull)
+  assignedTo     User?            @relation("SupportTicketAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  replies        SupportReply[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, priority])
+  @@index([tenantId, category])
+  @@index([tenantId, createdAt])
+  @@index([assignedToId])
+  @@index([userId])
+  @@map("support_tickets")
+}
+
+model SupportReply {
+  id         String   @id @default(uuid())
+  ticketId   String   @map("ticket_id")
+  userId     String   @map("user_id")
+  message    String   @db.Text
+  isInternal Boolean  @default(false) @map("is_internal") // Visível apenas para admins
+  attachments String[] // URLs ou IDs de arquivos
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@index([userId])
+  @@map("support_replies")
+}
+
 model PartsCategory {
   id        String   @id @default(uuid())
   name      String   @unique
@@ -943,4 +1045,37 @@ model ChecklistItem {
   @@index([checklistId])
   @@index([checklistId, order])
   @@map("checklist_items")
+}
+
+// Reports - Histórico de relatórios gerados
+model Report {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  type        String   @db.VarChar(50) // sales, services, financial, inventory, customers, mechanics, quotes, invoices, payments
+  format      String   @db.VarChar(10) // pdf, excel, csv, json
+  filename    String   @db.VarChar(255)
+  filePath    String?  @map("file_path") @db.VarChar(500) // Caminho do arquivo gerado
+  fileSize    Int?     @map("file_size") // Tamanho em bytes
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  filters     Json?    // Filtros aplicados
+  summary     Json?    // Resumo/estatísticas do relatório
+  generatedBy String?  @map("generated_by") // ID do usuário que gerou
+  status      String   @default("completed") @db.VarChar(50) // pending, processing, completed, failed
+  error       String?  @db.Text // Mensagem de erro se falhar
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  expiresAt   DateTime? @map("expires_at") // Data de expiração (para limpeza automática)
+
+  // Relações
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  generatedByUser User? @relation("GeneratedReports", fields: [generatedBy], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status])
+  @@index([generatedBy])
+  @@index([expiresAt])
+  @@map("reports")
 }

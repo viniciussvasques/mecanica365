@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 import Link from 'next/link';
-import { vehiclesApi, Vehicle, UpdateVehicleDto } from '@/lib/api/vehicles';
+import { vehiclesApi, UpdateVehicleDto } from '@/lib/api/vehicles';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -119,7 +119,7 @@ export default function EditVehiclePage() {
       newErrors.renavan = 'RENAVAN deve ter exatamente 11 dígitos';
     }
 
-    if (formData.placa && !/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/i.test(formData.placa)) {
+    if (formData.placa && !/^[A-Z]{3}\d[A-Z\d]\d{2}$/i.test(formData.placa)) {
       newErrors.placa = 'Placa inválida. Use o formato ABC1234 (Mercosul) ou ABC1D23';
     }
 
@@ -242,7 +242,7 @@ export default function EditVehiclePage() {
                 label="Placa"
                 placeholder="ABC1234"
                 value={formData.placa}
-                onChange={(e) => setFormData({ ...formData, placa: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7) })}
+                onChange={(e) => setFormData({ ...formData, placa: e.target.value.toUpperCase().replace(/[^A-Z\d]/g, '').slice(0, 7) })}
                 error={errors.placa}
                 maxLength={7}
               />
@@ -257,8 +257,8 @@ export default function EditVehiclePage() {
                     const selectedMake = e.target.value;
                     setFormData({
                       ...formData,
-                      make: selectedMake || undefined,
-                      model: selectedMake ? formData.model : undefined, // Limpar modelo se mudar marca
+                      make: selectedMake || '',
+                      model: selectedMake ? formData.model : '', // Limpar modelo se mudar marca
                     });
                     if (selectedMake !== 'Outro') {
                       setCustomMake('');
@@ -290,7 +290,7 @@ export default function EditVehiclePage() {
                       value={formData.model || ''}
                       onChange={(e) => {
                         const value = e.target.value;
-                        setFormData({ ...formData, model: value || undefined });
+                        setFormData({ ...formData, model: value || '' });
                         if (value !== 'Outro') {
                           setCustomModel('');
                         }
@@ -318,7 +318,7 @@ export default function EditVehiclePage() {
                     label="Modelo"
                     placeholder="Digite o modelo"
                     value={formData.model || ''}
-                    onChange={(e) => setFormData({ ...formData, model: e.target.value || undefined })}
+                    onChange={(e) => setFormData({ ...formData, model: e.target.value || '' })}
                   />
                 )}
               </div>
@@ -330,7 +330,7 @@ export default function EditVehiclePage() {
                 type="number"
                 placeholder="2020"
                 value={formData.year || ''}
-                onChange={(e) => setFormData({ ...formData, year: e.target.value ? parseInt(e.target.value, 10) : undefined })}
+                onChange={(e) => setFormData({ ...formData, year: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })}
                 error={errors.year}
                 min={1900}
                 max={new Date().getFullYear() + 1}
@@ -338,7 +338,7 @@ export default function EditVehiclePage() {
               <Select
                 label="Cor"
                 value={formData.color || ''}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value || undefined })}
+                onChange={(e) => setFormData({ ...formData, color: e.target.value || '' })}
                 options={[
                   { value: '', label: 'Selecione uma cor' },
                   ...VEHICLE_COLORS.map((color) => ({ value: color, label: color })),
@@ -349,7 +349,7 @@ export default function EditVehiclePage() {
                 type="number"
                 placeholder="50000"
                 value={formData.mileage || ''}
-                onChange={(e) => setFormData({ ...formData, mileage: e.target.value ? parseInt(e.target.value, 10) : undefined })}
+                onChange={(e) => setFormData({ ...formData, mileage: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })}
                 error={errors.mileage}
                 min={0}
               />

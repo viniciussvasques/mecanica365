@@ -10,6 +10,9 @@ import {
   UpdatePartDto,
   PartResponseDto,
   PartFiltersDto,
+  ImportPartsDto,
+  ImportPartsResponseDto,
+  ImportPartItemDto,
 } from './dto';
 import { Prisma } from '@prisma/client';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
@@ -438,6 +441,121 @@ export class PartsService {
     }
 
     return updateData;
+  }
+
+  /**
+   * Importa múltiplas peças de uma vez
+   */
+  async importParts(
+    tenantId: string,
+    importPartsDto: ImportPartsDto,
+  ): Promise<ImportPartsResponseDto> {
+    const result: ImportPartsResponseDto = {
+      total: importPartsDto.parts.length,
+      created: 0,
+      updated: 0,
+      errors: 0,
+      errorDetails: [],
+    };
+
+    for (let i = 0; i < importPartsDto.parts.length; i++) {
+      const partData = importPartsDto.parts[i];
+      const row = i + 2; // +2 porque linha 1 é cabeçalho e índice começa em 0
+
+      try {
+        // Validar dados obrigatórios
+        if (!partData.name || partData.name.trim().length === 0) {
+          result.errors++;
+          result.errorDetails.push({
+            row,
+            name: partData.name,
+            error: 'Nome é obrigatório',
+          });
+          continue;
+        }
+
+        // Verificar se já existe peça com mesmo partNumber
+        if (partData.partNumber) {
+          const existingPart = await this.prisma.part.findFirst({
+            where: {
+              tenantId,
+              partNumber: partData.partNumber.trim(),
+            },
+          });
+
+          if (existingPart) {
+            // Atualizar peça existente
+            const updateData = this.preparePartUpdateData({
+              name: partData.name.trim(),
+              description: partData.description?.trim(),
+              category: partData.category?.trim(),
+              brand: partData.brand?.trim(),
+              supplierId: partData.supplierId,
+              quantity: partData.quantity,
+              minQuantity: partData.minQuantity,
+              costPrice: partData.costPrice,
+              sellPrice: partData.sellPrice,
+              location: partData.location?.trim(),
+              isActive: partData.isActive ?? true,
+            });
+
+            await this.prisma.part.update({
+              where: { id: existingPart.id },
+              data: updateData,
+            });
+
+            result.updated++;
+            this.logger.log(
+              `Peça atualizada via importação: ${existingPart.id} (partNumber: ${partData.partNumber})`,
+            );
+            continue;
+          }
+        }
+
+        // Criar nova peça
+        const part = await this.prisma.part.create({
+          data: {
+            tenantId,
+            partNumber: partData.partNumber?.trim() || null,
+            name: partData.name.trim(),
+            description: partData.description?.trim() || null,
+            category: partData.category?.trim() || null,
+            brand: partData.brand?.trim() || null,
+            supplierId: partData.supplierId || null,
+            quantity: partData.quantity || 0,
+            minQuantity: partData.minQuantity || 0,
+            costPrice: new Decimal(partData.costPrice),
+            sellPrice: new Decimal(partData.sellPrice),
+            location: partData.location?.trim() || null,
+            isActive: partData.isActive ?? true,
+          },
+        });
+
+        result.created++;
+        this.logger.log(
+          `Peça criada via importação: ${part.id} (tenant: ${tenantId})`,
+        );
+      } catch (error) {
+        result.errors++;
+        const errorMessage = getErrorMessage(error);
+        result.errorDetails.push({
+          row,
+          partNumber: partData.partNumber,
+          name: partData.name,
+          error: errorMessage,
+        });
+        this.logger.error(
+          `Erro ao importar peça (linha ${row}): ${errorMessage}`,
+          getErrorStack(error),
+        );
+      }
+    }
+
+    this.logger.log(
+      `Importação concluída: ${result.created} criadas, ${result.updated} atualizadas, ${result.errors} erros`,
+    );
+
+    return result;
   }
 
   /**

@@ -57,9 +57,10 @@ export class AuditService {
 
   /**
    * Lista logs de auditoria com filtros
+   * Se tenantId for undefined, retorna logs de todos os tenants (superadmin)
    */
   async findAll(
-    tenantId: string,
+    tenantId: string | undefined,
     filters: AuditLogFiltersDto,
   ): Promise<{
     data: AuditLogResponseDto[];
@@ -82,7 +83,8 @@ export class AuditService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.AuditLogWhereInput = {
-      tenantId,
+      // Se tenantId for undefined, não filtra por tenant (superadmin vê tudo)
+      ...(tenantId && { tenantId }),
       ...(userId && { userId }),
       ...(action && { action }),
       ...(resourceType && { resourceType }),
@@ -126,12 +128,17 @@ export class AuditService {
 
   /**
    * Busca um log específico
+   * Se tenantId for undefined, busca em todos os tenants (superadmin)
    */
-  async findOne(tenantId: string, id: string): Promise<AuditLogResponseDto> {
+  async findOne(
+    tenantId: string | undefined,
+    id: string,
+  ): Promise<AuditLogResponseDto> {
     const auditLog = await this.prisma.auditLog.findFirst({
       where: {
         id,
-        tenantId,
+        // Se tenantId for undefined, não filtra por tenant (superadmin vê tudo)
+        ...(tenantId && { tenantId }),
       },
       include: {
         user: {

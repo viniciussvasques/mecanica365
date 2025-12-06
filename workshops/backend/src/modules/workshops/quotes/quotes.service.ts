@@ -868,10 +868,10 @@ export class QuotesService {
   /**
    * Envia orçamento ao cliente (muda status para SENT)
    */
-  async sendToCustomer(
+  sendToCustomer = async (
     tenantId: string,
     id: string,
-  ): Promise<QuoteResponseDto> {
+  ): Promise<QuoteResponseDto> => {
     const quote = await this.prisma.quote.findFirst({
       where: {
         id,
@@ -956,7 +956,7 @@ export class QuotesService {
     this.logger.log(`Orçamento ${quote.number} enviado ao cliente`);
 
     return this.toResponseDto(updatedQuote);
-  }
+  };
 
   /**
    * Gera token único para acesso público ao orçamento
@@ -968,9 +968,10 @@ export class QuotesService {
   /**
    * Busca orçamento por token público (para visualização pública)
    */
-  async findByPublicToken(
+
+  findByPublicToken = async (
     token: string,
-  ): Promise<QuoteResponseDto & { tenantName?: string }> {
+  ): Promise<QuoteResponseDto & { tenantName?: string }> => {
     const quote = await this.prisma.quote.findFirst({
       where: {
         publicToken: token,
@@ -1080,7 +1081,7 @@ export class QuotesService {
           }
         : undefined,
     } as QuoteResponseDto & { tenantName?: string; workshopSettings?: unknown };
-  }
+  };
 
   /**
    * Aprova orçamento via token público (cliente aprova pelo link)
@@ -1650,10 +1651,10 @@ export class QuotesService {
   /**
    * Rejeita orçamento via token público
    */
-  async rejectByPublicToken(
+  rejectByPublicToken = async (
     token: string,
     reason?: string,
-  ): Promise<QuoteResponseDto> {
+  ): Promise<QuoteResponseDto> => {
     const quote = await this.prisma.quote.findFirst({
       where: {
         publicToken: token,
@@ -1719,6 +1720,7 @@ export class QuotesService {
             email: true,
           },
         },
+
         items: true,
       },
     });
@@ -1759,7 +1761,7 @@ export class QuotesService {
     );
 
     return this.toResponseDto(updatedQuote);
-  }
+  };
 
   /**
    * Aprova orçamento manualmente (atendente marca como aprovado após assinatura física)
@@ -3218,7 +3220,7 @@ export class QuotesService {
   /**
    * Converte Prisma Quote para QuoteResponseDto
    */
-  private toResponseDto(quote: {
+  private toResponseDto = (quote: {
     id: string;
     tenantId: string;
     number: string;
@@ -3294,7 +3296,7 @@ export class QuotesService {
     }>;
     createdAt: Date;
     updatedAt: Date;
-  }): QuoteResponseDto {
+  }): QuoteResponseDto => {
     return {
       id: quote.id,
       tenantId: quote.tenantId,
@@ -3388,7 +3390,7 @@ export class QuotesService {
       createdAt: quote.createdAt,
       updatedAt: quote.updatedAt,
     };
-  }
+  };
 
   /**
    * Busca attachments e checklists relacionados a um quote

@@ -102,7 +102,7 @@ export default function NewVehiclePage() {
       newErrors.renavan = 'RENAVAN deve ter exatamente 11 dígitos';
     }
 
-    if (formData.placa && !/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/i.test(formData.placa)) {
+    if (formData.placa && !/^[A-Z]{3}\d[A-Z\d]\d{2}$/i.test(formData.placa)) {
       newErrors.placa = 'Placa inválida. Use o formato ABC1234 (Mercosul) ou ABC1D23';
     }
 
@@ -159,9 +159,9 @@ export default function NewVehiclePage() {
       // Preparar dados removendo campos undefined e strings vazias
       const data: CreateVehicleDto = {
         customerId: formData.customerId,
-        ...(hasVin && { vin: formData.vin.trim().toUpperCase() }),
-        ...(hasRenavan && { renavan: formData.renavan.trim() }),
-        ...(hasPlaca && { placa: formData.placa.trim().toUpperCase() }),
+        ...(hasVin && formData.vin && { vin: formData.vin.trim().toUpperCase() }),
+        ...(hasRenavan && formData.renavan && { renavan: formData.renavan.trim() }),
+        ...(hasPlaca && formData.placa && { placa: formData.placa.trim().toUpperCase() }),
         ...(formData.make === 'Outro' 
           ? (customMake.trim() && { make: customMake.trim() })
           : (formData.make?.trim() && { make: formData.make.trim() })),
@@ -263,7 +263,7 @@ export default function NewVehiclePage() {
                 { value: '', label: 'Selecione um cliente' },
                 ...customers.map((customer) => ({
                   value: customer.id,
-                  label: `${customer.name}${customer.phone ? ` - ${customer.phone}` : ''}`,
+                  label: customer.phone ? `${customer.name} - ${customer.phone}` : customer.name,
                 })),
               ]}
               error={errors.customerId}
@@ -316,7 +316,7 @@ export default function NewVehiclePage() {
                 placeholder="ABC1234"
                 value={formData.placa}
                 onChange={async (e) => {
-                  const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
+                  const value = e.target.value.toUpperCase().replace(/[^A-Z\d]/g, '').slice(0, 7);
                   setFormData({ ...formData, placa: value });
                   
                   // Buscar dados automaticamente quando placa tiver 7 caracteres
@@ -466,7 +466,7 @@ export default function NewVehiclePage() {
                 type="number"
                 placeholder="50000"
                 value={formData.mileage || ''}
-                onChange={(e) => setFormData({ ...formData, mileage: e.target.value ? parseInt(e.target.value, 10) : undefined })}
+                onChange={(e) => setFormData({ ...formData, mileage: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })}
                 error={errors.mileage}
                 min={0}
               />

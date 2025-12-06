@@ -33,7 +33,7 @@ import { TenantId } from '@common/decorators/tenant.decorator';
 @ApiBearerAuth()
 @Controller('integrations')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
-@Roles('admin')
+@Roles('admin', 'superadmin')
 export class IntegrationsController {
   constructor(private readonly integrationsService: IntegrationsService) {}
 

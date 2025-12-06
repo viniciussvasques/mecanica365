@@ -99,7 +99,10 @@ export default function ServiceOrdersPage() {
     );
   };
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | undefined | null) => {
+    if (value === undefined || value === null || Number.isNaN(value)) {
+      return 'R$ 0,00';
+    }
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
@@ -169,16 +172,23 @@ export default function ServiceOrdersPage() {
 
         {/* Tabela */}
         <div className="bg-[#1A1E23] border border-[#2A3038] rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E0B8] mx-auto"></div>
-              <p className="mt-4 text-[#7E8691]">Carregando ordens de serviço...</p>
-            </div>
-          ) : serviceOrders.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-[#7E8691]">Nenhuma ordem de serviço encontrada</p>
-            </div>
-          ) : (
+          {(() => {
+            if (loading) {
+              return (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E0B8] mx-auto"></div>
+                  <p className="mt-4 text-[#7E8691]">Carregando ordens de serviço...</p>
+                </div>
+              );
+            }
+            if (serviceOrders.length === 0) {
+              return (
+                <div className="p-8 text-center">
+                  <p className="text-[#7E8691]">Nenhuma ordem de serviço encontrada</p>
+                </div>
+              );
+            }
+            return (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -268,7 +278,8 @@ export default function ServiceOrdersPage() {
                 </div>
               )}
             </>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>

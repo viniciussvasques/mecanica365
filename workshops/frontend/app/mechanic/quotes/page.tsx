@@ -78,6 +78,7 @@ export default function MechanicQuotesPage() {
       [QuoteStatus.AWAITING_DIAGNOSIS]: { label: 'Aguardando', className: 'bg-[#FFA500]/20 text-[#FFA500]' },
       [QuoteStatus.DIAGNOSED]: { label: 'Diagnosticado', className: 'bg-[#00E0B8]/20 text-[#00E0B8]' },
       [QuoteStatus.SENT]: { label: 'Enviado', className: 'bg-[#3ABFF8]/20 text-[#3ABFF8]' },
+      [QuoteStatus.VIEWED]: { label: 'Visualizado', className: 'bg-[#00E0B8]/20 text-[#00E0B8]' },
       [QuoteStatus.ACCEPTED]: { label: 'Aprovado', className: 'bg-[#00E0B8]/20 text-[#00E0B8]' },
       [QuoteStatus.REJECTED]: { label: 'Rejeitado', className: 'bg-[#FF4E3D]/20 text-[#FF4E3D]' },
       [QuoteStatus.EXPIRED]: { label: 'Expirado', className: 'bg-[#7E8691]/20 text-[#7E8691]' },
@@ -189,9 +190,9 @@ export default function MechanicQuotesPage() {
                   <div className="mb-4">
                     <p className="text-sm text-[#7E8691] mb-2">Sintomas:</p>
                     <div className="flex flex-wrap gap-2">
-                      {quote.reportedProblemSymptoms.slice(0, 3).map((symptom, index) => (
+                      {quote.reportedProblemSymptoms.slice(0, 3).map((symptom) => (
                         <span
-                          key={index}
+                          key={symptom}
                           className="px-2 py-1 bg-[#2A3038] text-[#D0D6DE] rounded text-xs"
                         >
                           {symptom}

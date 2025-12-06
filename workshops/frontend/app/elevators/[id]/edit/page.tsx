@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { elevatorsApi, Elevator, UpdateElevatorDto, ElevatorType, ElevatorStatus } from '@/lib/api/elevators';
+import { elevatorsApi, UpdateElevatorDto, ElevatorType, ElevatorStatus } from '@/lib/api/elevators';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -90,8 +90,8 @@ export default function EditElevatorPage() {
       setLoading(true);
       
       const data: UpdateElevatorDto = {
-        name: formData.name.trim(),
-        number: formData.number.trim(),
+        name: formData.name?.trim(),
+        number: formData.number?.trim(),
         type: formData.type,
         capacity: formData.capacity,
         status: formData.status,
@@ -140,7 +140,7 @@ export default function EditElevatorPage() {
               <Input
                 label="Nome *"
                 placeholder="Ex: Elevador 1"
-                value={formData.name}
+                value={formData.name || ''}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 error={errors.name}
                 required
@@ -179,7 +179,7 @@ export default function EditElevatorPage() {
                   step="0.1"
                   min="0"
                   value={formData.capacity}
-                  onChange={(e) => setFormData({ ...formData, capacity: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, capacity: Number.parseFloat(e.target.value) || 0 })}
                   error={errors.capacity}
                   required
                 />
@@ -212,10 +212,11 @@ export default function EditElevatorPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+              <label htmlFor="notes" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                 Observações
               </label>
               <textarea
+                id="notes"
                 className="w-full px-4 py-2 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8] focus:border-transparent"
                 rows={4}
                 placeholder="Observações sobre o elevador..."

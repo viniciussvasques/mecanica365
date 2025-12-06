@@ -34,6 +34,8 @@ import { RateLimitingModule } from '../modules/shared/rate-limiting/rate-limitin
 import { IntegrationsModule } from '../modules/shared/integrations/integrations.module';
 import { AutomationsModule } from '../modules/shared/automations/automations.module';
 import { NotificationsModule } from '../modules/core/notifications/notifications.module';
+import { PlansModule } from '../modules/core/plans/plans.module';
+import { SupportModule } from '../modules/core/support/support.module';
 import { TenantResolverMiddleware } from '../common/middleware/tenant-resolver.middleware';
 import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
 import { ValidationPipe } from '../common/pipes/validation.pipe';
@@ -71,11 +73,13 @@ import appConfig from '../config/app.config';
     ReportsModule,
     SuppliersModule,
     WebhooksModule,
-    JobsModule,
-    RateLimitingModule,
+    // JobsModule, // Desabilitado - dependências não instaladas
+    // RateLimitingModule, // Desabilitado - @nestjs/throttler não instalado
     IntegrationsModule,
     AutomationsModule,
     NotificationsModule,
+    PlansModule,
+    SupportModule,
     // Módulos adicionais serão adicionados conforme necessário
   ],
   controllers: [AppController],

@@ -101,9 +101,8 @@ export default function NewQuotePage() {
     }
   };
 
-  const removeSymptom = (index: number) => {
-    const newSymptoms = [...(formData.reportedProblemSymptoms || [])];
-    newSymptoms.splice(index, 1);
+  const removeSymptom = (symptomToRemove: string) => {
+    const newSymptoms = (formData.reportedProblemSymptoms || []).filter((symptom) => symptom !== symptomToRemove);
     setFormData({ ...formData, reportedProblemSymptoms: newSymptoms });
   };
 
@@ -270,10 +269,11 @@ export default function NewQuotePage() {
                 error={errors.reportedProblemCategory}
               />
               <div>
-                <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+                <label htmlFor="reportedProblemDescription" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                   Descrição do Problema
                 </label>
                 <textarea
+                  id="reportedProblemDescription"
                   className="w-full px-4 py-2 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]"
                   rows={3}
                   placeholder="Descreva o problema relatado pelo cliente..."
@@ -282,7 +282,7 @@ export default function NewQuotePage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+                <label htmlFor="symptoms-input" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                   Sintomas *
                 </label>
                 {errors.symptoms && (
@@ -290,10 +290,12 @@ export default function NewQuotePage() {
                 )}
                 <div className="flex gap-2 mb-2">
                   <Input
+                    label=""
+                    id="symptoms-input"
                     placeholder="Ex: ruído no freio, barulho ao frear..."
                     value={symptomInput}
                     onChange={(e) => setSymptomInput(e.target.value)}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         addSymptom();
@@ -306,15 +308,15 @@ export default function NewQuotePage() {
                 </div>
                 {formData.reportedProblemSymptoms && formData.reportedProblemSymptoms.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {formData.reportedProblemSymptoms.map((symptom, index) => (
+                    {formData.reportedProblemSymptoms.map((symptom) => (
                       <span
-                        key={index}
+                        key={symptom}
                         className="px-3 py-1 bg-[#2A3038] text-[#D0D6DE] rounded-full text-sm flex items-center gap-2"
                       >
                         {symptom}
                         <button
                           type="button"
-                          onClick={() => removeSymptom(index)}
+                          onClick={() => removeSymptom(symptom)}
                           className="text-[#FF4E3D] hover:text-[#FF6B5A]"
                         >
                           ×

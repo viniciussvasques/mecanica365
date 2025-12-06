@@ -32,7 +32,7 @@ import { TenantId } from '@common/decorators/tenant.decorator';
 @ApiBearerAuth()
 @Controller('automations')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
-@Roles('admin')
+@Roles('admin', 'superadmin')
 export class AutomationsController {
   constructor(private readonly automationsService: AutomationsService) {}
 

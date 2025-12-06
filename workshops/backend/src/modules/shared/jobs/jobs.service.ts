@@ -88,9 +88,10 @@ export class JobsService {
 
   /**
    * Lista jobs com filtros
+   * Se tenantId for undefined, retorna jobs de todos os tenants (superadmin)
    */
   async findAll(
-    tenantId: string,
+    tenantId: string | undefined,
     filters: JobFiltersDto,
   ): Promise<{
     data: JobResponseDto[];
@@ -111,13 +112,16 @@ export class JobsService {
       const skip = (page - 1) * limit;
 
       const where: {
-        tenantId: string;
+        tenantId?: string;
         type?: string;
         status?: string;
         createdAt?: { gte?: Date; lte?: Date };
-      } = {
-        tenantId,
-      };
+      } = {};
+
+      // Se tenantId for undefined, não filtra por tenant (superadmin vê tudo)
+      if (tenantId) {
+        where.tenantId = tenantId;
+      }
 
       if (type) {
         where.type = type;
@@ -167,13 +171,18 @@ export class JobsService {
 
   /**
    * Busca um job por ID
+   * Se tenantId for undefined, busca em todos os tenants (superadmin)
    */
-  async findOne(tenantId: string, id: string): Promise<JobResponseDto> {
+  async findOne(
+    tenantId: string | undefined,
+    id: string,
+  ): Promise<JobResponseDto> {
     try {
       const job = await this.prisma.job.findFirst({
         where: {
           id,
-          tenantId,
+          // Se tenantId for undefined, não filtra por tenant (superadmin vê tudo)
+          ...(tenantId && { tenantId }),
         },
       });
 

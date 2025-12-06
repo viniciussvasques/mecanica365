@@ -1,0 +1,8 @@
+Set-Location "c:\erp-dealer\workshops\backend"
+Write-Host "Executando seed..."
+docker-compose exec -T backend npx tsx prisma/seeds/index.ts 2>&1 | Out-File -FilePath "c:\erp-dealer\seed-output.txt"
+Write-Host "Reiniciando backend..."
+docker-compose restart backend 2>&1 | Out-File -FilePath "c:\erp-dealer\restart-output.txt"
+Write-Host "Obtendo logs..."
+docker-compose logs backend --tail 40 2>&1 | Out-File -FilePath "c:\erp-dealer\logs-output.txt"
+Write-Host "Concluido! Arquivos salvos em c:\erp-dealer\"

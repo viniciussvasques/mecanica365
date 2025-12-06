@@ -24,6 +24,8 @@ import {
   UpdatePartDto,
   PartResponseDto,
   PartFiltersDto,
+  ImportPartsDto,
+  ImportPartsResponseDto,
 } from './dto';
 import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@core/auth/guards/roles.guard';
@@ -147,5 +149,25 @@ export class PartsController {
     @Param('id') id: string,
   ): Promise<void> {
     return this.partsService.remove(tenantId, id);
+  }
+
+  @Post('import')
+  @HttpCode(HttpStatus.OK)
+  @Roles('admin', 'manager', 'receptionist')
+  @ApiOperation({ summary: 'Importar múltiplas peças via planilha' })
+  @ApiResponse({
+    status: 200,
+    description: 'Importação concluída',
+    type: ImportPartsResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos',
+  })
+  async import(
+    @TenantId() tenantId: string,
+    @Body() importPartsDto: ImportPartsDto,
+  ): Promise<ImportPartsResponseDto> {
+    return this.partsService.importParts(tenantId, importPartsDto);
   }
 }

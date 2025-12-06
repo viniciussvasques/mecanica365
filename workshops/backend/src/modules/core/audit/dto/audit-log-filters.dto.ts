@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsDateString, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsDateString,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { AuditAction } from './create-audit-log.dto';
 
 export class AuditLogFiltersDto {
@@ -33,11 +42,18 @@ export class AuditLogFiltersDto {
   @IsOptional()
   endDate?: string;
 
-  @ApiProperty({ required: false, default: 1 })
+  @ApiProperty({ required: false, default: 1, minimum: 1 })
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   page?: number;
 
-  @ApiProperty({ required: false, default: 20 })
+  @ApiProperty({ required: false, default: 20, minimum: 1, maximum: 100 })
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit?: number;
 }

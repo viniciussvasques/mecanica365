@@ -37,7 +37,6 @@ export default function EditQuotePage() {
   const id = params.id as string;
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [elevators, setElevators] = useState<Elevator[]>([]);
@@ -219,29 +218,25 @@ export default function EditQuotePage() {
       };
 
       // Se não pode editar itens, remover itens do payload
-      if (!canEditItems) {
-        delete data.items;
-        delete data.laborCost;
-        delete data.partsCost;
-        delete data.discount;
-        delete data.taxAmount;
-      } else {
+      if (canEditItems) {
         // Validar e formatar itens antes de enviar
         if (data.items && data.items.length > 0) {
-          data.items = data.items.map(item => {
-            // Remover campos que não devem ser enviados (totalCost é calculado no backend)
-            const { totalCost, ...itemData } = item;
+          const formattedItems: QuoteItem[] = data.items.map(item => {
+            // Calcular totalCost (necessário para o tipo QuoteItem)
+            const calculatedTotalCost = (item.quantity || 1) * (item.unitCost || 0);
             return {
               type: item.type || QuoteItemType.SERVICE,
               name: item.name || '',
               description: item.description || undefined,
               quantity: item.quantity || 1,
               unitCost: item.unitCost || 0,
+              totalCost: calculatedTotalCost,
               hours: item.hours || undefined,
               serviceId: item.serviceId || undefined,
               partId: item.partId || undefined,
             };
           }).filter(item => item.name && item.unitCost > 0); // Remover itens inválidos
+          data.items = formattedItems;
         }
       }
 
@@ -341,10 +336,11 @@ export default function EditQuotePage() {
                 ]}
               />
               <div>
-                <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+                <label htmlFor="reportedProblemDescription" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                   Descrição do Problema
                 </label>
                 <textarea
+                  id="reportedProblemDescription"
                   className="w-full px-4 py-2 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]"
                   rows={3}
                   placeholder="Descreva o problema relatado pelo cliente..."
@@ -353,15 +349,16 @@ export default function EditQuotePage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+                <label htmlFor="symptoms" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                   Sintomas
                 </label>
                 <div className="flex gap-2 mb-2">
                   <Input
+                    label=""
                     placeholder="Ex: ruído no freio, barulho ao frear..."
                     value={symptomInput}
                     onChange={(e) => setSymptomInput(e.target.value)}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         addSymptom();
@@ -374,15 +371,15 @@ export default function EditQuotePage() {
                 </div>
                 {formData.reportedProblemSymptoms && formData.reportedProblemSymptoms.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {formData.reportedProblemSymptoms.map((symptom, index) => (
+                    {formData.reportedProblemSymptoms.map((symptom, symptomIndex) => (
                       <span
-                        key={index}
+                        key={`${symptom}-${symptomIndex}`}
                         className="px-3 py-1 bg-[#2A3038] text-[#D0D6DE] rounded-full text-sm flex items-center gap-2"
                       >
                         {symptom}
                         <button
                           type="button"
-                          onClick={() => removeSymptom(index)}
+                          onClick={() => removeSymptom(symptomIndex)}
                           className="text-[#FF4E3D] hover:text-[#FF6B5A]"
                         >
                           ×
@@ -462,7 +459,7 @@ export default function EditQuotePage() {
                     type="number"
                     min="1"
                     value={newItem.quantity || 1}
-                    onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => setNewItem({ ...newItem, quantity: Number.parseInt(e.target.value, 10) || 1 })}
                   />
                 </div>
                 <div>
@@ -472,7 +469,7 @@ export default function EditQuotePage() {
                     step="0.01"
                     min="0"
                     value={newItem.unitCost || 0}
-                    onChange={(e) => setNewItem({ ...newItem, unitCost: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setNewItem({ ...newItem, unitCost: Number.parseFloat(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="flex items-end">
@@ -485,33 +482,36 @@ export default function EditQuotePage() {
 
             {formData.items && formData.items.length > 0 && (
               <div className="space-y-2">
-                {formData.items.map((item, index) => (
-                  <div key={index} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038] flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-[#D0D6DE]">{item.name}</span>
-                        <span className="text-xs text-[#7E8691]">
-                          ({item.type === QuoteItemType.SERVICE ? 'Serviço' : 'Peça'})
-                        </span>
+                {formData.items.map((item, itemIndex) => {
+                  const itemKey = item.id || `${item.name}-${item.type}-${itemIndex}`;
+                  return (
+                    <div key={itemKey} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038] flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-[#D0D6DE]">{item.name}</span>
+                          <span className="text-xs text-[#7E8691]">
+                            ({item.type === QuoteItemType.SERVICE ? 'Serviço' : 'Peça'})
+                          </span>
+                        </div>
+                        {item.description && (
+                          <p className="text-sm text-[#7E8691] mt-1">{item.description}</p>
+                        )}
+                        <div className="text-sm text-[#7E8691] mt-1">
+                          {item.quantity}x R$ {item.unitCost.toFixed(2)} = R$ {item.totalCost.toFixed(2)}
+                        </div>
                       </div>
-                      {item.description && (
-                        <p className="text-sm text-[#7E8691] mt-1">{item.description}</p>
-                      )}
-                      <div className="text-sm text-[#7E8691] mt-1">
-                        {item.quantity}x R$ {item.unitCost.toFixed(2)} = R$ {item.totalCost.toFixed(2)}
-                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeItem(itemIndex)}
+                        className="text-[#FF4E3D] border-[#FF4E3D] hover:bg-[#FF4E3D]/10"
+                      >
+                        Remover
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeItem(index)}
-                      className="text-[#FF4E3D] border-[#FF4E3D] hover:bg-[#FF4E3D]/10"
-                    >
-                      Remover
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -522,7 +522,7 @@ export default function EditQuotePage() {
                 step="0.01"
                 min="0"
                 value={formData.laborCost || 0}
-                onChange={(e) => setFormData({ ...formData, laborCost: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, laborCost: Number.parseFloat(e.target.value) || 0 })}
               />
               <Input
                 label="Custo de Peças"
@@ -530,7 +530,7 @@ export default function EditQuotePage() {
                 step="0.01"
                 min="0"
                 value={formData.partsCost || 0}
-                onChange={(e) => setFormData({ ...formData, partsCost: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, partsCost: Number.parseFloat(e.target.value) || 0 })}
               />
               <Input
                 label="Desconto"
@@ -538,7 +538,7 @@ export default function EditQuotePage() {
                 step="0.01"
                 min="0"
                 value={formData.discount || 0}
-                onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, discount: Number.parseFloat(e.target.value) || 0 })}
               />
             </div>
 

@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --admin-bg: #0A0A0D;
+  --admin-card: #12121A;
+  --admin-border: #1F1F28;
+  --admin-hover: #1A1A24;
+  --admin-primary: #FF6B6B;
+  --admin-secondary: #EE5A5A;
+  --admin-text: #D0D6DE;
+  --admin-muted: #8B8B9E;
+  --admin-dark: #6B6B7E;
+}
+
+body {
+  background-color: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--admin-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--admin-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-muted);
+}
+
+/* Selection */
+::selection {
+  background: var(--admin-primary);
+  color: white;
+}
+

@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [settings, setSettings] = useState<WorkshopSettings | null>(null);
   const [formData, setFormData] = useState<CreateWorkshopSettingsDto>({});
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -58,7 +59,7 @@ export default function SettingsPage() {
         if (data.logoUrl.startsWith('/uploads/')) {
           // Construir URL completa baseada na API
           const getApiBaseUrl = () => {
-            if (typeof window === 'undefined') return 'http://localhost:3001';
+            if (typeof globalThis.window === 'undefined') return 'http://localhost:3001';
             const subdomain = localStorage.getItem('subdomain');
             const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
             if (subdomain && baseUrl.includes('localhost')) {
@@ -74,8 +75,8 @@ export default function SettingsPage() {
           setLogoPreview(data.logoUrl);
         } else {
           // URL relativa ou incompleta, tentar construir
-          const getApiBaseUrl = () => {
-            if (typeof window === 'undefined') return 'http://localhost:3001';
+          const getApiBaseUrl2 = () => {
+            if (typeof globalThis.window === 'undefined') return 'http://localhost:3001';
             const subdomain = localStorage.getItem('subdomain');
             const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
             if (subdomain && baseUrl.includes('localhost')) {
@@ -83,7 +84,8 @@ export default function SettingsPage() {
             }
             return baseUrl;
           };
-          const fullUrl = `${getApiBaseUrl()}${data.logoUrl.startsWith('/') ? '' : '/'}${data.logoUrl}`;
+          const prefix = data.logoUrl.startsWith('/') ? '' : '/';
+          const fullUrl = `${getApiBaseUrl2()}${prefix}${data.logoUrl}`;
           console.log('[Settings] Definindo preview do logo (construída):', fullUrl);
           setLogoPreview(fullUrl);
         }
@@ -115,7 +117,7 @@ export default function SettingsPage() {
         // Para cores, validar formato antes de enviar
         if (['primaryColor', 'secondaryColor', 'accentColor'].includes(key)) {
           // Se não for um hex válido, não enviar
-          if (typeof value === 'string' && value !== '' && !/^#[0-9A-Fa-f]{6}$/i.test(value)) {
+          if (typeof value === 'string' && value !== '' && !/^#[\dA-Fa-f]{6}$/i.test(value)) {
             return;
           }
         }
@@ -148,14 +150,14 @@ export default function SettingsPage() {
           type === 'checkbox'
             ? (e.target as HTMLInputElement).checked
             : type === 'number'
-              ? parseFloat(value) || 0
+              ? Number.parseFloat(value) || 0
               : value,
       };
       
       // Atualizar preview do logo se a URL mudar
       if (name === 'logoUrl' && value) {
-        const getApiBaseUrl = () => {
-          if (typeof window === 'undefined') return 'http://localhost:3001';
+        const getApiBaseUrl3 = () => {
+          if (typeof globalThis.window === 'undefined') return 'http://localhost:3001';
           const subdomain = localStorage.getItem('subdomain');
           const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
           if (subdomain && baseUrl.includes('localhost')) {
@@ -165,7 +167,7 @@ export default function SettingsPage() {
         };
         
         if (value.startsWith('/uploads/')) {
-          setLogoPreview(`${getApiBaseUrl()}${value}`);
+          setLogoPreview(`${getApiBaseUrl3()}${value}`);
         } else if (value.startsWith('http://') || value.startsWith('https://')) {
           setLogoPreview(value);
         } else if (value.trim() !== '') {
@@ -187,7 +189,8 @@ export default function SettingsPage() {
     if (!file) return;
 
     // Validar tipo de arquivo
-    if (!file.type.match(/^image\/(jpg|jpeg|png|gif|webp|svg)$/)) {
+    const imageTypeRegex = /^image\/(jpg|jpeg|png|gif|webp|svg)$/;
+    if (!imageTypeRegex.exec(file.type)) {
       showNotification('Apenas imagens são permitidas (JPG, PNG, GIF, WEBP, SVG)', 'error');
       return;
     }
@@ -301,6 +304,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <input
+                      id="logo-upload"
                       type="file"
                       accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
                       onChange={handleLogoUpload}
@@ -360,7 +364,7 @@ export default function SettingsPage() {
             <h2 className="text-xl font-semibold text-[#D0D6DE] mb-4">Cores</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+                <label htmlFor="primaryColor" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                   Cor Primária
                 </label>
                 <div className="flex gap-2">
@@ -373,6 +377,7 @@ export default function SettingsPage() {
                     className="h-10 w-20 rounded border border-[#2A3038] cursor-pointer"
                   />
                   <Input
+                    label=""
                     name="primaryColor"
                     value={formData.primaryColor || ''}
                     onChange={handleChange}
@@ -383,7 +388,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+                <label htmlFor="secondaryColor" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                   Cor Secundária
                 </label>
                 <div className="flex gap-2">
@@ -396,6 +401,7 @@ export default function SettingsPage() {
                     className="h-10 w-20 rounded border border-[#2A3038] cursor-pointer"
                   />
                   <Input
+                    label=""
                     name="secondaryColor"
                     value={formData.secondaryColor || ''}
                     onChange={handleChange}
@@ -406,7 +412,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+                <label htmlFor="accentColor" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                   Cor de Destaque
                 </label>
                 <div className="flex gap-2">
@@ -419,6 +425,7 @@ export default function SettingsPage() {
                     className="h-10 w-20 rounded border border-[#2A3038] cursor-pointer"
                   />
                   <Input
+                    label=""
                     name="accentColor"
                     value={formData.accentColor || ''}
                     onChange={handleChange}

@@ -147,6 +147,7 @@ export function DiagnosticPanel({
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-[#D0D6DE]">Sugestões de Diagnóstico</h3>
             <Select
+              label=""
               value={selectedCategory || ''}
               onChange={(e) => setSelectedCategory(e.target.value as ProblemCategory || undefined)}
               options={[

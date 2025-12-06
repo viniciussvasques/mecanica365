@@ -7,6 +7,8 @@ import { serviceOrdersApi, ServiceOrder, ServiceOrderStatus } from '@/lib/api/se
 import { Button } from '@/components/ui/Button';
 import { AttachmentsPanel } from '@/components/AttachmentsPanel';
 import { ChecklistPanel } from '@/components/ChecklistPanel';
+import { Attachment } from '@/lib/api/attachments';
+import { Checklist } from '@/lib/api/checklists';
 import { Modal } from '@/components/ui/Modal';
 
 export const dynamic = 'force-dynamic';
@@ -111,7 +113,7 @@ export default function ServiceOrderDetailPage() {
   };
 
   const formatCurrency = (value: number | undefined | null) => {
-    if (value === undefined || value === null || isNaN(value)) {
+    if (value === undefined || value === null || Number.isNaN(value)) {
       return 'R$ 0,00';
     }
     return new Intl.NumberFormat('pt-BR', {
@@ -219,30 +221,31 @@ export default function ServiceOrderDetailPage() {
                 <div>
                   <p className="text-sm text-[#7E8691]">Veículo</p>
                   <p className="text-[#D0D6DE] font-medium">
-                    {serviceOrder.vehiclePlaca || serviceOrder.vehicleMake || serviceOrder.vehicleModel ? (
-                      <span>
-                        {serviceOrder.vehiclePlaca && (
-                          <span className="text-[#00E0B8]">{serviceOrder.vehiclePlaca}</span>
-                        )}
-                        {serviceOrder.vehicleMake && serviceOrder.vehicleModel && (
-                          <span className="ml-2">
-                            {serviceOrder.vehicleMake} {serviceOrder.vehicleModel}
-                            {serviceOrder.vehicleYear && ` (${serviceOrder.vehicleYear})`}
+                    {(() => {
+                      if (serviceOrder.vehicle?.placa || serviceOrder.vehicle?.make || serviceOrder.vehicle?.model) {
+                        return (
+                          <span>
+                            {serviceOrder.vehicle?.placa && (
+                              <span className="text-[#00E0B8]">{serviceOrder.vehicle.placa}</span>
+                            )}
+                            {serviceOrder.vehicle?.make && serviceOrder.vehicle?.model && (
+                              <span className="ml-2">
+                                {serviceOrder.vehicle.make} {serviceOrder.vehicle.model}
+                                {serviceOrder.vehicle.year && ` (${serviceOrder.vehicle.year})`}
+                              </span>
+                            )}
                           </span>
-                        )}
-                        {serviceOrder.vehicleMileage && (
-                          <span className="ml-2 text-sm text-[#7E8691]">
-                            • {serviceOrder.vehicleMileage.toLocaleString('pt-BR')} km
-                          </span>
-                        )}
-                      </span>
-                    ) : serviceOrder.vehicle ? (
-                      <Link href={`/vehicles/${serviceOrder.vehicle.id}`} className="text-[#00E0B8] hover:text-[#3ABFF8]">
-                        {serviceOrder.vehicle.placa || `${serviceOrder.vehicle.make} ${serviceOrder.vehicle.model}`.trim() || 'Veículo'}
-                      </Link>
-                    ) : (
-                      '-'
-                    )}
+                        );
+                      }
+                      if (serviceOrder.vehicle) {
+                        return (
+                          <Link href={`/vehicles/${serviceOrder.vehicle.id}`} className="text-[#00E0B8] hover:text-[#3ABFF8]">
+                            {serviceOrder.vehicle.placa || `${serviceOrder.vehicle.make} ${serviceOrder.vehicle.model}`.trim() || 'Veículo'}
+                          </Link>
+                        );
+                      }
+                      return '-';
+                    })()}
                   </p>
                 </div>
                 <div>
@@ -273,9 +276,9 @@ export default function ServiceOrderDetailPage() {
                     <div>
                       <p className="text-sm text-[#7E8691] mb-2">Sintomas</p>
                       <div className="flex flex-wrap gap-2">
-                        {serviceOrder.reportedProblemSymptoms.map((symptom, index) => (
+                        {serviceOrder.reportedProblemSymptoms.map((symptom) => (
                           <span
-                            key={index}
+                            key={symptom}
                             className="px-3 py-1 bg-[#2A3038] text-[#D0D6DE] rounded-full text-sm"
                           >
                             {symptom}
@@ -326,8 +329,8 @@ export default function ServiceOrderDetailPage() {
               <div className="bg-[#1A1E23] border border-[#2A3038] rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-[#D0D6DE] mb-4">Itens da Ordem de Serviço</h2>
                 <div className="space-y-3">
-                  {serviceOrder.items.map((item, index) => (
-                    <div key={index} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038]">
+                  {serviceOrder.items.map((item) => (
+                    <div key={item.id || `${item.name}-${item.quantity}-${item.unitCost}`} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038]">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <span className="text-[#D0D6DE] font-medium">{item.name}</span>
@@ -421,37 +424,25 @@ export default function ServiceOrderDetailPage() {
                     </p>
                   </div>
                 )}
-                {serviceOrder.appointmentDate && (
+                {serviceOrder.scheduledStart && (
                   <div>
                     <p className="text-sm text-[#7E8691]">Agendado para</p>
-                    <p className="text-[#D0D6DE]">{formatDate(serviceOrder.appointmentDate)}</p>
+                    <p className="text-[#D0D6DE]">{formatDate(serviceOrder.scheduledStart.toString())}</p>
                   </div>
                 )}
-                {serviceOrder.startedAt && (
+                {serviceOrder.actualStart && (
                   <div>
                     <p className="text-sm text-[#7E8691]">Iniciado em</p>
-                    <p className="text-[#D0D6DE]">{formatDate(serviceOrder.startedAt)}</p>
+                    <p className="text-[#D0D6DE]">{formatDate(serviceOrder.actualStart.toString())}</p>
                   </div>
                 )}
-                {serviceOrder.completedAt && (
+                {serviceOrder.actualEnd && (
                   <div>
                     <p className="text-sm text-[#7E8691]">Finalizado em</p>
-                    <p className="text-[#D0D6DE]">{formatDate(serviceOrder.completedAt)}</p>
+                    <p className="text-[#D0D6DE]">{formatDate(serviceOrder.actualEnd.toString())}</p>
                   </div>
                 )}
-                {serviceOrder.estimatedHours && (
-                  <div>
-                    <p className="text-sm text-[#7E8691]">Horas Estimadas</p>
-                    <p className="text-[#D0D6DE]">{serviceOrder.estimatedHours}h</p>
-                  </div>
-                )}
-                {serviceOrder.actualHours && (
-                  <div>
-                    <p className="text-sm text-[#7E8691]">Horas Reais</p>
-                    <p className="text-[#D0D6DE]">{serviceOrder.actualHours}h</p>
-                  </div>
-                )}
-                {!serviceOrder.elevator && !serviceOrder.quote && !serviceOrder.appointmentDate && !serviceOrder.startedAt && !serviceOrder.completedAt && !serviceOrder.estimatedHours && !serviceOrder.actualHours && (
+                {!serviceOrder.elevator && !serviceOrder.quote && !serviceOrder.scheduledStart && !serviceOrder.actualStart && !serviceOrder.actualEnd && (
                   <p className="text-sm text-[#7E8691]">Nenhuma informação adicional disponível</p>
                 )}
               </div>
@@ -461,7 +452,7 @@ export default function ServiceOrderDetailPage() {
             <AttachmentsPanel
               entityType="service_order"
               entityId={id}
-              attachments={serviceOrder.attachments}
+              attachments={serviceOrder.attachments as Attachment[] | undefined}
               onAttachmentsChange={(attachments) => {
                 setServiceOrder({ ...serviceOrder, attachments });
               }}
@@ -472,7 +463,7 @@ export default function ServiceOrderDetailPage() {
             <ChecklistPanel
               entityType="service_order"
               entityId={id}
-              checklists={serviceOrder.checklists}
+              checklists={serviceOrder.checklists as Checklist[] | undefined}
               onChecklistsChange={(checklists) => {
                 setServiceOrder({ ...serviceOrder, checklists });
               }}
@@ -498,10 +489,11 @@ export default function ServiceOrderDetailPage() {
             Descreva o que foi realizado no serviço, observações importantes e qualquer informação relevante para o cliente.
           </p>
           <div>
-            <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+            <label htmlFor="finalNotes" className="block text-sm font-medium text-[#D0D6DE] mb-2">
               Observações Finais do Mecânico <span className="text-[#7E8691]">(opcional)</span>
             </label>
             <textarea
+              id="finalNotes"
               className="w-full px-4 py-2 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]"
               rows={6}
               placeholder="Ex: Serviço concluído com sucesso. Todas as peças foram substituídas conforme especificado. Veículo testado e aprovado..."

@@ -15,6 +15,8 @@ import {
   ScannerIcon,
   BellIcon,
   ClockIcon,
+  CreditCardIcon,
+  HelpIcon,
 } from './icons/MechanicIcons';
 
 interface MenuItem {
@@ -23,6 +25,7 @@ interface MenuItem {
   icon: React.ComponentType<{ className?: string }>;
   badge?: number;
   roles?: string[]; // Roles que podem ver este item (undefined = todos)
+  dividerBefore?: boolean; // Adiciona divisor antes do item
 }
 
 const allMenuItems: MenuItem[] = [
@@ -36,10 +39,17 @@ const allMenuItems: MenuItem[] = [
   { label: 'Usuários', href: '/users', icon: GearIcon, roles: ['admin', 'manager'] },
   { label: 'Estoque', href: '/inventory', icon: OilIcon, roles: ['admin', 'manager'] },
   { label: 'Peças', href: '/parts', icon: FilterIcon, roles: ['admin', 'manager'] },
+  { label: 'Fornecedores', href: '/suppliers', icon: GearIcon, roles: ['admin', 'manager'] },
+  { label: 'Faturas', href: '/invoicing', icon: GearIcon, roles: ['admin', 'manager', 'receptionist', 'accountant'] },
+  { label: 'Pagamentos', href: '/payments', icon: GearIcon, roles: ['admin', 'manager', 'receptionist', 'accountant'] },
+  { label: 'Relatórios', href: '/reports', icon: GearIcon, roles: ['admin', 'manager', 'accountant'] },
   { label: 'Veículos', href: '/vehicles', icon: EngineIcon, roles: ['admin', 'manager', 'receptionist'] },
   { label: 'Elevadores', href: '/elevators', icon: ElevatorIcon, roles: ['admin', 'manager', 'receptionist', 'mechanic'] },
   { label: 'Diagnóstico', href: '/diagnostics', icon: ScannerIcon, roles: ['admin', 'manager'] },
   { label: 'Notificações', href: '/mechanic/notifications', icon: BellIcon, roles: ['mechanic'] },
+  // Seção de Conta
+  { label: 'Minha Assinatura', href: '/subscription', icon: CreditCardIcon, roles: ['admin', 'manager'], dividerBefore: true },
+  { label: 'Suporte', href: '/support', icon: HelpIcon, roles: ['admin', 'manager', 'receptionist', 'accountant', 'mechanic'] },
   { label: 'Configurações', href: '/settings', icon: GearIcon, roles: ['admin', 'manager'] },
 ];
 
@@ -258,44 +268,49 @@ export function Sidebar({ onToggle }: SidebarProps) {
 
       {/* Menu Items */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-        {menuItems.map((item) => {
+        {menuItems.map((item, index) => {
           const active = isActive(item.href);
           const Icon = item.icon;
 
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                flex items-center space-x-3 px-4 py-3 rounded-lg
-                transition-all duration-200
-                group
-                ${
-                  active
-                    ? 'bg-gradient-to-r from-[#00E0B8]/20 to-[#3ABFF8]/20 border border-[#00E0B8]/30 text-[#00E0B8]'
-                    : 'text-[#7E8691] hover:bg-[#2A3038] hover:text-[#D0D6DE]'
-                }
-              `}
-              title={collapsed ? item.label : undefined}
-            >
-              <Icon
-                className={`
-                  w-5 h-5 flex-shrink-0
-                  ${active ? 'text-[#00E0B8]' : 'text-[#7E8691] group-hover:text-[#D0D6DE]'}
-                  transition-colors
-                `}
-              />
-              {!collapsed && (
-                <>
-                  <span className="flex-1 font-medium">{item.label}</span>
-                  {item.badge && (
-                    <span className="px-2 py-1 text-xs font-bold rounded-full bg-[#FF4E3D] text-white">
-                      {item.badge}
-                    </span>
-                  )}
-                </>
+            <div key={item.href}>
+              {/* Divisor antes do item se necessário */}
+              {item.dividerBefore && index > 0 && (
+                <div className={`my-4 border-t border-[#2A3038] ${collapsed ? 'mx-2' : ''}`} />
               )}
-            </Link>
+              <Link
+                href={item.href}
+                className={`
+                  flex items-center space-x-3 px-4 py-3 rounded-lg
+                  transition-all duration-200
+                  group
+                  ${
+                    active
+                      ? 'bg-gradient-to-r from-[#00E0B8]/20 to-[#3ABFF8]/20 border border-[#00E0B8]/30 text-[#00E0B8]'
+                      : 'text-[#7E8691] hover:bg-[#2A3038] hover:text-[#D0D6DE]'
+                  }
+                `}
+                title={collapsed ? item.label : undefined}
+              >
+                <Icon
+                  className={`
+                    w-5 h-5 flex-shrink-0
+                    ${active ? 'text-[#00E0B8]' : 'text-[#7E8691] group-hover:text-[#D0D6DE]'}
+                    transition-colors
+                  `}
+                />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1 font-medium">{item.label}</span>
+                    {item.badge && (
+                      <span className="px-2 py-1 text-xs font-bold rounded-full bg-[#FF4E3D] text-white">
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
+                )}
+              </Link>
+            </div>
           );
         })}
       </nav>

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { DiagnosticPanel } from '@/components/DiagnosticPanel';
 import { ChecklistPanel } from '@/components/ChecklistPanel';
+import { Checklist } from '@/lib/api/checklists';
 import { useNotification } from '@/components/NotificationProvider';
 
 export const dynamic = 'force-dynamic';
@@ -129,6 +130,9 @@ export default function DiagnoseQuotePage() {
     setDiagnosis((prev) => ({
       ...prev,
       ...updatedDiagnosis,
+      identifiedProblemCategory: updatedDiagnosis.identifiedProblemCategory
+        ? (updatedDiagnosis.identifiedProblemCategory as ProblemCategory)
+        : prev.identifiedProblemCategory,
     }));
   }, []);
 
@@ -195,9 +199,9 @@ export default function DiagnoseQuotePage() {
             <div className="mt-4">
               <p className="text-sm text-[#7E8691] mb-2">Sintomas Relatados:</p>
               <div className="flex flex-wrap gap-2">
-                {quote.reportedProblemSymptoms.map((symptom, index) => (
+                {quote.reportedProblemSymptoms.map((symptom) => (
                   <span
-                    key={index}
+                    key={symptom}
                     className="px-3 py-1 bg-[#2A3038] text-[#D0D6DE] rounded-full text-sm"
                   >
                     {symptom}
@@ -228,10 +232,8 @@ export default function DiagnoseQuotePage() {
           {/* Campos adicionais de diagnóstico */}
           <div className="mt-6 space-y-4 border-t border-[#2A3038] pt-6">
             <div>
-              <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
-                Categoria do Problema Identificado
-              </label>
               <Select
+                label="Categoria do Problema Identificado"
                 value={diagnosis.identifiedProblemCategory || ''}
                 onChange={(e) => setDiagnosis({ 
                   ...diagnosis, 
@@ -245,10 +247,11 @@ export default function DiagnoseQuotePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+              <label htmlFor="identifiedProblemDescription" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                 Descrição do Problema Identificado
               </label>
               <textarea
+                id="identifiedProblemDescription"
                 className="w-full px-4 py-2 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]"
                 rows={3}
                 placeholder="Descreva o problema identificado..."
@@ -261,10 +264,11 @@ export default function DiagnoseQuotePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+              <label htmlFor="diagnosticNotes" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                 Notas de Diagnóstico
               </label>
               <textarea
+                id="diagnosticNotes"
                 className="w-full px-4 py-2 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]"
                 rows={4}
                 placeholder="Anotações durante o diagnóstico..."
@@ -277,10 +281,11 @@ export default function DiagnoseQuotePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
+              <label htmlFor="recommendations" className="block text-sm font-medium text-[#D0D6DE] mb-2">
                 Recomendações
               </label>
               <textarea
+                id="recommendations"
                 className="w-full px-4 py-2 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]"
                 rows={4}
                 placeholder="Recomendações do mecânico (troca de peça, manutenção preventiva, etc.)..."
@@ -293,10 +298,8 @@ export default function DiagnoseQuotePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#D0D6DE] mb-2">
-                Tempo Estimado de Serviço (horas) <span className="text-[#7E8691] text-xs font-normal">(opcional)</span>
-              </label>
               <Input
+                label="Tempo Estimado de Serviço (horas) (opcional)"
                 type="number"
                 step="0.25"
                 min="0.25"
@@ -307,7 +310,7 @@ export default function DiagnoseQuotePage() {
                   const value = e.target.value;
                   setDiagnosis({
                     ...diagnosis,
-                    estimatedHours: value ? parseFloat(value) : undefined,
+                    estimatedHours: value ? Number.parseFloat(value) : undefined,
                   });
                 }}
               />
@@ -323,9 +326,14 @@ export default function DiagnoseQuotePage() {
           <ChecklistPanel
             entityType="quote"
             entityId={quoteId}
-            checklists={quote.checklists}
+            checklists={quote.checklists as Checklist[] | undefined}
             onChecklistsChange={(checklists) => {
-              setQuote({ ...quote, checklists });
+              setQuote({ ...quote, checklists: checklists as Array<{
+                id: string;
+                checklistType: string;
+                name: string;
+                status: string;
+              }> });
             }}
             readonly={false}
             canComplete={true}

@@ -40,7 +40,7 @@ export default function MechanicNotificationsPage() {
         limit: 100,
       });
       setNotifications(result.notifications);
-      setUnreadCount(result.unreadCount);
+      setUnreadCount(result.unreadCount || 0);
     } catch (err) {
       console.error('Erro ao carregar notificações:', err);
     } finally {
@@ -164,7 +164,15 @@ export default function MechanicNotificationsPage() {
             {notifications.map((notification) => (
               <div
                 key={notification.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleNotificationClick(notification)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleNotificationClick(notification);
+                  }
+                }}
                 className={`bg-[#1A1E23] border rounded-lg p-4 cursor-pointer transition-all ${
                   notification.read 
                     ? 'border-[#2A3038] hover:border-[#3A4048]' 

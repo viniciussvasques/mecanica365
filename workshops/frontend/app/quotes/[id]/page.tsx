@@ -12,7 +12,9 @@ import { SendQuoteModal } from '@/components/SendQuoteModal';
 import { ManualApproveModal } from '@/components/ManualApproveModal';
 import { useNotification } from '@/components/NotificationProvider';
 import { AttachmentsPanel } from '@/components/AttachmentsPanel';
+import { Attachment } from '@/lib/api/attachments';
 import { ChecklistPanel } from '@/components/ChecklistPanel';
+import { Checklist } from '@/lib/api/checklists';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,20 +78,30 @@ export default function QuoteDetailPage() {
     }
   };
 
+  const prepareSymptomsForSuggestion = (quoteData: Quote): string[] => {
+    const symptomsToSuggest = quoteData.reportedProblemSymptoms || [];
+    if (quoteData.identifiedProblemDescription) {
+      symptomsToSuggest.push(quoteData.identifiedProblemDescription);
+    }
+    return symptomsToSuggest;
+  };
+
   const loadSuggestions = async (quoteData: Quote) => {
     try {
       setLoadingSuggestions(true);
-      if (quoteData.identifiedProblemDescription || (quoteData.reportedProblemSymptoms && quoteData.reportedProblemSymptoms.length > 0)) {
-        const symptomsToSuggest = quoteData.reportedProblemSymptoms || [];
-        if (quoteData.identifiedProblemDescription) {
-          symptomsToSuggest.push(quoteData.identifiedProblemDescription);
-        }
-        const diagnosticSuggestions = await diagnosticApi.suggestProblems({
-          symptoms: symptomsToSuggest,
-          category: quoteData.identifiedProblemCategory as any,
-        });
-        setSuggestions(diagnosticSuggestions);
+      const hasSymptoms = quoteData.identifiedProblemDescription || 
+        (quoteData.reportedProblemSymptoms && quoteData.reportedProblemSymptoms.length > 0);
+      
+      if (!hasSymptoms) {
+        return;
       }
+
+      const symptomsToSuggest = prepareSymptomsForSuggestion(quoteData);
+      const diagnosticSuggestions = await diagnosticApi.suggestProblems({
+        symptoms: symptomsToSuggest,
+        category: quoteData.identifiedProblemCategory as any,
+      });
+      setSuggestions(diagnosticSuggestions);
     } catch (err) {
       console.error('Erro ao carregar sugestões:', err);
     } finally {
@@ -114,67 +126,72 @@ export default function QuoteDetailPage() {
     }
   };
 
-  const [sending, setSending] = useState(false);
+  const sendViaEmail = (quote: Quote, publicLink: string): void => {
+    if (!quote.customer?.email) {
+      throw new Error('Email do cliente não cadastrado');
+    }
+    const emailSubject = encodeURIComponent(`Orçamento ${quote.number} - ${quote.customer.name}`);
+    const emailBodyText = `Olá ${quote.customer.name},\n\n` +
+      `Segue o link do seu orçamento ${quote.number}.\n` +
+      `Você pode visualizar e aprovar online:\n\n` +
+      `${publicLink}\n\n` +
+      `Atenciosamente,\n` +
+      `Equipe da Oficina`;
+    const emailBody = encodeURIComponent(emailBodyText);
+    globalThis.open(`mailto:${quote.customer.email}?subject=${emailSubject}&body=${emailBody}`, '_blank');
+  };
+
+  const sendViaWhatsApp = (quote: Quote, publicLink: string): void => {
+    if (!quote.customer?.phone) {
+      throw new Error('Telefone do cliente não cadastrado');
+    }
+    const phoneNumber = quote.customer.phone.replaceAll(/\D/g, '');
+    const whatsappMessageText = `Olá! 👋\n\n` +
+      `Segue o link do seu orçamento *${quote.number}*.\n` +
+      `Você pode visualizar e aprovar online:\n\n` +
+      `${publicLink}\n\n` +
+      `Aguardamos sua aprovação! 😊`;
+    const whatsappMessage = encodeURIComponent(whatsappMessageText);
+    globalThis.open(`https://wa.me/${phoneNumber}?text=${whatsappMessage}`, '_blank');
+  };
+
+  const sendViaSms = (quote: Quote, publicLink: string): void => {
+    if (!quote.customer?.phone) {
+      throw new Error('Telefone do cliente não cadastrado');
+    }
+    const smsMessageText = `Orçamento ${quote.number}: ${publicLink}`;
+    const smsMessage = encodeURIComponent(smsMessageText);
+    globalThis.open(`sms:${quote.customer.phone}?body=${smsMessage}`, '_blank');
+  };
+
+  const getPublicToken = async (): Promise<string> => {
+    let updatedQuote = quote;
+    if (quote && quote.status !== QuoteStatus.SENT) {
+      updatedQuote = await quotesApi.sendToCustomer(id);
+    }
+    const publicToken = updatedQuote?.publicToken || quote?.publicToken;
+    if (!publicToken) {
+      throw new Error('Token público não foi gerado. Tente novamente.');
+    }
+    return publicToken;
+  };
 
   const handleSendToCustomer = async (method: 'email' | 'whatsapp' | 'sms' | 'link') => {
     if (!quote) return;
 
     try {
-      setSending(true);
-      
-      // Primeiro, atualizar status para SENT se ainda não estiver (isso gera o token)
-      let updatedQuote = quote;
-      if (quote.status !== QuoteStatus.SENT) {
-        updatedQuote = await quotesApi.sendToCustomer(id);
-      }
+      const publicToken = await getPublicToken();
+      const publicLink = `${globalThis.location.origin}/quotes/view?token=${publicToken}`;
 
-      // Obter token público (pode estar no quote atualizado)
-      const publicToken = updatedQuote.publicToken || quote.publicToken;
-      if (!publicToken) {
-        throw new Error('Token público não foi gerado. Tente novamente.');
-      }
-
-      const publicLink = `${window.location.origin}/quotes/view?token=${publicToken}`;
-
-      // Depois, enviar pelo método escolhido
       switch (method) {
         case 'email':
-          if (!quote.customer?.email) {
-            throw new Error('Email do cliente não cadastrado');
-          }
-          // Abrir cliente de email com mensagem pré-formatada
-          const emailSubject = encodeURIComponent(`Orçamento ${quote.number} - ${quote.customer.name}`);
-          const emailBody = encodeURIComponent(
-            `Olá ${quote.customer.name},\n\n` +
-            `Segue o link do seu orçamento ${quote.number}.\n` +
-            `Você pode visualizar e aprovar online:\n\n` +
-            `${publicLink}\n\n` +
-            `Atenciosamente,\n` +
-            `Equipe da Oficina`
-          );
-          window.open(`mailto:${quote.customer.email}?subject=${emailSubject}&body=${emailBody}`, '_blank');
+          sendViaEmail(quote, publicLink);
           break;
         case 'whatsapp':
-          if (!quote.customer?.phone) {
-            throw new Error('Telefone do cliente não cadastrado');
-          }
-          // Abrir WhatsApp Web com mensagem pré-formatada
-          const phoneNumber = quote.customer.phone.replace(/\D/g, '');
-          const whatsappMessage = encodeURIComponent(
-            `Olá! 👋\n\n` +
-            `Segue o link do seu orçamento *${quote.number}*.\n` +
-            `Você pode visualizar e aprovar online:\n\n` +
-            `${publicLink}\n\n` +
-            `Aguardamos sua aprovação! 😊`
-          );
-          window.open(`https://wa.me/${phoneNumber}?text=${whatsappMessage}`, '_blank');
+          sendViaWhatsApp(quote, publicLink);
           break;
         case 'sms':
-          if (!quote.customer?.phone) {
-            throw new Error('Telefone do cliente não cadastrado');
-          }
-          // Abrir SMS com mensagem pré-formatada
-          window.open(`sms:${quote.customer.phone}?body=${encodeURIComponent(`Orçamento ${quote.number}: ${publicLink}`)}`, '_blank');
+          sendViaSms(quote, publicLink);
           break;
         case 'link':
           // Já foi copiado no modal
@@ -185,8 +202,63 @@ export default function QuoteDetailPage() {
     } catch (err: unknown) {
       console.error('Erro ao enviar orçamento:', err);
       throw err; // Re-throw para o modal tratar
-    } finally {
-      setSending(false);
+    }
+  };
+
+  const calculateSolutionCost = (suggestion: DiagnosticSuggestion, solution: string): number => {
+    if (suggestion.estimatedCost) {
+      const severityMultiplier = {
+        high: 0.5,
+        medium: 0.3,
+        low: 0.15,
+      }[suggestion.severity.toLowerCase()] || 0.3;
+      
+      return Math.round(suggestion.estimatedCost * severityMultiplier * 100) / 100;
+    }
+    
+    const solutionLower = solution.toLowerCase();
+    if (solutionLower.includes('troca') || solutionLower.includes('substitui')) {
+      return 150;
+    }
+    if (solutionLower.includes('repar') || solutionLower.includes('consert')) {
+      return 100;
+    }
+    return 80;
+  };
+
+  const createMainItem = (suggestion: DiagnosticSuggestion): QuoteItem | null => {
+    if (!suggestion.estimatedCost || !quote) {
+      return null;
+    }
+
+    return {
+      type: QuoteItemType.SERVICE,
+      name: suggestion.name,
+      description: suggestion.description || quote.identifiedProblemDescription || '',
+      quantity: 1,
+      unitCost: suggestion.estimatedCost,
+      totalCost: suggestion.estimatedCost,
+    };
+  };
+
+  const createSolutionItems = (suggestion: DiagnosticSuggestion): QuoteItem[] => {
+    return suggestion.solutions.map((solution) => {
+      const estimatedSolutionCost = calculateSolutionCost(suggestion, solution);
+      return {
+        type: QuoteItemType.SERVICE,
+        name: solution,
+        description: `Solução recomendada: ${solution}`,
+        quantity: 1,
+        unitCost: estimatedSolutionCost,
+        totalCost: estimatedSolutionCost,
+      };
+    });
+  };
+
+  const updateLaborAndPartsCost = (estimatedCost: number): void => {
+    if (estimatedCost > 0) {
+      setEditingLaborCost(Math.round(estimatedCost * 0.4 * 100) / 100);
+      setEditingPartsCost(Math.round(estimatedCost * 0.6 * 100) / 100);
     }
   };
 
@@ -196,55 +268,17 @@ export default function QuoteDetailPage() {
     const newItems: QuoteItem[] = [];
 
     // Adicionar item principal baseado no problema (com preço inteligente)
-    if (suggestion.estimatedCost) {
-      newItems.push({
-        type: QuoteItemType.SERVICE,
-        name: suggestion.name,
-        description: suggestion.description || quote.identifiedProblemDescription || '',
-        quantity: 1,
-        unitCost: suggestion.estimatedCost,
-        totalCost: suggestion.estimatedCost,
-      });
-      
-      // Preencher automaticamente mão de obra se for serviço
-      if (suggestion.estimatedCost > 0) {
-        setEditingLaborCost(Math.round(suggestion.estimatedCost * 0.4 * 100) / 100);
-        setEditingPartsCost(Math.round(suggestion.estimatedCost * 0.6 * 100) / 100);
-      }
+    const mainItem = createMainItem(suggestion);
+    if (mainItem && suggestion.estimatedCost) {
+      newItems.push(mainItem);
+      updateLaborAndPartsCost(suggestion.estimatedCost);
     }
 
     // Adicionar soluções como itens adicionais
-    suggestion.solutions.forEach((solution) => {
-      let estimatedSolutionCost = 0;
-      
-      if (suggestion.estimatedCost) {
-        const severityMultiplier = {
-          high: 0.5,
-          medium: 0.3,
-          low: 0.15,
-        }[suggestion.severity.toLowerCase()] || 0.3;
-        
-        estimatedSolutionCost = Math.round(suggestion.estimatedCost * severityMultiplier * 100) / 100;
-      } else {
-        if (solution.toLowerCase().includes('troca') || solution.toLowerCase().includes('substitui')) {
-          estimatedSolutionCost = 150;
-        } else if (solution.toLowerCase().includes('repar') || solution.toLowerCase().includes('consert')) {
-          estimatedSolutionCost = 100;
-        } else {
-          estimatedSolutionCost = 80;
-        }
-      }
+    const solutionItems = createSolutionItems(suggestion);
+    newItems.push(...solutionItems);
 
-      newItems.push({
-        type: QuoteItemType.SERVICE,
-        name: solution,
-        description: `Solução recomendada: ${solution}`,
-        quantity: 1,
-        unitCost: estimatedSolutionCost,
-        totalCost: estimatedSolutionCost,
-      });
-    });
-
+    // Atualizar itens e mostrar notificação
     if (editingItems.length === 0) {
       setEditingItems(newItems);
       showNotification(`✅ Orçamento preenchido automaticamente com ${newItems.length} item(ns)!`, 'success');
@@ -296,18 +330,19 @@ export default function QuoteDetailPage() {
     try {
       setSaving(true);
       
-      // Formatar items corretamente antes de enviar (remover totalCost que é calculado no backend)
-      const formattedItems = editingItems.map(item => {
-        const { totalCost, id, ...itemData } = item;
+      // Formatar items corretamente antes de enviar (totalCost é necessário para o tipo QuoteItem)
+      const formattedItems: QuoteItem[] = editingItems.map(item => {
+        const calculatedTotalCost = (item.quantity || 1) * (item.unitCost || 0);
         return {
-          type: itemData.type || QuoteItemType.SERVICE,
-          name: itemData.name || '',
-          description: itemData.description || undefined,
-          quantity: itemData.quantity || 1,
-          unitCost: itemData.unitCost || 0,
-          hours: itemData.hours || undefined,
-          serviceId: itemData.serviceId || undefined,
-          partId: itemData.partId || undefined,
+          type: item.type || QuoteItemType.SERVICE,
+          name: item.name || '',
+          description: item.description || undefined,
+          quantity: item.quantity || 1,
+          unitCost: item.unitCost || 0,
+          totalCost: calculatedTotalCost,
+          hours: item.hours || undefined,
+          serviceId: item.serviceId || undefined,
+          partId: item.partId || undefined,
         };
       }).filter(item => item.name && item.unitCost > 0); // Remover itens inválidos
 
@@ -386,14 +421,14 @@ export default function QuoteDetailPage() {
     try {
       setGeneratingPdf(true);
       const blob = await quotesApi.generatePdf(id);
-      const url = window.URL.createObjectURL(blob);
+      const url = globalThis.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `orcamento-${quote?.number || id}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      globalThis.URL.revokeObjectURL(url);
+      a.remove();
     } catch (err: unknown) {
       console.error('Erro ao gerar PDF:', err);
       alert('Erro ao gerar PDF do orçamento');
@@ -445,6 +480,146 @@ export default function QuoteDetailPage() {
     });
   };
 
+  const shouldShowDraftButton = (): boolean => {
+    if (!quote) return false;
+    return quote.status === QuoteStatus.DRAFT;
+  };
+
+  const shouldShowSendButton = (): boolean => {
+    if (!quote) return false;
+    return quote.status === QuoteStatus.DIAGNOSED || quote.status === QuoteStatus.SENT;
+  };
+
+  const shouldShowManualApproveButton = (): boolean => {
+    if (!quote) return false;
+    return (quote.status === QuoteStatus.SENT || quote.status === QuoteStatus.VIEWED) && !quote.serviceOrderId;
+  };
+
+  const shouldShowGenerateOSButton = (): boolean => {
+    if (!quote) return false;
+    const isAccepted = quote.status === QuoteStatus.ACCEPTED;
+    const isSentWithAccepted = quote.status === QuoteStatus.SENT && Boolean(quote.acceptedAt);
+    return (isAccepted || isSentWithAccepted) && !quote.serviceOrderId;
+  };
+
+  const renderActionButtons = () => {
+    if (!quote) return null;
+
+    return (
+      <div className="flex gap-2 flex-wrap">
+        {shouldShowDraftButton() && (
+          <Button variant="primary" onClick={handleSendForDiagnosis} disabled={loading}>
+            {loading ? 'Enviando...' : 'Enviar para Diagnóstico'}
+          </Button>
+        )}
+        {shouldShowSendButton() && (
+          <Button 
+            variant="primary" 
+            onClick={() => setShowSendModal(true)} 
+            disabled={quote.items.length === 0}
+          >
+            📧 Enviar ao Cliente
+          </Button>
+        )}
+        <Button variant="secondary" onClick={() => setShowPdfViewer(true)}>
+          Ver PDF
+        </Button>
+        <Button variant="secondary" onClick={handleGeneratePdf} disabled={generatingPdf}>
+          {generatingPdf ? 'Gerando...' : 'Download PDF'}
+        </Button>
+        {shouldShowManualApproveButton() && (
+          <Button 
+            variant="primary" 
+            onClick={handleApproveManually} 
+            disabled={approvingManually}
+            className="bg-[#3ABFF8] hover:bg-[#3ABFF8]/90 text-white font-bold px-6 py-2"
+          >
+            {approvingManually ? '⏳ Criando OS...' : '✍️ Aprovar Manualmente'}
+          </Button>
+        )}
+        {shouldShowGenerateOSButton() && (
+          <Button 
+            variant="primary" 
+            onClick={handleApprove} 
+            disabled={approving}
+            className="bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115] font-bold px-6 py-2 shadow-lg shadow-[#00E0B8]/30"
+          >
+            {approving ? '⏳ Criando OS...' : '⚙️ Gerar Ordem de Serviço'}
+          </Button>
+        )}
+        {quote.serviceOrderId && (
+          <Link href={`/service-orders/${quote.serviceOrderId}`}>
+            <Button variant="primary" className="bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115]">
+              📋 Ver Ordem de Serviço
+            </Button>
+          </Link>
+        )}
+        <Link href={`/quotes/${id}/edit`}>
+          <Button variant="outline">Editar</Button>
+        </Link>
+      </div>
+    );
+  };
+
+  const renderApprovedAlert = () => {
+    if (!quote) return null;
+    
+    const isApproved = quote.status === QuoteStatus.ACCEPTED || 
+      quote.status === QuoteStatus.VIEWED || 
+      (quote.status === QuoteStatus.SENT && quote.acceptedAt);
+    
+    if (!isApproved || quote.serviceOrderId) {
+      return null;
+    }
+
+    return (
+      <div className="bg-gradient-to-r from-[#00E0B8]/20 to-[#3ABFF8]/20 border-2 border-[#00E0B8] rounded-lg p-6 mb-6 animate-pulse-glow">
+        <div className="flex items-center gap-4">
+          <div className="text-4xl">✅</div>
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-[#D0D6DE] mb-2">
+              🎉 Orçamento Aprovado pelo Cliente!
+            </h3>
+            <p className="text-[#7E8691] mb-4">
+              O cliente aprovou este orçamento. Clique no botão abaixo para gerar a Ordem de Serviço automaticamente.
+            </p>
+            <Button 
+              variant="primary" 
+              onClick={handleApprove} 
+              disabled={approving}
+              className="bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115] font-bold px-8 py-3 text-lg shadow-lg shadow-[#00E0B8]/40"
+            >
+              {approving ? '⏳ Criando Ordem de Serviço...' : '⚙️ Gerar Ordem de Serviço'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderServiceOrderAlert = () => {
+    if (!quote?.serviceOrderId) return null;
+
+    return (
+      <div className="bg-gradient-to-r from-[#00E0B8]/10 to-[#3ABFF8]/10 border border-[#00E0B8] rounded-lg p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📋</span>
+            <div>
+              <p className="text-[#D0D6DE] font-semibold">Ordem de Serviço já criada</p>
+              <p className="text-sm text-[#7E8691]">Este orçamento já foi convertido em uma Ordem de Serviço</p>
+            </div>
+          </div>
+          <Link href={`/service-orders/${quote.serviceOrderId}`}>
+            <Button variant="primary" className="bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115]">
+              Ver OS
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0F1115] text-[#D0D6DE] p-6 flex items-center justify-center">
@@ -483,109 +658,16 @@ export default function QuoteDetailPage() {
             </div>
             <div className="flex items-center gap-4">
               {getStatusBadge(quote.status)}
-              <div className="flex gap-2 flex-wrap">
-                {quote.status === QuoteStatus.DRAFT && (
-                  <Button variant="primary" onClick={handleSendForDiagnosis} disabled={loading}>
-                    {loading ? 'Enviando...' : 'Enviar para Diagnóstico'}
-                  </Button>
-                )}
-                {(quote.status === QuoteStatus.DIAGNOSED || quote.status === QuoteStatus.SENT) && (
-                  <Button 
-                    variant="primary" 
-                    onClick={() => setShowSendModal(true)} 
-                    disabled={quote.items.length === 0}
-                  >
-                    📧 Enviar ao Cliente
-                  </Button>
-                )}
-                <Button variant="secondary" onClick={() => setShowPdfViewer(true)}>
-                  Ver PDF
-                </Button>
-                <Button variant="secondary" onClick={handleGeneratePdf} disabled={generatingPdf}>
-                  {generatingPdf ? 'Gerando...' : 'Download PDF'}
-                </Button>
-                {(quote.status === QuoteStatus.SENT || quote.status === QuoteStatus.VIEWED) && !quote.serviceOrderId && (
-                  <Button 
-                    variant="primary" 
-                    onClick={handleApproveManually} 
-                    disabled={approvingManually}
-                    className="bg-[#3ABFF8] hover:bg-[#3ABFF8]/90 text-white font-bold px-6 py-2"
-                  >
-                    {approvingManually ? '⏳ Criando OS...' : '✍️ Aprovar Manualmente'}
-                  </Button>
-                )}
-                {(quote.status === QuoteStatus.ACCEPTED || 
-                  (quote.status === QuoteStatus.SENT && quote.acceptedAt)) && !quote.serviceOrderId && (
-                  <Button 
-                    variant="primary" 
-                    onClick={handleApprove} 
-                    disabled={approving}
-                    className="bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115] font-bold px-6 py-2 shadow-lg shadow-[#00E0B8]/30"
-                  >
-                    {approving ? '⏳ Criando OS...' : '⚙️ Gerar Ordem de Serviço'}
-                  </Button>
-                )}
-                {quote.serviceOrderId && (
-                  <Link href={`/service-orders/${quote.serviceOrderId}`}>
-                    <Button variant="primary" className="bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115]">
-                      📋 Ver Ordem de Serviço
-                    </Button>
-                  </Link>
-                )}
-                <Link href={`/quotes/${id}/edit`}>
-                  <Button variant="outline">Editar</Button>
-                </Link>
-              </div>
+              {renderActionButtons()}
             </div>
           </div>
         </div>
 
         {/* Alerta: Orçamento Aprovado - Pronto para Gerar OS */}
-        {(quote.status === QuoteStatus.ACCEPTED || 
-          quote.status === QuoteStatus.VIEWED || 
-          (quote.status === QuoteStatus.SENT && quote.acceptedAt)) && !quote.serviceOrderId && (
-          <div className="bg-gradient-to-r from-[#00E0B8]/20 to-[#3ABFF8]/20 border-2 border-[#00E0B8] rounded-lg p-6 mb-6 animate-pulse-glow">
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">✅</div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-[#D0D6DE] mb-2">
-                  🎉 Orçamento Aprovado pelo Cliente!
-                </h3>
-                <p className="text-[#7E8691] mb-4">
-                  O cliente aprovou este orçamento. Clique no botão abaixo para gerar a Ordem de Serviço automaticamente.
-                </p>
-                <Button 
-                  variant="primary" 
-                  onClick={handleApprove} 
-                  disabled={approving}
-                  className="bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115] font-bold px-8 py-3 text-lg shadow-lg shadow-[#00E0B8]/40"
-                >
-                  {approving ? '⏳ Criando Ordem de Serviço...' : '⚙️ Gerar Ordem de Serviço'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderApprovedAlert()}
 
         {/* Alerta: OS já criada */}
-        {quote.serviceOrderId && (
-          <div className="bg-gradient-to-r from-[#00E0B8]/10 to-[#3ABFF8]/10 border border-[#00E0B8] rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📋</span>
-                <div>
-                  <p className="text-[#D0D6DE] font-semibold">Ordem de Serviço já criada</p>
-                  <p className="text-sm text-[#7E8691]">Este orçamento já foi convertido em uma Ordem de Serviço</p>
-                </div>
-              </div>
-              <Link href={`/service-orders/${quote.serviceOrderId}`}>
-                <Button variant="primary" className="bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115]">
-                  Ver OS
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
+        {renderServiceOrderAlert()}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Informações Principais */}
@@ -650,9 +732,9 @@ export default function QuoteDetailPage() {
                     <div>
                       <p className="text-sm text-[#7E8691] mb-2">Sintomas</p>
                       <div className="flex flex-wrap gap-2">
-                        {quote.reportedProblemSymptoms.map((symptom, index) => (
+                        {quote.reportedProblemSymptoms.map((symptom) => (
                           <span
-                            key={index}
+                            key={symptom}
                             className="px-3 py-1 bg-[#2A3038] text-[#D0D6DE] rounded-full text-sm"
                           >
                             {symptom}
@@ -718,9 +800,10 @@ export default function QuoteDetailPage() {
                 ) : (
                   <div className="space-y-3">
                     {suggestions.slice(0, 3).map((suggestion) => (
-                      <div
+                      <button
                         key={suggestion.problemId}
-                        className="bg-[#0F1115] border border-[#2A3038] rounded-lg p-4 hover:border-[#00E0B8]/50 transition-all cursor-pointer"
+                        type="button"
+                        className="w-full text-left bg-[#0F1115] border border-[#2A3038] rounded-lg p-4 hover:border-[#00E0B8]/50 transition-all cursor-pointer"
                         onClick={() => autoFillFromSuggestion(suggestion)}
                       >
                         <div className="flex items-start justify-between">
@@ -736,7 +819,7 @@ export default function QuoteDetailPage() {
                             )}
                           </div>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -755,8 +838,10 @@ export default function QuoteDetailPage() {
               </div>
               {isEditing ? (
                 <form onSubmit={handleSaveItems} className="space-y-4">
-                  {editingItems.map((item, index) => (
-                    <div key={index} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038]">
+                  {editingItems.map((item, index) => {
+                    const itemKey = item.id || `item-${item.name || 'unnamed'}-${item.type || 'service'}-${index}`;
+                    return (
+                      <div key={itemKey} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038]">
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
                           <Input
@@ -781,7 +866,7 @@ export default function QuoteDetailPage() {
                             type="number"
                             min="1"
                             value={item.quantity || 1}
-                            onChange={(e) => updateEditingItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                            onChange={(e) => updateEditingItem(index, 'quantity', Number.parseInt(e.target.value, 10) || 1)}
                             required
                           />
                         </div>
@@ -792,7 +877,7 @@ export default function QuoteDetailPage() {
                             step="0.01"
                             min="0"
                             value={item.unitCost || 0}
-                            onChange={(e) => updateEditingItem(index, 'unitCost', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updateEditingItem(index, 'unitCost', Number.parseFloat(e.target.value) || 0)}
                             required
                           />
                         </div>
@@ -813,7 +898,8 @@ export default function QuoteDetailPage() {
                         </p>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   {editingItems.length === 0 && (
                     <p className="text-[#7E8691] text-center py-8">Nenhum item adicionado. Clique em "Adicionar Item" para começar.</p>
                   )}
@@ -825,28 +911,28 @@ export default function QuoteDetailPage() {
                       type="number"
                       step="0.01"
                       value={editingLaborCost}
-                      onChange={(e) => setEditingLaborCost(parseFloat(e.target.value) || 0)}
+                      onChange={(e) => setEditingLaborCost(Number.parseFloat(e.target.value) || 0)}
                     />
                     <Input
                       label="Peças"
                       type="number"
                       step="0.01"
                       value={editingPartsCost}
-                      onChange={(e) => setEditingPartsCost(parseFloat(e.target.value) || 0)}
+                      onChange={(e) => setEditingPartsCost(Number.parseFloat(e.target.value) || 0)}
                     />
                     <Input
                       label="Desconto"
                       type="number"
                       step="0.01"
                       value={editingDiscount}
-                      onChange={(e) => setEditingDiscount(parseFloat(e.target.value) || 0)}
+                      onChange={(e) => setEditingDiscount(Number.parseFloat(e.target.value) || 0)}
                     />
                     <Input
                       label="Impostos"
                       type="number"
                       step="0.01"
                       value={editingTaxAmount}
-                      onChange={(e) => setEditingTaxAmount(parseFloat(e.target.value) || 0)}
+                      onChange={(e) => setEditingTaxAmount(Number.parseFloat(e.target.value) || 0)}
                     />
                   </div>
 
@@ -859,43 +945,52 @@ export default function QuoteDetailPage() {
                     </Button>
                   </div>
                 </form>
-              ) : (
-                quote.items && quote.items.length > 0 ? (
+              ) : (() => {
+                if (!quote.items || quote.items.length === 0) {
+                  return <p className="text-[#7E8691]">Nenhum item adicionado</p>;
+                }
+                return (
                   <div className="space-y-3">
-                    {quote.items.map((item, index) => (
-                      <div key={index} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038]">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-[#D0D6DE] font-medium">{item.name}</span>
-                              <span className="text-xs text-[#7E8691] px-2 py-1 bg-[#2A3038] rounded">
-                                {item.type === 'service' ? 'Serviço' : 'Peça'}
-                              </span>
-                            </div>
-                            {item.description && (
-                              <p className="text-sm text-[#7E8691] mb-2">{item.description}</p>
-                            )}
-                            <div className="text-sm text-[#7E8691]">
-                              Quantidade: {item.quantity} × {formatCurrency(item.unitCost)} = {formatCurrency(item.totalCost)}
+                    {quote.items.map((item) => {
+                      const itemKey = item.id || `${item.name}-${item.type}`;
+                      return (
+                        <div key={itemKey} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038]">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[#D0D6DE] font-medium">{item.name}</span>
+                                <span className="text-xs text-[#7E8691] px-2 py-1 bg-[#2A3038] rounded">
+                                  {item.type === 'service' ? 'Serviço' : 'Peça'}
+                                </span>
+                              </div>
+                              {item.description && (
+                                <p className="text-sm text-[#7E8691] mb-2">{item.description}</p>
+                              )}
+                              <div className="text-sm text-[#7E8691]">
+                                Quantidade: {item.quantity} × {formatCurrency(item.unitCost)} = {formatCurrency(item.totalCost)}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
-                ) : (
-                  <p className="text-[#7E8691]">Nenhum item adicionado</p>
-                )
-              )}
+                );
+              })()}
             </div>
 
             {/* Attachments */}
             <AttachmentsPanel
               entityType="quote"
               entityId={id}
-              attachments={quote.attachments}
+              attachments={quote.attachments as Attachment[] | undefined}
               onAttachmentsChange={(attachments) => {
-                setQuote({ ...quote, attachments });
+                setQuote({ ...quote, attachments: attachments as Array<{
+                  id: string;
+                  type: string;
+                  url: string;
+                  originalName: string;
+                }> });
               }}
               readonly={quote.status === QuoteStatus.ACCEPTED || quote.status === QuoteStatus.REJECTED}
             />
@@ -904,16 +999,22 @@ export default function QuoteDetailPage() {
             <ChecklistPanel
               entityType="quote"
               entityId={id}
-              checklists={quote.checklists}
-              onChecklistsChange={(checklists) => {
-                setQuote({ ...quote, checklists });
-              }}
+            checklists={quote.checklists as Checklist[] | undefined}
+            onChecklistsChange={(checklists) => {
+              setQuote({ ...quote, checklists: checklists as Array<{
+                id: string;
+                checklistType: string;
+                name: string;
+                status: string;
+              }> });
+            }}
               readonly={quote.status === QuoteStatus.ACCEPTED || quote.status === QuoteStatus.REJECTED}
-              canComplete={
+              canComplete={Boolean(
                 quote.status === QuoteStatus.AWAITING_DIAGNOSIS || 
                 quote.status === QuoteStatus.DIAGNOSED ||
-                (quote.status === QuoteStatus.PENDING && quote.assignedMechanicId)
-              }
+                quote.status === QuoteStatus.SENT ||
+                quote.status === QuoteStatus.VIEWED
+              )}
             />
           </div>
 
@@ -1050,7 +1151,7 @@ export default function QuoteDetailPage() {
           customerPhone={quote.customer?.phone}
           onSend={handleSendToCustomer}
           onRegenerateToken={async () => {
-            const updated = await quotesApi.regenerateToken(id);
+            await quotesApi.regenerateToken(id);
             await loadQuote();
           }}
         />

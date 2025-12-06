@@ -29,9 +29,11 @@ export class RateLimitingService {
    * Verifica se uma requisição deve ser bloqueada
    * (Normalmente feito automaticamente pelo ThrottlerGuard)
    */
-  shouldBlock(_identifier: string): boolean {
+  shouldBlock(identifier: string): boolean {
     // Lógica adicional de rate limiting pode ser implementada aqui
     // Por enquanto, o ThrottlerGuard faz o trabalho principal
+
+    void identifier; // Parâmetro mantido para compatibilidade com interface
     return false;
   }
 }

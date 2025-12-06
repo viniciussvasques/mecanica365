@@ -1,0 +1,7 @@
+Código,Nome,Descrição,Categoria,Marca,Quantidade,Quantidade Mínima,Preço Custo,Preço Venda,Localização,Ativo
+PEC-001,Pastilha de Freio Dianteira,Pastilha de freio para eixo dianteiro,Freios,Bosch,50,10,25.5,45,Estoque A - Prateleira 1,true
+PEC-002,Filtro de Óleo,Filtro de óleo para motor,Filtros,Mann Filter,30,5,15,28,Estoque A - Prateleira 2,true
+PEC-003,Óleo Motor 5W30,Óleo sintético 5W30,Lubrificantes,Shell,20,5,35,55,Estoque B - Prateleira 1,true
+PEC-004,Correia Dentada,Correia dentada original,Correias,Gates,15,3,80,120,Estoque B - Prateleira 2,true
+PEC-005,Vela de Ignição,Vela de ignição iridium,Ignição,NGK,40,10,25,40,Estoque C - Prateleira 1,true
+
