@@ -36,5 +36,15 @@ module.exports = {
     '^@database/(.*)$': '<rootDir>/database/$1',
     '^@health/(.*)$': '<rootDir>/health/$1',
   },
+  // Configurações simples para reduzir problemas de I/O com múltiplos projetos
+  maxWorkers: 1,
+  cache: false,
+  testTimeout: 15000,
+  // Desabilitar haste map para evitar erros de I/O com múltiplos projetos
+  haste: {
+    enableSymlinks: false,
+  },
+  // Usar resolver customizado para evitar problemas de I/O
+  resolver: undefined,
 };
 

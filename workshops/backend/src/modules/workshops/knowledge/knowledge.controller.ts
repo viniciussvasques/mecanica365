@@ -51,7 +51,7 @@ export class KnowledgeController {
   async create(
     @TenantId() tenantId: string,
     @UserId() userId: string,
-    @CurrentUser() user: unknown,
+    @CurrentUser() user: { name?: string; email?: string },
     @Body() createKnowledgeDto: CreateKnowledgeDto,
   ): Promise<KnowledgeResponseDto> {
     const userName = user.name || user.email || 'Usuário';

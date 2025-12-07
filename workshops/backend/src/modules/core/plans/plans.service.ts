@@ -140,71 +140,11 @@ export class PlansService {
     updatePlanDto: UpdatePlanDto,
   ): Promise<PlanResponseDto> {
     try {
-      const existingPlan = await this.prisma.plan.findUnique({
-        where: { id },
-      });
+      const existingPlan = await this.validatePlanExists(id);
+      await this.validateCodeChange(id, updatePlanDto, existingPlan);
+      await this.handleDefaultPlanChange(id, updatePlanDto, existingPlan);
 
-      if (!existingPlan) {
-        throw new NotFoundException(`Plano não encontrado: ${id}`);
-      }
-
-      // Se estiver alterando o código, verificar se já existe
-      if (updatePlanDto.code && updatePlanDto.code !== existingPlan.code) {
-        const planWithCode = await this.prisma.plan.findUnique({
-          where: { code: updatePlanDto.code },
-        });
-        if (planWithCode) {
-          throw new ConflictException(
-            `Plano com código '${updatePlanDto.code}' já existe`,
-          );
-        }
-      }
-
-      // Se este plano for marcado como default, remover default dos outros
-      if (updatePlanDto.isDefault && !existingPlan.isDefault) {
-        await this.prisma.plan.updateMany({
-          where: { isDefault: true, id: { not: id } },
-          data: { isDefault: false },
-        });
-      }
-
-      const updateData: Prisma.PlanUpdateInput = {};
-
-      if (updatePlanDto.code !== undefined)
-        updateData.code = updatePlanDto.code;
-      if (updatePlanDto.name !== undefined)
-        updateData.name = updatePlanDto.name;
-      if (updatePlanDto.description !== undefined)
-        updateData.description = updatePlanDto.description;
-      if (updatePlanDto.monthlyPrice !== undefined)
-        updateData.monthlyPrice = new Prisma.Decimal(
-          updatePlanDto.monthlyPrice,
-        );
-      if (updatePlanDto.annualPrice !== undefined)
-        updateData.annualPrice = new Prisma.Decimal(updatePlanDto.annualPrice);
-      if (updatePlanDto.serviceOrdersLimit !== undefined)
-        updateData.serviceOrdersLimit = updatePlanDto.serviceOrdersLimit;
-      if (updatePlanDto.partsLimit !== undefined)
-        updateData.partsLimit = updatePlanDto.partsLimit;
-      if (updatePlanDto.usersLimit !== undefined)
-        updateData.usersLimit = updatePlanDto.usersLimit;
-      if (updatePlanDto.features !== undefined)
-        updateData.features = updatePlanDto.features;
-      if (updatePlanDto.isActive !== undefined)
-        updateData.isActive = updatePlanDto.isActive;
-      if (updatePlanDto.isDefault !== undefined)
-        updateData.isDefault = updatePlanDto.isDefault;
-      if (updatePlanDto.sortOrder !== undefined)
-        updateData.sortOrder = updatePlanDto.sortOrder;
-      if (updatePlanDto.highlightText !== undefined)
-        updateData.highlightText = updatePlanDto.highlightText;
-      if (updatePlanDto.stripePriceIdMonthly !== undefined)
-        updateData.stripePriceIdMonthly = updatePlanDto.stripePriceIdMonthly;
-      if (updatePlanDto.stripePriceIdAnnual !== undefined)
-        updateData.stripePriceIdAnnual = updatePlanDto.stripePriceIdAnnual;
-      if (updatePlanDto.stripeProductId !== undefined)
-        updateData.stripeProductId = updatePlanDto.stripeProductId;
-
+      const updateData = this.buildUpdateData(updatePlanDto);
       const plan = await this.prisma.plan.update({
         where: { id },
         data: updateData,
@@ -225,6 +165,94 @@ export class PlansService {
       );
       throw error;
     }
+  }
+
+  private async validatePlanExists(id: string) {
+    const existingPlan = await this.prisma.plan.findUnique({
+      where: { id },
+    });
+
+    if (!existingPlan) {
+      throw new NotFoundException(`Plano não encontrado: ${id}`);
+    }
+
+    return existingPlan;
+  }
+
+  private async validateCodeChange(
+    id: string,
+    updatePlanDto: UpdatePlanDto,
+    existingPlan: { code: string },
+  ): Promise<void> {
+    if (!updatePlanDto.code || updatePlanDto.code === existingPlan.code) {
+      return;
+    }
+
+    const planWithCode = await this.prisma.plan.findUnique({
+      where: { code: updatePlanDto.code },
+    });
+
+    if (planWithCode) {
+      throw new ConflictException(
+        `Plano com código '${updatePlanDto.code}' já existe`,
+      );
+    }
+  }
+
+  private async handleDefaultPlanChange(
+    id: string,
+    updatePlanDto: UpdatePlanDto,
+    existingPlan: { isDefault: boolean },
+  ): Promise<void> {
+    if (updatePlanDto.isDefault && !existingPlan.isDefault) {
+      await this.prisma.plan.updateMany({
+        where: { isDefault: true, id: { not: id } },
+        data: { isDefault: false },
+      });
+    }
+  }
+
+  private buildUpdateData(
+    updatePlanDto: UpdatePlanDto,
+  ): Prisma.PlanUpdateInput {
+    const updateData: Prisma.PlanUpdateInput = {};
+
+    if (updatePlanDto.code !== undefined)
+      updateData.code = updatePlanDto.code;
+    if (updatePlanDto.name !== undefined)
+      updateData.name = updatePlanDto.name;
+    if (updatePlanDto.description !== undefined)
+      updateData.description = updatePlanDto.description;
+    if (updatePlanDto.monthlyPrice !== undefined)
+      updateData.monthlyPrice = new Prisma.Decimal(
+        updatePlanDto.monthlyPrice,
+      );
+    if (updatePlanDto.annualPrice !== undefined)
+      updateData.annualPrice = new Prisma.Decimal(updatePlanDto.annualPrice);
+    if (updatePlanDto.serviceOrdersLimit !== undefined)
+      updateData.serviceOrdersLimit = updatePlanDto.serviceOrdersLimit;
+    if (updatePlanDto.partsLimit !== undefined)
+      updateData.partsLimit = updatePlanDto.partsLimit;
+    if (updatePlanDto.usersLimit !== undefined)
+      updateData.usersLimit = updatePlanDto.usersLimit;
+    if (updatePlanDto.features !== undefined)
+      updateData.features = updatePlanDto.features;
+    if (updatePlanDto.isActive !== undefined)
+      updateData.isActive = updatePlanDto.isActive;
+    if (updatePlanDto.isDefault !== undefined)
+      updateData.isDefault = updatePlanDto.isDefault;
+    if (updatePlanDto.sortOrder !== undefined)
+      updateData.sortOrder = updatePlanDto.sortOrder;
+    if (updatePlanDto.highlightText !== undefined)
+      updateData.highlightText = updatePlanDto.highlightText;
+    if (updatePlanDto.stripePriceIdMonthly !== undefined)
+      updateData.stripePriceIdMonthly = updatePlanDto.stripePriceIdMonthly;
+    if (updatePlanDto.stripePriceIdAnnual !== undefined)
+      updateData.stripePriceIdAnnual = updatePlanDto.stripePriceIdAnnual;
+    if (updatePlanDto.stripeProductId !== undefined)
+      updateData.stripeProductId = updatePlanDto.stripeProductId;
+
+    return updateData;
   }
 
   async remove(id: string): Promise<void> {

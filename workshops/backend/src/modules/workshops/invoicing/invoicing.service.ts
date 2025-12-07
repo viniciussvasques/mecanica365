@@ -350,137 +350,31 @@ export class InvoicingService {
     createInvoiceDto: CreateInvoiceDto,
   ): Promise<InvoiceResponseDto> {
     try {
-      // Validar cliente se fornecido
-      if (createInvoiceDto.customerId) {
-        const customer = await this.prisma.customer.findFirst({
-          where: {
-            id: createInvoiceDto.customerId,
-            tenantId,
-          },
-        });
-
-        if (!customer) {
-          throw new NotFoundException('Cliente não encontrado');
-        }
-      }
-
-      // Validar ordem de serviço se fornecido
-      if (createInvoiceDto.serviceOrderId) {
-        const serviceOrder = await this.prisma.serviceOrder.findFirst({
-          where: {
-            id: createInvoiceDto.serviceOrderId,
-            tenantId,
-          },
-        });
-
-        if (!serviceOrder) {
-          throw new NotFoundException('Ordem de serviço não encontrada');
-        }
-
-        // Verificar se já existe fatura para esta OS
-        const existingInvoice = await this.prisma.invoice.findFirst({
-          where: {
-            tenantId,
-            serviceOrderId: createInvoiceDto.serviceOrderId,
-          },
-        });
-
-        if (existingInvoice) {
-          throw new BadRequestException(
-            'Já existe uma fatura para esta ordem de serviço',
-          );
-        }
-      }
-
-      // Validar itens
-      if (!createInvoiceDto.items || createInvoiceDto.items.length === 0) {
-        throw new BadRequestException('A fatura deve ter pelo menos um item');
-      }
-
-      // Calcular total se não fornecido
-      const calculatedTotal = this.calculateTotal(createInvoiceDto.items);
-      const total = createInvoiceDto.total || calculatedTotal;
-      const discount = createInvoiceDto.discount || 0;
-      const taxAmount = createInvoiceDto.taxAmount || 0;
-      const finalTotal = total - discount + taxAmount;
-
-      if (finalTotal < 0) {
-        throw new BadRequestException('O valor total não pode ser negativo');
-      }
-
-      // Gerar número único se não fornecido
-      const invoiceNumber =
-        createInvoiceDto.invoiceNumber ||
-        (await this.generateInvoiceNumber(tenantId));
-
-      // Verificar se número já existe
-      const existingNumber = await this.prisma.invoice.findUnique({
-        where: { invoiceNumber },
-      });
-
-      if (existingNumber) {
-        throw new BadRequestException('Já existe uma fatura com este número');
-      }
-
-      if (
-        createInvoiceDto.paymentPreference === PaymentPreference.MANUAL &&
-        createInvoiceDto.paymentGatewayId
-      ) {
-        throw new BadRequestException(
-          'Selecione um gateway apenas para pagamentos online ou com maquininha',
-        );
-      }
-
-      const gateway = await this.validateGatewayOwnership(
+      await this.validateCreateInvoiceData(tenantId, createInvoiceDto);
+      const invoiceNumber = await this.resolveInvoiceNumber(
         tenantId,
-        createInvoiceDto.paymentGatewayId,
+        createInvoiceDto.invoiceNumber,
       );
-
-      const paymentPreference = this.resolvePaymentPreference(
-        createInvoiceDto.paymentPreference,
-        gateway,
-      );
-
-      // Criar fatura
-      const invoice = await this.prisma.invoice.create({
-        data: {
+      const { finalTotal, discount, taxAmount } =
+        this.calculateInvoiceTotals(createInvoiceDto);
+      const { gateway, paymentPreference } =
+        await this.resolvePaymentConfiguration(
           tenantId,
-          invoiceNumber,
-          serviceOrderId: createInvoiceDto.serviceOrderId || null,
-          customerId: createInvoiceDto.customerId || null,
-          type: createInvoiceDto.type,
-          total: new Decimal(finalTotal),
-          discount: new Decimal(discount),
-          taxAmount: new Decimal(taxAmount),
-          paymentMethod: createInvoiceDto.paymentMethod || null,
-          paymentPreference,
-          paymentGatewayId: gateway?.id || null,
-          paymentStatus:
-            createInvoiceDto.paymentStatus || PaymentStatus.PENDING,
-          status: createInvoiceDto.status || InvoiceStatus.DRAFT,
-          dueDate: createInvoiceDto.dueDate
-            ? new Date(createInvoiceDto.dueDate)
-            : null,
-          nfeKey: createInvoiceDto.nfeKey || null,
-          nfeXmlUrl: createInvoiceDto.nfeXmlUrl || null,
-          nfePdfUrl: createInvoiceDto.nfePdfUrl || null,
-          nfeStatus: createInvoiceDto.nfeStatus || null,
-          items: {
-            create: createInvoiceDto.items.map((item) => ({
-              type: item.type,
-              name: item.name,
-              description: item.description || null,
-              quantity: item.quantity,
-              unitPrice: new Decimal(item.unitPrice),
-              totalPrice: new Decimal(item.totalPrice),
-            })),
-          },
-        },
-        include: this.invoiceInclude,
-      });
+          createInvoiceDto,
+        );
+
+      const invoice = await this.createInvoiceRecord(
+        tenantId,
+        createInvoiceDto,
+        invoiceNumber,
+        finalTotal,
+        discount,
+        taxAmount,
+        gateway,
+        paymentPreference,
+      );
 
       this.logger.log(`Fatura criada: ${invoice.id} (tenant: ${tenantId})`);
-
       return this.toResponseDto(invoice);
     } catch (error) {
       this.logger.error(
@@ -497,6 +391,168 @@ export class InvoicingService {
 
       throw new BadRequestException('Erro ao criar fatura');
     }
+  }
+
+  private async validateCreateInvoiceData(
+    tenantId: string,
+    createInvoiceDto: CreateInvoiceDto,
+  ): Promise<void> {
+    if (createInvoiceDto.customerId) {
+      await this.validateCustomerIfProvided(
+        tenantId,
+        createInvoiceDto.customerId,
+      );
+    }
+
+    if (createInvoiceDto.serviceOrderId) {
+      await this.validateServiceOrder(tenantId, createInvoiceDto.serviceOrderId);
+    }
+
+    if (!createInvoiceDto.items || createInvoiceDto.items.length === 0) {
+      throw new BadRequestException('A fatura deve ter pelo menos um item');
+    }
+
+    if (
+      createInvoiceDto.paymentPreference === PaymentPreference.MANUAL &&
+      createInvoiceDto.paymentGatewayId
+    ) {
+      throw new BadRequestException(
+        'Selecione um gateway apenas para pagamentos online ou com maquininha',
+      );
+    }
+  }
+
+  private async validateServiceOrder(
+    tenantId: string,
+    serviceOrderId: string,
+  ): Promise<void> {
+    const serviceOrder = await this.prisma.serviceOrder.findFirst({
+      where: {
+        id: serviceOrderId,
+        tenantId,
+      },
+    });
+
+    if (!serviceOrder) {
+      throw new NotFoundException('Ordem de serviço não encontrada');
+    }
+
+    const existingInvoice = await this.prisma.invoice.findFirst({
+      where: {
+        tenantId,
+        serviceOrderId,
+      },
+    });
+
+    if (existingInvoice) {
+      throw new BadRequestException(
+        'Já existe uma fatura para esta ordem de serviço',
+      );
+    }
+  }
+
+  private calculateInvoiceTotals(createInvoiceDto: CreateInvoiceDto): {
+    finalTotal: number;
+    discount: number;
+    taxAmount: number;
+  } {
+    const calculatedTotal = this.calculateTotal(createInvoiceDto.items);
+    const total = createInvoiceDto.total || calculatedTotal;
+    const discount = createInvoiceDto.discount || 0;
+    const taxAmount = createInvoiceDto.taxAmount || 0;
+    const finalTotal = total - discount + taxAmount;
+
+    if (finalTotal < 0) {
+      throw new BadRequestException('O valor total não pode ser negativo');
+    }
+
+    return { finalTotal, discount, taxAmount };
+  }
+
+  private async resolveInvoiceNumber(
+    tenantId: string,
+    providedNumber?: string,
+  ): Promise<string> {
+    const invoiceNumber =
+      providedNumber || (await this.generateInvoiceNumber(tenantId));
+
+    const existingNumber = await this.prisma.invoice.findUnique({
+      where: { invoiceNumber },
+    });
+
+    if (existingNumber) {
+      throw new BadRequestException('Já existe uma fatura com este número');
+    }
+
+    return invoiceNumber;
+  }
+
+  private async resolvePaymentConfiguration(
+    tenantId: string,
+    createInvoiceDto: CreateInvoiceDto,
+  ): Promise<{
+    gateway: { id: string; type: string } | null;
+    paymentPreference: PaymentPreference;
+  }> {
+    const gateway = await this.validateGatewayOwnership(
+      tenantId,
+      createInvoiceDto.paymentGatewayId,
+    );
+
+    const paymentPreference = this.resolvePaymentPreference(
+      createInvoiceDto.paymentPreference,
+      gateway,
+    );
+
+    return { gateway, paymentPreference };
+  }
+
+  private async createInvoiceRecord(
+    tenantId: string,
+    createInvoiceDto: CreateInvoiceDto,
+    invoiceNumber: string,
+    finalTotal: number,
+    discount: number,
+    taxAmount: number,
+    gateway: { id: string; type: string } | null,
+    paymentPreference: PaymentPreference,
+  ) {
+    return this.prisma.invoice.create({
+      data: {
+        tenantId,
+        invoiceNumber,
+        serviceOrderId: createInvoiceDto.serviceOrderId || null,
+        customerId: createInvoiceDto.customerId || null,
+        type: createInvoiceDto.type,
+        total: new Decimal(finalTotal),
+        discount: new Decimal(discount),
+        taxAmount: new Decimal(taxAmount),
+        paymentMethod: createInvoiceDto.paymentMethod || null,
+        paymentPreference,
+        paymentGatewayId: gateway?.id || null,
+        paymentStatus:
+          createInvoiceDto.paymentStatus || PaymentStatus.PENDING,
+        status: createInvoiceDto.status || InvoiceStatus.DRAFT,
+        dueDate: createInvoiceDto.dueDate
+          ? new Date(createInvoiceDto.dueDate)
+          : null,
+        nfeKey: createInvoiceDto.nfeKey || null,
+        nfeXmlUrl: createInvoiceDto.nfeXmlUrl || null,
+        nfePdfUrl: createInvoiceDto.nfePdfUrl || null,
+        nfeStatus: createInvoiceDto.nfeStatus || null,
+        items: {
+          create: createInvoiceDto.items.map((item) => ({
+            type: item.type,
+            name: item.name,
+            description: item.description || null,
+            quantity: item.quantity,
+            unitPrice: new Decimal(item.unitPrice),
+            totalPrice: new Decimal(item.totalPrice),
+          })),
+        },
+      },
+      include: this.invoiceInclude,
+    });
   }
 
   /**
@@ -597,7 +653,7 @@ export class InvoicingService {
         include: this.invoiceInclude,
       });
 
-      if (!invoice) {
+      if (invoice === null) {
         throw new NotFoundException('Fatura não encontrada');
       }
 
@@ -625,87 +681,24 @@ export class InvoicingService {
     updateInvoiceDto: UpdateInvoiceDto,
   ): Promise<InvoiceResponseDto> {
     try {
-      const invoice = await this.prisma.invoice.findFirst({
-        where: {
-          id,
-          tenantId,
-        },
-      });
-
-      if (!invoice) {
-        throw new NotFoundException('Fatura não encontrada');
-      }
-
-      // Validar se pode ser atualizada
-      this.validateInvoiceCanBeUpdated(invoice);
-
-      // Validar cliente se fornecido
+      const invoice = await this.findInvoiceForUpdate(tenantId, id);
       await this.validateCustomerIfProvided(
         tenantId,
         updateInvoiceDto.customerId,
       );
 
-      // Preparar dados de atualização
       const updateData = await this.prepareInvoiceUpdateData(
         id,
         updateInvoiceDto,
       );
 
-      let targetGatewayId =
-        invoice.paymentGatewayId !== null ? invoice.paymentGatewayId : null;
-      let shouldUpdateGateway = false;
+      await this.resolvePaymentGatewayUpdate(
+        tenantId,
+        invoice,
+        updateInvoiceDto,
+        updateData,
+      );
 
-      if (updateInvoiceDto.paymentGatewayId !== undefined) {
-        shouldUpdateGateway = true;
-        targetGatewayId = updateInvoiceDto.paymentGatewayId || null;
-      }
-
-      if (updateInvoiceDto.paymentPreference === PaymentPreference.MANUAL) {
-        shouldUpdateGateway = true;
-        targetGatewayId = null;
-      }
-
-      if (
-        updateInvoiceDto.paymentPreference === PaymentPreference.MANUAL &&
-        updateInvoiceDto.paymentGatewayId
-      ) {
-        throw new BadRequestException(
-          'Não selecione um gateway ao usar pagamento manual',
-        );
-      }
-
-      let gatewayEntity: { id: string; type: string } | null = null;
-      if (targetGatewayId) {
-        gatewayEntity = await this.validateGatewayOwnership(
-          tenantId,
-          targetGatewayId,
-        );
-      }
-
-      if (
-        updateInvoiceDto.paymentPreference !== undefined ||
-        shouldUpdateGateway
-      ) {
-        const resolvedPreference = this.resolvePaymentPreference(
-          updateInvoiceDto.paymentPreference,
-          gatewayEntity,
-        );
-
-        updateData.paymentPreference = resolvedPreference;
-        if (resolvedPreference === PaymentPreference.MANUAL) {
-          targetGatewayId = null;
-        } else if (gatewayEntity) {
-          targetGatewayId = gatewayEntity.id;
-        }
-      }
-
-      if (shouldUpdateGateway) {
-        updateData.paymentGateway = targetGatewayId
-          ? { connect: { id: targetGatewayId } }
-          : { disconnect: true };
-      }
-
-      // Atualizar fatura
       const updatedInvoice = await this.prisma.invoice.update({
         where: { id },
         data: updateData,
@@ -713,7 +706,6 @@ export class InvoicingService {
       });
 
       this.logger.log(`Fatura atualizada: ${id} (tenant: ${tenantId})`);
-
       return this.toResponseDto(updatedInvoice);
     } catch (error) {
       this.logger.error(
@@ -732,6 +724,104 @@ export class InvoicingService {
     }
   }
 
+  private async findInvoiceForUpdate(tenantId: string, id: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id,
+        tenantId,
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Fatura não encontrada');
+    }
+
+    this.validateInvoiceCanBeUpdated(invoice);
+    return invoice;
+  }
+
+  private async resolvePaymentGatewayUpdate(
+    tenantId: string,
+    invoice: { paymentGatewayId: string | null },
+    updateInvoiceDto: UpdateInvoiceDto,
+    updateData: Prisma.InvoiceUpdateInput,
+  ): Promise<void> {
+    this.validatePaymentPreferenceAndGateway(updateInvoiceDto);
+
+    const gatewayConfig = this.determineGatewayConfiguration(
+      invoice,
+      updateInvoiceDto,
+    );
+
+    if (
+      updateInvoiceDto.paymentPreference !== undefined ||
+      gatewayConfig.shouldUpdate
+    ) {
+      const gatewayEntity = gatewayConfig.targetGatewayId
+        ? await this.validateGatewayOwnership(
+            tenantId,
+            gatewayConfig.targetGatewayId,
+          )
+        : null;
+
+      const resolvedPreference = this.resolvePaymentPreference(
+        updateInvoiceDto.paymentPreference,
+        gatewayEntity,
+      );
+
+      updateData.paymentPreference = resolvedPreference;
+
+      if (resolvedPreference === PaymentPreference.MANUAL) {
+        gatewayConfig.targetGatewayId = null;
+      } else if (gatewayEntity) {
+        gatewayConfig.targetGatewayId = gatewayEntity.id;
+      }
+
+      if (gatewayConfig.shouldUpdate) {
+        updateData.paymentGateway = gatewayConfig.targetGatewayId
+          ? { connect: { id: gatewayConfig.targetGatewayId } }
+          : { disconnect: true };
+      }
+    }
+  }
+
+  private validatePaymentPreferenceAndGateway(
+    updateInvoiceDto: UpdateInvoiceDto,
+  ): void {
+    if (
+      updateInvoiceDto.paymentPreference === PaymentPreference.MANUAL &&
+      updateInvoiceDto.paymentGatewayId
+    ) {
+      throw new BadRequestException(
+        'Não selecione um gateway ao usar pagamento manual',
+      );
+    }
+  }
+
+  private determineGatewayConfiguration(
+    invoice: { paymentGatewayId: string | null },
+    updateInvoiceDto: UpdateInvoiceDto,
+  ): {
+    shouldUpdate: boolean;
+    targetGatewayId: string | null;
+  } {
+    let targetGatewayId =
+      invoice.paymentGatewayId !== null ? invoice.paymentGatewayId : null;
+    let shouldUpdate = false;
+
+    if (updateInvoiceDto.paymentGatewayId !== undefined) {
+      shouldUpdate = true;
+      targetGatewayId = updateInvoiceDto.paymentGatewayId || null;
+    }
+
+    if (updateInvoiceDto.paymentPreference === PaymentPreference.MANUAL) {
+      shouldUpdate = true;
+      targetGatewayId = null;
+    }
+
+    return { shouldUpdate, targetGatewayId };
+  }
+
   /**
    * Remove uma fatura
    */
@@ -744,7 +834,7 @@ export class InvoicingService {
         },
       });
 
-      if (!invoice) {
+      if (invoice === null) {
         throw new NotFoundException('Fatura não encontrada');
       }
 
@@ -793,7 +883,7 @@ export class InvoicingService {
         },
       });
 
-      if (!invoice) {
+      if (invoice === null) {
         throw new NotFoundException('Fatura não encontrada');
       }
 
@@ -849,7 +939,7 @@ export class InvoicingService {
         },
       });
 
-      if (!invoice) {
+      if (invoice === null) {
         throw new NotFoundException('Fatura não encontrada');
       }
 

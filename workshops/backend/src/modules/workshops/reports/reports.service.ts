@@ -934,9 +934,9 @@ export class ReportsService {
     this.flattenDataToSheet(worksheet, reportData, dataRow + 2);
 
     // Ajustar largura das colunas
-    worksheet.columns.forEach((column) => {
+    for (const column of worksheet.columns) {
       column.width = 20;
-    });
+    }
 
     // Gerar buffer
     if (isCsv) {
@@ -1010,22 +1010,24 @@ export class ReportsService {
         if (value.length > 0 && typeof value[0] === 'object') {
           // Array de objetos - criar cabeçalho
           const headers = Object.keys(value[0] as Record<string, unknown>);
-          headers.forEach((header, colIndex) => {
+          for (let colIndex = 0; colIndex < headers.length; colIndex++) {
+            const header = headers[colIndex];
             worksheet.getCell(currentRow, colIndex + 1).value =
               this.formatKey(header);
             worksheet.getCell(currentRow, colIndex + 1).font = { bold: true };
-          });
+          }
           currentRow++;
 
           // Dados
-          value.forEach((item) => {
+          for (const item of value) {
             const itemObj = item as Record<string, unknown>;
-            headers.forEach((header, colIndex) => {
+            for (let colIndex = 0; colIndex < headers.length; colIndex++) {
+              const header = headers[colIndex];
               worksheet.getCell(currentRow, colIndex + 1).value =
                 this.formatValue(itemObj[header]);
-            });
+            }
             currentRow++;
-          });
+          }
         } else {
           // Array simples
           worksheet.getCell(currentRow, 1).value = this.formatKey(key);

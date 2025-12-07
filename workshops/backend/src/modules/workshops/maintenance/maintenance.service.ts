@@ -446,11 +446,10 @@ export class MaintenanceService {
 
     return schedules.map((s): MaintenanceAlertDto => {
       const isOverdue =
-        s.nextDueDate && s.nextDueDate < now
-          ? true
-          : s.nextDueKm && s.vehicle.mileage && s.nextDueKm <= s.vehicle.mileage
-            ? true
-            : false;
+        (s.nextDueDate && s.nextDueDate < now) ||
+        (s.nextDueKm &&
+          s.vehicle.mileage &&
+          s.nextDueKm <= s.vehicle.mileage);
 
       const daysUntilDue = s.nextDueDate
         ? Math.ceil(
@@ -631,7 +630,7 @@ export class MaintenanceService {
   // ============================================================
 
   private toTemplateResponse(
-    template: unknown,
+    template: PrismaTypes.MaintenanceTemplateGetPayload<Record<string, never>>,
   ): MaintenanceTemplateResponseDto {
     return {
       id: template.id,
@@ -641,10 +640,14 @@ export class MaintenanceService {
       category: template.category as MaintenanceCategory,
       intervalKm: template.intervalKm ?? undefined,
       intervalMonths: template.intervalMonths ?? undefined,
-      items: template.items as unknown[],
+      items: Array.isArray(template.items)
+        ? (template.items as unknown[])
+        : [],
       estimatedCost: template.estimatedCost?.toNumber(),
       estimatedHours: template.estimatedHours?.toNumber(),
-      suggestedParts: template.suggestedParts as unknown[],
+      suggestedParts: Array.isArray(template.suggestedParts)
+        ? (template.suggestedParts as unknown[])
+        : [],
       isActive: template.isActive,
       isDefault: template.isDefault,
       createdAt: template.createdAt,
@@ -652,7 +655,14 @@ export class MaintenanceService {
     };
   }
 
-  private toScheduleResponse(schedule: unknown): VehicleScheduleResponseDto {
+  private toScheduleResponse(
+    schedule: PrismaTypes.VehicleMaintenanceScheduleGetPayload<{
+      include: {
+        vehicle: true;
+        template: true;
+      };
+    }>,
+  ): VehicleScheduleResponseDto {
     return {
       id: schedule.id,
       tenantId: schedule.tenantId,
@@ -691,7 +701,14 @@ export class MaintenanceService {
     };
   }
 
-  private toHistoryResponse(history: unknown): MaintenanceHistoryResponseDto {
+  private toHistoryResponse(
+    history: PrismaTypes.MaintenanceHistoryGetPayload<{
+      include: {
+        vehicle: true;
+        serviceOrder: true;
+      };
+    }>,
+  ): MaintenanceHistoryResponseDto {
     return {
       id: history.id,
       tenantId: history.tenantId,
@@ -706,8 +723,12 @@ export class MaintenanceService {
       laborCost: history.laborCost?.toNumber(),
       partsCost: history.partsCost?.toNumber(),
       totalCost: history.totalCost?.toNumber(),
-      partsUsed: history.partsUsed as unknown[],
-      servicesPerformed: history.servicesPerformed as unknown[],
+      partsUsed: Array.isArray(history.partsUsed)
+        ? (history.partsUsed as unknown[])
+        : [],
+      servicesPerformed: Array.isArray(history.servicesPerformed)
+        ? (history.servicesPerformed as unknown[])
+        : [],
       nextDueKm: history.nextDueKm ?? undefined,
       nextDueDate: history.nextDueDate ?? undefined,
       performedById: history.performedById ?? undefined,

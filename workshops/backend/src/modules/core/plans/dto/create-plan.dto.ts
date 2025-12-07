@@ -29,12 +29,12 @@ export class CreatePlanDto {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ description: 'Preço mensal', example: 99.0 })
+  @ApiProperty({ description: 'Preço mensal', example: 99 })
   @IsNumber()
   @Min(0)
   monthlyPrice: number;
 
-  @ApiProperty({ description: 'Preço anual', example: 990.0 })
+  @ApiProperty({ description: 'Preço anual', example: 990 })
   @IsNumber()
   @Min(0)
   annualPrice: number;

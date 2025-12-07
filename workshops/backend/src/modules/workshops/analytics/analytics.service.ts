@@ -116,12 +116,12 @@ export class AnalyticsService {
 
     // Contar veículos únicos baseado na placa ou VIN
     const uniqueVehicles = new Set<string>();
-    todayVehicles.forEach((order) => {
+    for (const order of todayVehicles) {
       const identifier = order.vehiclePlaca || order.vehicleVin;
       if (identifier) {
         uniqueVehicles.add(identifier);
       }
-    });
+    }
 
     // Tempo médio por OS (concluídas)
     const avgTimeResult = await this.prisma.serviceOrder.aggregate({
@@ -205,12 +205,13 @@ export class AnalyticsService {
     });
     const lastMonthRevenue = Number(lastMonthRevenueResult._sum.totalCost || 0);
 
-    const revenueGrowth =
-      lastMonthRevenue > 0
-        ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
-        : currentMonthRevenue > 0
-          ? 100
-          : 0;
+    let revenueGrowth = 0;
+    if (lastMonthRevenue > 0) {
+      revenueGrowth =
+        ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+    } else if (currentMonthRevenue > 0) {
+      revenueGrowth = 100;
+    }
 
     return {
       todayServiceOrders,
@@ -315,7 +316,7 @@ export class AnalyticsService {
       { count: number; totalCost: number }
     >();
 
-    problems.forEach((order) => {
+    for (const order of problems) {
       if (order.identifiedProblem) {
         const problemName = order.identifiedProblem.name;
         const existing = problemCounts.get(problemName) || {
@@ -327,7 +328,7 @@ export class AnalyticsService {
           totalCost: existing.totalCost + Number(order.totalCost || 0),
         });
       }
-    });
+    }
 
     const totalProblems = problems.length;
     const result: CommonProblemDto[] = Array.from(problemCounts.entries())
@@ -371,7 +372,7 @@ export class AnalyticsService {
       { quantity: number; totalValue: number }
     >();
 
-    partsData.forEach((part) => {
+    for (const part of partsData) {
       const existing = partStats.get(part.partName) || {
         quantity: 0,
         totalValue: 0,
@@ -380,7 +381,7 @@ export class AnalyticsService {
         quantity: existing.quantity + part.quantity,
         totalValue: existing.totalValue + Number(part.totalCost),
       });
-    });
+    }
 
     return Array.from(partStats.entries())
       .map(([partName, stats]) => ({
@@ -430,7 +431,7 @@ export class AnalyticsService {
       }
     >();
 
-    mechanicData.forEach((order) => {
+    for (const order of mechanicData) {
       if (order.technician) {
         const mechanicId = order.technician.id;
         const existing = mechanicStats.get(mechanicId) || {
@@ -448,7 +449,7 @@ export class AnalyticsService {
           totalRevenue: existing.totalRevenue + Number(order.totalCost || 0),
         });
       }
-    });
+    }
 
     return Array.from(mechanicStats.entries())
       .map(([, stats]) => ({
@@ -490,7 +491,7 @@ export class AnalyticsService {
       take: 5,
     });
 
-    overdueServiceOrders.forEach((order) => {
+    for (const order of overdueServiceOrders) {
       alerts.push({
         type: 'overdue_service_order',
         severity: 'high',
@@ -498,7 +499,7 @@ export class AnalyticsService {
         description: `Cliente: ${order.customer?.name || 'N/A'} - Iniciada há ${Math.floor((Date.now() - order.startedAt!.getTime()) / (24 * 60 * 60 * 1000))} dias`,
         data: { serviceOrderId: order.id },
       });
-    });
+    }
 
     // Peças com estoque baixo
     const lowStockParts = await this.prisma.part.findMany({
@@ -512,7 +513,7 @@ export class AnalyticsService {
       take: 5,
     });
 
-    lowStockParts.forEach((part) => {
+    for (const part of lowStockParts) {
       alerts.push({
         type: 'low_stock',
         severity: part.quantity === 0 ? 'urgent' : 'medium',
@@ -520,7 +521,7 @@ export class AnalyticsService {
         description: `${part.name} - Quantidade: ${part.quantity}`,
         data: { partId: part.id },
       });
-    });
+    }
 
     // Manutenções vencidas
     const overdueMaintenances =
@@ -541,7 +542,7 @@ export class AnalyticsService {
         take: 5,
       });
 
-    overdueMaintenances.forEach((schedule) => {
+    for (const schedule of overdueMaintenances) {
       alerts.push({
         type: 'due_maintenance',
         severity: 'high',
@@ -549,7 +550,7 @@ export class AnalyticsService {
         description: `${schedule.vehicle.placa || 'Veículo'} - ${schedule.name}`,
         data: { scheduleId: schedule.id, vehicleId: schedule.vehicleId },
       });
-    });
+    }
 
     // Orçamentos aguardando aprovação (mais de 3 dias)
     const pendingQuotes = await this.prisma.quote.findMany({
@@ -570,7 +571,7 @@ export class AnalyticsService {
       take: 5,
     });
 
-    pendingQuotes.forEach((quote) => {
+    for (const quote of pendingQuotes) {
       alerts.push({
         type: 'pending_quote',
         severity: 'medium',
@@ -578,7 +579,7 @@ export class AnalyticsService {
         description: `Cliente: ${quote.customer?.name || 'N/A'} - ${quote.number}`,
         data: { quoteId: quote.id },
       });
-    });
+    }
 
     return alerts;
   }

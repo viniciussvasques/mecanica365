@@ -3226,7 +3226,7 @@ export class QuotesService {
   /**
    * Converte Prisma Quote para QuoteResponseDto
    */
-  private toResponseDto = (quote: {
+  private readonly toResponseDto = (quote: {
     id: string;
     tenantId: string;
     number: string;

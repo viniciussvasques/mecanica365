@@ -85,70 +85,9 @@ export class KnowledgeService {
     filters: KnowledgeFiltersDto,
   ): Promise<KnowledgeSummaryDto[]> {
     try {
-      const where: Prisma.KnowledgeBaseWhereInput = {
-        tenantId,
-        isActive: filters.isActive !== undefined ? filters.isActive : true,
-      };
+      const where = this.buildWhereClause(tenantId, filters);
+      const orderBy = this.buildOrderByClause(filters);
 
-      // Filtro por categoria
-      if (filters.category) {
-        where.category = filters.category;
-      }
-
-      // Filtro por soluções verificadas
-      if (filters.isVerified !== undefined) {
-        where.isVerified = filters.isVerified;
-      }
-
-      // Filtro por marca de veículo - usando abordagem diferente para campos JSON
-      // Como o Prisma não suporta filtros complexos em JSON, vamos buscar tudo e filtrar depois
-
-      // Busca por texto
-      if (filters.search) {
-        where.OR = [
-          {
-            problemTitle: {
-              contains: filters.search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            problemDescription: {
-              contains: filters.search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            solutionTitle: {
-              contains: filters.search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            solutionDescription: {
-              contains: filters.search,
-              mode: 'insensitive',
-            },
-          },
-        ];
-      }
-
-      // Ordenação
-      const orderBy: Prisma.KnowledgeBaseOrderByWithRelationInput = {};
-      const sortBy = filters.sortBy || 'createdAt';
-      const sortOrder = filters.sortOrder || 'desc';
-
-      if (sortBy === 'rating') {
-        orderBy.rating = sortOrder === 'desc' ? 'desc' : 'asc';
-      } else if (sortBy === 'successCount') {
-        orderBy.successCount = sortOrder === 'desc' ? 'desc' : 'asc';
-      } else if (sortBy === 'viewCount') {
-        orderBy.viewCount = sortOrder === 'desc' ? 'desc' : 'asc';
-      } else {
-        orderBy.createdAt = sortOrder === 'desc' ? 'desc' : 'asc';
-      }
-
-      // Buscar todos os registros que atendem aos filtros básicos
       let knowledge = await this.prisma.knowledgeBase.findMany({
         where,
         orderBy,
@@ -168,61 +107,8 @@ export class KnowledgeService {
         },
       });
 
-      // Aplicar filtros nos campos JSON manualmente
-      if (filters.vehicleMake) {
-        knowledge = knowledge.filter((item) => {
-          const makes = Array.isArray(item.vehicleMakes)
-            ? item.vehicleMakes
-            : [];
-          return makes.some((make: unknown) =>
-            make.make
-              ?.toLowerCase()
-              .includes(filters.vehicleMake!.toLowerCase()),
-          );
-        });
-      }
-
-      if (filters.vehicleModel) {
-        knowledge = knowledge.filter((item) => {
-          const models = Array.isArray(item.vehicleModels)
-            ? item.vehicleModels
-            : [];
-          return models.some((model: unknown) =>
-            model.model
-              ?.toLowerCase()
-              .includes(filters.vehicleModel!.toLowerCase()),
-          );
-        });
-      }
-
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        knowledge = knowledge.filter((item) => {
-          const symptoms = Array.isArray(item.symptoms) ? item.symptoms : [];
-          const symptomText = symptoms
-            .map((s: unknown) => s.symptom || '')
-            .join(' ')
-            .toLowerCase();
-          return (
-            item.problemTitle.toLowerCase().includes(searchLower) ||
-            item.solutionTitle.toLowerCase().includes(searchLower) ||
-            symptomText.includes(searchLower)
-          );
-        });
-      }
-
-      // Remover campos JSON dos resultados finais
-      return knowledge.map((item) => ({
-        id: item.id,
-        problemTitle: item.problemTitle,
-        category: item.category,
-        solutionTitle: item.solutionTitle,
-        successCount: item.successCount,
-        rating: item.rating ? Number(item.rating) : undefined,
-        isVerified: item.isVerified,
-        createdByName: item.createdByName,
-        createdAt: item.createdAt,
-      }));
+      knowledge = this.applyJsonFilters(knowledge, filters);
+      return this.mapToSummaryDto(knowledge);
     } catch (error) {
       this.logger.error(
         `Erro ao buscar entradas da base de conhecimento: ${getErrorMessage(error)}`,
@@ -230,6 +116,189 @@ export class KnowledgeService {
       );
       throw error;
     }
+  }
+
+  private buildWhereClause(
+    tenantId: string,
+    filters: KnowledgeFiltersDto,
+  ): Prisma.KnowledgeBaseWhereInput {
+    const where: Prisma.KnowledgeBaseWhereInput = {
+      tenantId,
+      isActive: filters.isActive ?? true,
+    };
+
+    if (filters.category) {
+      where.category = filters.category;
+    }
+
+    if (filters.isVerified !== undefined) {
+      where.isVerified = filters.isVerified;
+    }
+
+    if (filters.search) {
+      where.OR = this.buildSearchOrClause(filters.search);
+    }
+
+    return where;
+  }
+
+  private buildSearchOrClause(search: string) {
+    return [
+      {
+        problemTitle: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      },
+      {
+        problemDescription: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      },
+      {
+        solutionTitle: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      },
+      {
+        solutionDescription: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      },
+    ];
+  }
+
+  private buildOrderByClause(
+    filters: KnowledgeFiltersDto,
+  ): Prisma.KnowledgeBaseOrderByWithRelationInput {
+    const orderBy: Prisma.KnowledgeBaseOrderByWithRelationInput = {};
+    const sortBy = filters.sortBy || 'createdAt';
+    const sortOrder = filters.sortOrder || 'desc';
+    const direction = sortOrder === 'desc' ? 'desc' : 'asc';
+
+    if (sortBy === 'rating') {
+      orderBy.rating = direction;
+    } else if (sortBy === 'successCount') {
+      orderBy.successCount = direction;
+    } else if (sortBy === 'viewCount') {
+      orderBy.viewCount = direction;
+    } else {
+      orderBy.createdAt = direction;
+    }
+
+    return orderBy;
+  }
+
+  private applyJsonFilters(
+    knowledge: Array<{
+      id: string;
+      problemTitle: string;
+      solutionTitle: string;
+      vehicleMakes: unknown;
+      vehicleModels: unknown;
+      symptoms: unknown;
+    }>,
+    filters: KnowledgeFiltersDto,
+  ) {
+    let filtered = knowledge;
+
+    if (filters.vehicleMake) {
+      filtered = this.filterByVehicleMake(filtered, filters.vehicleMake);
+    }
+
+    if (filters.vehicleModel) {
+      filtered = this.filterByVehicleModel(filtered, filters.vehicleModel);
+    }
+
+    if (filters.search) {
+      filtered = this.filterBySearchInSymptoms(filtered, filters.search);
+    }
+
+    return filtered;
+  }
+
+  private filterByVehicleMake(
+    knowledge: Array<{ vehicleMakes: unknown }>,
+    vehicleMake: string,
+  ) {
+    const makeLower = vehicleMake.toLowerCase();
+    return knowledge.filter((item) => {
+      const makes = Array.isArray(item.vehicleMakes)
+        ? item.vehicleMakes
+        : [];
+      return makes.some((make: { make?: string }) =>
+        make.make?.toLowerCase().includes(makeLower),
+      );
+    });
+  }
+
+  private filterByVehicleModel(
+    knowledge: Array<{ vehicleModels: unknown }>,
+    vehicleModel: string,
+  ) {
+    const modelLower = vehicleModel.toLowerCase();
+    return knowledge.filter((item) => {
+      const models = Array.isArray(item.vehicleModels)
+        ? item.vehicleModels
+        : [];
+      return models.some((model: { model?: string }) =>
+        model.model?.toLowerCase().includes(modelLower),
+      );
+    });
+  }
+
+  private filterBySearchInSymptoms(
+    knowledge: Array<{
+      problemTitle: string;
+      solutionTitle: string;
+      symptoms: unknown;
+    }>,
+    search: string,
+  ) {
+    const searchLower = search.toLowerCase();
+    return knowledge.filter((item) => {
+      const symptoms = Array.isArray(item.symptoms) ? item.symptoms : [];
+      const symptomText = symptoms
+        .map((s: { symptom?: string } | string) =>
+          typeof s === 'string' ? s : s.symptom || '',
+        )
+        .join(' ')
+        .toLowerCase();
+      return (
+        item.problemTitle.toLowerCase().includes(searchLower) ||
+        item.solutionTitle.toLowerCase().includes(searchLower) ||
+        symptomText.includes(searchLower)
+      );
+    });
+  }
+
+  private mapToSummaryDto(
+    knowledge: Array<{
+      id: string;
+      problemTitle: string;
+      category: string;
+      solutionTitle: string;
+      successCount: number;
+      rating: unknown;
+      isVerified: boolean;
+      createdByName: string;
+      createdAt: Date;
+    }>,
+  ): KnowledgeSummaryDto[] {
+    return knowledge.map((item) => ({
+      id: item.id,
+      problemTitle: item.problemTitle,
+      category: item.category,
+      solutionTitle: item.solutionTitle,
+      successCount: item.successCount,
+      rating: item.rating ? Number(item.rating) : undefined,
+      isVerified: item.isVerified,
+      createdByName: item.createdByName,
+      createdAt: item.createdAt,
+    }));
   }
 
   /**
@@ -453,11 +522,10 @@ export class KnowledgeService {
             ? item.symptoms
             : [];
           return symptoms.some((searchSymptom) =>
-            itemSymptoms.some((itemSymptom: unknown) =>
-              itemSymptom.symptom
-                ?.toLowerCase()
-                .includes(searchSymptom.toLowerCase()),
-            ),
+            itemSymptoms.some((itemSymptom: { symptom?: string } | string) => {
+              const symptom = typeof itemSymptom === 'string' ? itemSymptom : itemSymptom.symptom;
+              return symptom?.toLowerCase().includes(searchSymptom.toLowerCase());
+            }),
           );
         })
         .slice(0, 5);
@@ -485,27 +553,31 @@ export class KnowledgeService {
   /**
    * Converter entidade do banco para DTO de resposta
    */
-  private toResponseDto(knowledge: unknown): KnowledgeResponseDto {
+  private toResponseDto(
+    knowledge: Prisma.KnowledgeBaseGetPayload<Record<string, never>>,
+  ): KnowledgeResponseDto {
     return {
       id: knowledge.id,
       tenantId: knowledge.tenantId,
       problemTitle: knowledge.problemTitle,
       problemDescription: knowledge.problemDescription,
-      symptoms: Array.isArray(knowledge.symptoms) ? knowledge.symptoms : [],
+      symptoms: Array.isArray(knowledge.symptoms)
+        ? (knowledge.symptoms as Array<{ symptom: string }>)
+        : [],
       category: knowledge.category,
       vehicleMakes: Array.isArray(knowledge.vehicleMakes)
-        ? knowledge.vehicleMakes
+        ? (knowledge.vehicleMakes as Array<{ make: string }>)
         : [],
       vehicleModels: Array.isArray(knowledge.vehicleModels)
-        ? knowledge.vehicleModels
+        ? (knowledge.vehicleModels as Array<{ model: string }>)
         : [],
       solutionTitle: knowledge.solutionTitle,
       solutionDescription: knowledge.solutionDescription,
       solutionSteps: Array.isArray(knowledge.solutionSteps)
-        ? knowledge.solutionSteps
+        ? (knowledge.solutionSteps as Array<{ step: number; description: string }>)
         : [],
       partsNeeded: Array.isArray(knowledge.partsNeeded)
-        ? knowledge.partsNeeded
+        ? (knowledge.partsNeeded as Array<{ name: string; partNumber?: string; avgCost?: number }>)
         : [],
       estimatedCost: knowledge.estimatedCost
         ? Number(knowledge.estimatedCost)

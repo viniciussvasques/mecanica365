@@ -192,7 +192,7 @@ export class CreateKnowledgeDto {
 
   @ApiPropertyOptional({
     description: 'Custo estimado da solução',
-    example: 150.0,
+    example: 150,
   })
   @IsNumber()
   @Min(0, { message: 'Custo deve ser positivo' })

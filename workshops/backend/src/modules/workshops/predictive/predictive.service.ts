@@ -54,7 +54,7 @@ export class PredictiveService {
       });
 
       // Buscar manutenções programadas ativas
-      const scheduledMaintenances =
+      const scheduledMaintenancesRaw =
         await this.prisma.vehicleMaintenanceSchedule.findMany({
           where: {
             tenantId,
@@ -62,6 +62,18 @@ export class PredictiveService {
             status: { in: ['pending', 'due'] },
           },
         });
+
+      // Mapear para o formato esperado
+      const scheduledMaintenances = scheduledMaintenancesRaw.map((s) => ({
+        id: s.id,
+        maintenanceName: s.name,
+        category: s.category,
+        dueKm: s.nextDueKm,
+        dueDate: s.nextDueDate,
+        priority: s.priority,
+        vehicleId: s.vehicleId, // Sempre presente no schema
+        estimatedCost: s.estimatedCost,
+      }));
 
       // Buscar padrões de veículos similares
       const similarVehiclesPatterns = await this.getSimilarVehiclesPatterns(
@@ -108,61 +120,15 @@ export class PredictiveService {
     tenantId: string,
   ): Promise<PredictionAlertDto[]> {
     try {
+      const vehicles = await this.fetchAllVehicles(tenantId);
       const alerts: PredictionAlertDto[] = [];
 
-      // Buscar todos os veículos ativos
-      const vehicles = await this.prisma.customerVehicle.findMany({
-        where: {
-          customer: {
-            tenantId: tenantId,
-          },
-        },
-        select: {
-          id: true,
-          placa: true,
-          make: true,
-          model: true,
-          year: true,
-          mileage: true,
-        },
-      });
-
       for (const vehicle of vehicles) {
-        const vehiclePredictions = await this.generateVehiclePredictions(
+        const vehicleAlerts = await this.generateAlertsForVehicle(
           tenantId,
-          vehicle.id,
+          vehicle,
         );
-
-        // Criar alertas para previsões urgentes
-        for (const prediction of vehiclePredictions.predictions) {
-          if (
-            prediction.urgency === 'urgent' ||
-            prediction.urgency === 'high'
-          ) {
-            const alert: PredictionAlertDto = {
-              alertId: `${prediction.id}_alert`,
-              vehicleId: prediction.vehicleId,
-              placa: vehicle.placa || '',
-              alertType:
-                prediction.daysUntilMaintenance <= 0
-                  ? 'overdue_maintenance'
-                  : prediction.daysUntilMaintenance <= 7
-                    ? 'critical_maintenance'
-                    : 'upcoming_maintenance',
-              severity: prediction.urgency,
-              title: `Manutenção ${prediction.urgency === 'urgent' ? 'Urgente' : 'Importante'}`,
-              message: `${prediction.maintenanceName} prevista para ${prediction.predictedKm ? `${prediction.predictedKm}km` : prediction.predictedDate?.toLocaleDateString('pt-BR')}`,
-              maintenanceName: prediction.maintenanceName,
-              recommendedKm: prediction.predictedKm,
-              recommendedDate: prediction.predictedDate,
-              daysRemaining: prediction.daysUntilMaintenance,
-              kmRemaining: prediction.kmUntilMaintenance,
-              recommendedActions: prediction.recommendations,
-              createdAt: new Date(),
-            };
-            alerts.push(alert);
-          }
-        }
+        alerts.push(...vehicleAlerts);
       }
 
       return alerts;
@@ -173,6 +139,92 @@ export class PredictiveService {
       );
       throw error;
     }
+  }
+
+  private async fetchAllVehicles(tenantId: string) {
+    return this.prisma.customerVehicle.findMany({
+      where: {
+        customer: {
+          tenantId: tenantId,
+        },
+      },
+      select: {
+        id: true,
+        placa: true,
+        make: true,
+        model: true,
+        year: true,
+        mileage: true,
+      },
+    });
+  }
+
+  private async generateAlertsForVehicle(
+    tenantId: string,
+    vehicle: { id: string; placa: string | null },
+  ): Promise<PredictionAlertDto[]> {
+    const vehiclePredictions = await this.generateVehiclePredictions(
+      tenantId,
+      vehicle.id,
+    );
+
+    return vehiclePredictions.predictions
+      .filter(
+        (prediction) =>
+          prediction.urgency === 'urgent' || prediction.urgency === 'high',
+      )
+      .map((prediction) =>
+        this.createAlertFromPrediction(prediction, vehicle),
+      );
+  }
+
+  private createAlertFromPrediction(
+    prediction: MaintenancePredictionDto,
+    vehicle: { placa: string | null },
+  ): PredictionAlertDto {
+    return {
+      alertId: `${prediction.id}_alert`,
+      vehicleId: prediction.vehicleId,
+      placa: vehicle.placa || '',
+      alertType: this.determineAlertType(prediction.daysUntilMaintenance),
+      severity: prediction.urgency,
+      title: this.createAlertTitle(prediction.urgency),
+      message: this.createAlertMessage(prediction),
+      maintenanceName: prediction.maintenanceName,
+      recommendedKm: prediction.predictedKm,
+      recommendedDate: prediction.predictedDate,
+      daysRemaining: prediction.daysUntilMaintenance,
+      kmRemaining: prediction.kmUntilMaintenance,
+      recommendedActions: prediction.recommendations,
+      createdAt: new Date(),
+    };
+  }
+
+  private determineAlertType(
+    daysUntilMaintenance: number,
+  ): 'overdue_maintenance' | 'critical_maintenance' | 'upcoming_maintenance' {
+    if (daysUntilMaintenance <= 0) {
+      return 'overdue_maintenance';
+    }
+    if (daysUntilMaintenance <= 7) {
+      return 'critical_maintenance';
+    }
+    return 'upcoming_maintenance';
+  }
+
+  private createAlertTitle(urgency: string): string {
+    const urgencyText = urgency === 'urgent' ? 'Urgente' : 'Importante';
+    return `Manutenção ${urgencyText}`;
+  }
+
+  private createAlertMessage(prediction: MaintenancePredictionDto): string {
+    const dateStr = prediction.predictedDate?.toLocaleDateString('pt-BR');
+    const kmStr = prediction.predictedKm
+      ? `${prediction.predictedKm}km`
+      : undefined;
+    const whenStr = kmStr || dateStr || 'data não definida';
+    const message = `${prediction.maintenanceName} prevista para ${whenStr}`;
+    return message;
   }
 
   /**
@@ -245,10 +297,10 @@ export class PredictiveService {
    * Calcula previsões baseadas em dados históricos
    */
   private async calculatePredictions(
-    vehicle: unknown,
-    maintenanceHistory: unknown[],
-    scheduledMaintenances: unknown[],
-    similarVehiclesPatterns: unknown[],
+    vehicle: { id: string; mileage: number | null; make: string | null; model: string | null; year: number | null },
+    maintenanceHistory: Array<{ id: string; category: string; performedAt: Date; mileageAtService: number | null; nextDueKm: number | null; nextDueDate: Date | null }>,
+    scheduledMaintenances: Array<{ id: string; maintenanceName: string; category: string; dueKm: number | null; dueDate: Date | null; priority: string; vehicleId: string; estimatedCost?: any }>,
+    similarVehiclesPatterns: Array<{ category: string; avgInterval: number; count: number }>,
   ): Promise<MaintenancePredictionDto[]> {
     const predictions: MaintenancePredictionDto[] = [];
     const currentKm = vehicle.mileage || 0;
@@ -286,7 +338,7 @@ export class PredictiveService {
    * Cria previsão baseada em manutenção programada
    */
   private createPredictionFromScheduled(
-    scheduled: unknown,
+    scheduled: { id: string; maintenanceName: string; category: string; dueKm: number | null; dueDate: Date | null; priority: string; vehicleId: string; estimatedCost?: any },
     currentKm: number,
     currentDate: Date,
   ): MaintenancePredictionDto | null {
@@ -338,7 +390,7 @@ export class PredictiveService {
         ? Number(scheduled.estimatedCost)
         : undefined,
       recommendations: [
-        `Agendada para ${predictedKm ? `${predictedKm}km` : predictedDate?.toLocaleDateString('pt-BR')}`,
+        this.formatScheduledRecommendation(predictedKm, predictedDate),
         'Verificar peças necessárias',
         'Agendar com antecedência',
       ],
@@ -349,109 +401,205 @@ export class PredictiveService {
    * Gera previsões baseadas em padrões históricos
    */
   private async generatePatternBasedPredictions(
-    vehicle: unknown,
-    maintenanceHistory: unknown[],
-    similarVehiclesPatterns: unknown[],
+    vehicle: { id: string; mileage: number | null; make: string | null; model: string | null; year: number | null },
+    maintenanceHistory: Array<{ id: string; category: string; performedAt: Date; mileageAtService: number | null; nextDueKm: number | null; nextDueDate: Date | null }>,
+    similarVehiclesPatterns: Array<{ category: string; avgInterval: number; count: number }>,
     currentKm: number,
     currentDate: Date,
   ): Promise<MaintenancePredictionDto[]> {
+    const kmPredictions = this.generateKmBasedPredictions(
+      vehicle,
+      maintenanceHistory,
+      currentKm,
+      currentDate,
+    );
+    const timePredictions = this.generateTimeBasedPredictions(
+      vehicle,
+      maintenanceHistory,
+      currentKm,
+      currentDate,
+    );
+
+    return [...kmPredictions, ...timePredictions];
+  }
+
+  private generateKmBasedPredictions(
+    vehicle: { id: string },
+    maintenanceHistory: Array<{ id: string; category: string; performedAt: Date; mileageAtService: number | null }>,
+    currentKm: number,
+    currentDate: Date,
+  ): MaintenancePredictionDto[] {
+    const kmPatterns = this.analyzeKmPatterns(maintenanceHistory);
     const predictions: MaintenancePredictionDto[] = [];
 
-    // Análise de padrões por quilometragem
-    const kmPatterns = this.analyzeKmPatterns(maintenanceHistory);
     for (const pattern of kmPatterns) {
-      if (pattern.avgInterval > 0) {
-        const lastMaintenance = maintenanceHistory
-          .filter((h) => h.category === pattern.category)
-          .sort((a, b) => b.performedAt.getTime() - a.performedAt.getTime())[0];
+      if (pattern.avgInterval <= 0) continue;
 
-        if (lastMaintenance) {
-          const lastKm = lastMaintenance.mileageAtService || 0;
-          const predictedKm = lastKm + pattern.avgInterval;
-          const kmUntilMaintenance = predictedKm - currentKm;
+      const prediction = this.createKmPrediction(
+        vehicle,
+        pattern,
+        maintenanceHistory,
+        currentKm,
+        currentDate,
+      );
 
-          if (kmUntilMaintenance > -5000) {
-            // Não mostrar previsões muito antigas
-            predictions.push({
-              id: `pattern_km_${pattern.category}_${Date.now()}`,
-              vehicleId: vehicle.id,
-              maintenanceName: `${pattern.category} (baseado em padrão)`,
-              category: pattern.category,
-              intervalType: 'km',
-              intervalValue: pattern.avgInterval,
-              currentKm,
-              currentDate,
-              predictedKm,
-              kmUntilMaintenance,
-              daysUntilMaintenance: Math.round(kmUntilMaintenance / 50), // Estimativa baseada em uso médio
-              urgency: this.calculateUrgency(kmUntilMaintenance, undefined),
-              confidence: Math.min(80, pattern.count * 10), // Confiança baseada em histórico
-              basedOnHistoryCount: pattern.count,
-              recommendations: [
-                `Baseado em ${pattern.count} manutenções similares`,
-                `Intervalo médio: ${pattern.avgInterval}km`,
-                'Considere agendamento preventivo',
-              ],
-            });
-          }
-        }
-      }
-    }
-
-    // Análise de padrões por tempo
-    const timePatterns = this.analyzeTimePatterns(maintenanceHistory);
-    for (const pattern of timePatterns) {
-      if (pattern.avgIntervalMonths > 0) {
-        const lastMaintenance = maintenanceHistory
-          .filter((h) => h.category === pattern.category)
-          .sort((a, b) => b.performedAt.getTime() - a.performedAt.getTime())[0];
-
-        if (lastMaintenance) {
-          const predictedDate = new Date(lastMaintenance.performedAt);
-          predictedDate.setMonth(
-            predictedDate.getMonth() + pattern.avgIntervalMonths,
-          );
-
-          const daysUntilMaintenance = Math.ceil(
-            (predictedDate.getTime() - currentDate.getTime()) /
-              (1000 * 60 * 60 * 24),
-          );
-
-          if (daysUntilMaintenance > -90) {
-            // Não mostrar previsões muito antigas
-            predictions.push({
-              id: `pattern_time_${pattern.category}_${Date.now()}`,
-              vehicleId: vehicle.id,
-              maintenanceName: `${pattern.category} (baseado em tempo)`,
-              category: pattern.category,
-              intervalType: 'months',
-              intervalValue: pattern.avgIntervalMonths,
-              currentKm,
-              currentDate,
-              predictedDate,
-              kmUntilMaintenance: Math.round(daysUntilMaintenance * 50), // Estimativa
-              daysUntilMaintenance,
-              urgency: this.calculateUrgency(undefined, daysUntilMaintenance),
-              confidence: Math.min(75, pattern.count * 8),
-              basedOnHistoryCount: pattern.count,
-              recommendations: [
-                `Baseado em ${pattern.count} manutenções similares`,
-                `Intervalo médio: ${pattern.avgIntervalMonths} meses`,
-                'Manutenção preventiva recomendada',
-              ],
-            });
-          }
-        }
+      if (prediction) {
+        predictions.push(prediction);
       }
     }
 
     return predictions;
   }
 
+  private createKmPrediction(
+    vehicle: { id: string },
+    pattern: { category: string; avgInterval: number; count: number },
+    maintenanceHistory: Array<{ category: string; performedAt: Date; mileageAtService: number | null }>,
+    currentKm: number,
+    currentDate: Date,
+  ): MaintenancePredictionDto | null {
+    const lastMaintenance = this.findLastMaintenanceByCategory(
+      maintenanceHistory,
+      pattern.category,
+    );
+
+    if (!lastMaintenance) {
+      return null;
+    }
+
+    const lastKm = lastMaintenance.mileageAtService || 0;
+    const predictedKm = lastKm + pattern.avgInterval;
+    const kmUntilMaintenance = predictedKm - currentKm;
+
+    if (kmUntilMaintenance <= -5000) return null;
+
+    return {
+      id: `pattern_km_${pattern.category}_${Date.now()}`,
+      vehicleId: vehicle.id,
+      maintenanceName: `${pattern.category} (baseado em padrão)`,
+      category: pattern.category,
+      intervalType: 'km',
+      intervalValue: pattern.avgInterval,
+      currentKm,
+      currentDate,
+      predictedKm,
+      kmUntilMaintenance,
+      daysUntilMaintenance: Math.round(kmUntilMaintenance / 50),
+      urgency: this.calculateUrgency(kmUntilMaintenance),
+      confidence: Math.min(80, pattern.count * 10),
+      basedOnHistoryCount: pattern.count,
+      recommendations: [
+        `Baseado em ${pattern.count} manutenções similares`,
+        `Intervalo médio: ${pattern.avgInterval}km`,
+        'Considere agendamento preventivo',
+      ],
+    };
+  }
+
+  private generateTimeBasedPredictions(
+    vehicle: { id: string },
+    maintenanceHistory: Array<{ id: string; category: string; performedAt: Date }>,
+    currentKm: number,
+    currentDate: Date,
+  ): MaintenancePredictionDto[] {
+    const timePatterns = this.analyzeTimePatterns(maintenanceHistory);
+    const predictions: MaintenancePredictionDto[] = [];
+
+    for (const pattern of timePatterns) {
+      if (pattern.avgIntervalMonths <= 0) continue;
+
+      const prediction = this.createTimePrediction(
+        vehicle,
+        pattern,
+        maintenanceHistory,
+        currentKm,
+        currentDate,
+      );
+
+      if (prediction) {
+        predictions.push(prediction);
+      }
+    }
+
+    return predictions;
+  }
+
+  private createTimePrediction(
+    vehicle: { id: string },
+    pattern: { category: string; avgIntervalMonths: number; count: number },
+    maintenanceHistory: Array<{ category: string; performedAt: Date }>,
+    currentKm: number,
+    currentDate: Date,
+  ): MaintenancePredictionDto | null {
+    const lastMaintenance = this.findLastMaintenanceByCategory(
+      maintenanceHistory,
+      pattern.category,
+    );
+
+    if (!lastMaintenance) {
+      return null;
+    }
+
+    const predictedDate = new Date(lastMaintenance.performedAt);
+    predictedDate.setMonth(
+      predictedDate.getMonth() + pattern.avgIntervalMonths,
+    );
+
+    const daysUntilMaintenance = Math.ceil(
+      (predictedDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (daysUntilMaintenance <= -90) return null;
+
+    return {
+      id: `pattern_time_${pattern.category}_${Date.now()}`,
+      vehicleId: vehicle.id,
+      maintenanceName: `${pattern.category} (baseado em tempo)`,
+      category: pattern.category,
+      intervalType: 'months',
+      intervalValue: pattern.avgIntervalMonths,
+      currentKm,
+      currentDate,
+      predictedDate,
+      kmUntilMaintenance: Math.round(daysUntilMaintenance * 50),
+      daysUntilMaintenance,
+      urgency: this.calculateUrgencyByDays(daysUntilMaintenance),
+      confidence: Math.min(75, pattern.count * 8),
+      basedOnHistoryCount: pattern.count,
+      recommendations: [
+        `Baseado em ${pattern.count} manutenções similares`,
+        `Intervalo médio: ${pattern.avgIntervalMonths} meses`,
+        'Manutenção preventiva recomendada',
+      ],
+    };
+  }
+
+  private findLastMaintenanceByCategory<T extends { category: string; performedAt: Date }>(
+    maintenanceHistory: T[],
+    category: string,
+  ): T | undefined {
+    return maintenanceHistory
+      .filter((h) => h.category === category)
+      .sort((a, b) => b.performedAt.getTime() - a.performedAt.getTime())[0];
+  }
+
+  private formatScheduledRecommendation(
+    predictedKm: number | undefined,
+    predictedDate: Date | undefined,
+  ): string {
+    if (predictedKm) {
+      return `Agendada para ${predictedKm}km`;
+    }
+    if (predictedDate) {
+      return `Agendada para ${predictedDate.toLocaleDateString('pt-BR')}`;
+    }
+    return 'Agendada para data não definida';
+  }
+
   /**
    * Busca padrões de veículos similares
    */
-  private async getSimilarVehiclesPatterns(tenantId: string, vehicle: unknown) {
+  private async getSimilarVehiclesPatterns(tenantId: string, vehicle: { id: string; make: string | null; model: string | null; year: number | null }): Promise<Array<{ category: string; avgInterval: number; count: number }>> {
     // Buscar veículos da mesma marca/modelo através do relacionamento com Customer
     const similarVehicles = await this.prisma.customerVehicle.findMany({
       where: {
@@ -474,39 +622,51 @@ export class PredictiveService {
           tenantId,
           vehicleId: { in: similarVehicles.map((v) => v.id) },
         },
+        select: {
+          category: true,
+          performedAt: true,
+          mileageAtService: true,
+        },
       });
 
-    return similarVehiclesHistory;
+    // Processar histórico para calcular padrões
+    const patterns = this.analyzeKmPatterns(
+      similarVehiclesHistory.map((h) => ({
+        category: h.category,
+        mileageAtService: h.mileageAtService,
+      })),
+    );
+
+    return patterns;
   }
 
   /**
    * Analisa padrões por quilometragem
    */
-  private analyzeKmPatterns(history: unknown[]) {
+  private analyzeKmPatterns(history: Array<{ category: string; mileageAtService: number | null }>): Array<{ category: string; avgInterval: number; count: number }> {
     const patterns: {
       [category: string]: { intervals: number[]; count: number };
     } = {};
 
     // Agrupar por categoria
-    history.forEach((item, index) => {
-      if (index < history.length - 1) {
-        const nextItem = history[index + 1];
-        if (
-          item.mileageAtService &&
-          nextItem.mileageAtService &&
-          item.category === nextItem.category
-        ) {
-          const interval = item.mileageAtService - nextItem.mileageAtService;
-          if (interval > 0) {
-            if (!patterns[item.category]) {
-              patterns[item.category] = { intervals: [], count: 0 };
-            }
-            patterns[item.category].intervals.push(interval);
-            patterns[item.category].count++;
+    for (let index = 0; index < history.length - 1; index++) {
+      const item = history[index];
+      const nextItem = history[index + 1];
+      if (
+        item.mileageAtService &&
+        nextItem.mileageAtService &&
+        item.category === nextItem.category
+      ) {
+        const interval = item.mileageAtService - nextItem.mileageAtService;
+        if (interval > 0) {
+          if (!patterns[item.category]) {
+            patterns[item.category] = { intervals: [], count: 0 };
           }
+          patterns[item.category].intervals.push(interval);
+          patterns[item.category].count++;
         }
       }
-    });
+    }
 
     // Calcular médias
     return Object.entries(patterns)
@@ -527,28 +687,27 @@ export class PredictiveService {
   /**
    * Analisa padrões por tempo
    */
-  private analyzeTimePatterns(history: unknown[]) {
+  private analyzeTimePatterns(history: Array<{ category: string; performedAt: Date }>) {
     const patterns: {
       [category: string]: { intervals: number[]; count: number };
     } = {};
 
-    history.forEach((item, index) => {
-      if (index < history.length - 1) {
-        const nextItem = history[index + 1];
-        if (item.category === nextItem.category) {
-          const intervalMs =
-            item.performedAt.getTime() - nextItem.performedAt.getTime();
-          const intervalMonths = intervalMs / (1000 * 60 * 60 * 24 * 30); // Aproximadamente
-          if (intervalMonths > 0) {
-            if (!patterns[item.category]) {
-              patterns[item.category] = { intervals: [], count: 0 };
-            }
-            patterns[item.category].intervals.push(intervalMonths);
-            patterns[item.category].count++;
+    for (let index = 0; index < history.length - 1; index++) {
+      const item = history[index];
+      const nextItem = history[index + 1];
+      if (item.category === nextItem.category) {
+        const intervalMs =
+          item.performedAt.getTime() - nextItem.performedAt.getTime();
+        const intervalMonths = intervalMs / (1000 * 60 * 60 * 24 * 30); // Aproximadamente
+        if (intervalMonths > 0) {
+          if (!patterns[item.category]) {
+            patterns[item.category] = { intervals: [], count: 0 };
           }
+          patterns[item.category].intervals.push(intervalMonths);
+          patterns[item.category].count++;
         }
       }
-    });
+    }
 
     return Object.entries(patterns)
       .map(([category, data]) => ({
@@ -592,6 +751,12 @@ export class PredictiveService {
       return 'medium';
     }
     return 'low';
+  }
+
+  private calculateUrgencyByDays(
+    daysRemaining: number,
+  ): 'low' | 'medium' | 'high' | 'urgent' {
+    return this.calculateUrgency(undefined, daysRemaining);
   }
 
   /**
@@ -671,7 +836,10 @@ export class PredictiveService {
             AND category = ${item.category}
             AND "total_cost" IS NOT NULL
         `;
-        const avgCost = (avgCostRaw as unknown[])[0]?.avg_cost || 0;
+        interface AvgCostResult {
+          avg_cost: number | null;
+        }
+        const avgCost = (avgCostRaw as AvgCostResult[])[0]?.avg_cost || 0;
         return {
           name: item.category,
           count: item._count.category,
@@ -709,16 +877,26 @@ export class PredictiveService {
       ORDER BY EXTRACT(MONTH FROM "performed_at")
     `;
 
+    interface MaintenanceByAgeResult {
+      age_range: string;
+      maintenance_count: bigint | number;
+    }
+
+    interface SeasonalPatternResult {
+      month: string;
+      maintenance_count: bigint | number;
+    }
+
     return {
       mostCommonMaintenances,
-      maintenanceByAge: (maintenanceByAgeRaw as unknown[]).map(
-        (item: unknown) => ({
+      maintenanceByAge: (maintenanceByAgeRaw as MaintenanceByAgeResult[]).map(
+        (item) => ({
           ageRange: item.age_range,
           maintenanceCount: Number(item.maintenance_count),
         }),
       ),
-      seasonalPatterns: (seasonalPatternsRaw as unknown[]).map(
-        (item: unknown) => ({
+      seasonalPatterns: (seasonalPatternsRaw as SeasonalPatternResult[]).map(
+        (item) => ({
           month: item.month.trim(),
           maintenanceCount: Number(item.maintenance_count),
         }),

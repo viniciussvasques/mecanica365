@@ -85,7 +85,7 @@ export class CreateMaintenanceTemplateDto {
   @IsOptional()
   items?: MaintenanceItemDto[];
 
-  @ApiPropertyOptional({ description: 'Custo estimado', example: 450.0 })
+  @ApiPropertyOptional({ description: 'Custo estimado', example: 450 })
   @IsNumber()
   @IsOptional()
   @Min(0)

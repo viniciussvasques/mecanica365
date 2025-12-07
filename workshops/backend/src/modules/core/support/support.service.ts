@@ -5,8 +5,10 @@ import {
   SupportPriority,
   SupportCategory,
 } from './dto/create-support-ticket.dto';
-import { SupportStatus } from './dto/support-ticket-response.dto';
-import { SupportTicketResponseDto } from './dto/support-ticket-response.dto';
+import {
+  SupportStatus,
+  SupportTicketResponseDto,
+} from './dto/support-ticket-response.dto';
 import { UpdateSupportTicketDto } from './dto/update-support-ticket.dto';
 import { CreateSupportReplyDto } from './dto/create-support-reply.dto';
 import { SupportTicketFiltersDto } from './dto/support-ticket-filters.dto';

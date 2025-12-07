@@ -77,13 +77,15 @@ export class KnowledgeFiltersDto {
     description: 'Mostrar apenas soluções ativas',
     default: true,
   })
-  @Transform(({ value }) =>
-    value === 'true' || value === undefined
-      ? true
-      : value === 'false'
-        ? false
-        : value,
-  )
+  @Transform(({ value }) => {
+    if (value === 'true' || value === undefined) {
+      return true;
+    }
+    if (value === 'false') {
+      return false;
+    }
+    return value;
+  })
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;

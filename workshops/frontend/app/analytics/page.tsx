@@ -297,7 +297,7 @@ export default function AnalyticsPage() {
                   <div className="flex-1">
                     <p className="text-sm text-[#D0D6DE] font-medium">{problem.problem}</p>
                     <p className="text-xs text-[#7E8691]">
-                      {formatNumber(problem.count)} ocorrências ({formatPercentage(problem.percentage)})
+                      {formatNumber(problem.count)} ocorrências ({formatPercentage(problem.percentage || 0)})
                     </p>
                   </div>
                   {problem.avgCost && (

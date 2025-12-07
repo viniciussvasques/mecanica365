@@ -226,7 +226,7 @@ export class MaintenanceController {
       tenantId,
       vehicleId,
       category,
-      limit ? parseInt(limit, 10) : 50,
+      limit ? Number.parseInt(limit, 10) : 50,
     );
   }
 
@@ -256,7 +256,7 @@ export class MaintenanceController {
   ): Promise<MaintenanceAlertDto[]> {
     return this.maintenanceService.getMaintenanceAlerts(
       tenantId,
-      daysAhead ? parseInt(daysAhead, 10) : 30,
+      daysAhead ? Number.parseInt(daysAhead, 10) : 30,
     );
   }
 
@@ -288,7 +288,7 @@ export class MaintenanceController {
       tenantId,
       templateId,
       vehicleId,
-      currentMileage ? parseInt(currentMileage, 10) : undefined,
+      currentMileage ? Number.parseInt(currentMileage, 10) : undefined,
     );
   }
 }
