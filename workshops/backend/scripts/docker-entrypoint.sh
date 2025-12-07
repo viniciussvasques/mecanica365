@@ -20,7 +20,17 @@ if [ ! -f "/app/node_modules/.prisma/client/index.js" ]; then
   npx prisma generate --schema=./prisma/schema.prisma
   echo "✅ Prisma Client regenerado!"
 else
-  echo "✅ Prisma Client já está configurado!"
+  # Sempre regenerar para garantir que está atualizado com o schema mais recente
+  echo "🔨 Regenerando Prisma Client para garantir tipos atualizados..."
+  npx prisma generate --schema=./prisma/schema.prisma
+  echo "✅ Prisma Client atualizado!"
+fi
+
+# Verificar se @nestjs/schedule está instalado
+if [ ! -d "/app/node_modules/@nestjs/schedule" ]; then
+  echo "📦 Instalando @nestjs/schedule..."
+  npm install @nestjs/schedule
+  echo "✅ @nestjs/schedule instalado!"
 fi
 
 # Executar comando original
