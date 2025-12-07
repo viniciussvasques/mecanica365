@@ -51,10 +51,13 @@ CREATE INDEX IF NOT EXISTS "restore_operations_status_idx" ON "restore_operation
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "restore_operations_backup_id_idx" ON "restore_operations"("backup_id");
 
--- AddForeignKey
+-- AddForeignKey para backups_tenant_id_fkey (apenas se tenants existir)
 DO $$ 
 BEGIN
-    IF NOT EXISTS (
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'tenants'
+    ) AND NOT EXISTS (
         SELECT 1 FROM pg_constraint 
         WHERE conname = 'backups_tenant_id_fkey'
     ) THEN
@@ -63,7 +66,7 @@ BEGIN
     END IF;
 END $$;
 
--- AddForeignKey
+-- AddForeignKey para restore_operations_backup_id_fkey
 DO $$ 
 BEGIN
     IF NOT EXISTS (
@@ -75,10 +78,13 @@ BEGIN
     END IF;
 END $$;
 
--- AddForeignKey
+-- AddForeignKey para restore_operations_tenant_id_fkey (apenas se tenants existir)
 DO $$ 
 BEGIN
-    IF NOT EXISTS (
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'tenants'
+    ) AND NOT EXISTS (
         SELECT 1 FROM pg_constraint 
         WHERE conname = 'restore_operations_tenant_id_fkey'
     ) THEN
