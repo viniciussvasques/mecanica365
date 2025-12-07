@@ -88,7 +88,7 @@ export class KnowledgeService {
       const where = this.buildWhereClause(tenantId, filters);
       const orderBy = this.buildOrderByClause(filters);
 
-      let knowledge = await this.prisma.knowledgeBase.findMany({
+      const knowledgeResult = await this.prisma.knowledgeBase.findMany({
         where,
         orderBy,
         select: {
@@ -107,7 +107,7 @@ export class KnowledgeService {
         },
       });
 
-      knowledge = this.applyJsonFilters(knowledge, filters);
+      const knowledge = this.applyJsonFilters(knowledgeResult, filters);
       return this.mapToSummaryDto(knowledge);
     } catch (error) {
       this.logger.error(
@@ -142,30 +142,32 @@ export class KnowledgeService {
     return where;
   }
 
-  private buildSearchOrClause(search: string) {
+  private buildSearchOrClause(
+    search: string,
+  ): Prisma.KnowledgeBaseWhereInput[] {
     return [
       {
         problemTitle: {
           contains: search,
-          mode: 'insensitive',
+          mode: Prisma.QueryMode.insensitive,
         },
       },
       {
         problemDescription: {
           contains: search,
-          mode: 'insensitive',
+          mode: Prisma.QueryMode.insensitive,
         },
       },
       {
         solutionTitle: {
           contains: search,
-          mode: 'insensitive',
+          mode: Prisma.QueryMode.insensitive,
         },
       },
       {
         solutionDescription: {
           contains: search,
-          mode: 'insensitive',
+          mode: Prisma.QueryMode.insensitive,
         },
       },
     ];
@@ -196,13 +198,32 @@ export class KnowledgeService {
     knowledge: Array<{
       id: string;
       problemTitle: string;
+      category: string;
       solutionTitle: string;
-      vehicleMakes: unknown;
-      vehicleModels: unknown;
-      symptoms: unknown;
+      successCount: number;
+      rating: Prisma.Decimal | null;
+      isVerified: boolean;
+      createdByName: string;
+      createdAt: Date;
+      vehicleMakes: Prisma.JsonValue;
+      vehicleModels: Prisma.JsonValue;
+      symptoms: Prisma.JsonValue;
     }>,
     filters: KnowledgeFiltersDto,
-  ) {
+  ): Array<{
+    id: string;
+    problemTitle: string;
+    category: string;
+    solutionTitle: string;
+    successCount: number;
+    rating: Prisma.Decimal | null;
+    isVerified: boolean;
+    createdByName: string;
+    createdAt: Date;
+    vehicleMakes: Prisma.JsonValue;
+    vehicleModels: Prisma.JsonValue;
+    symptoms: Prisma.JsonValue;
+  }> {
     let filtered = knowledge;
 
     if (filters.vehicleMake) {
@@ -220,10 +241,11 @@ export class KnowledgeService {
     return filtered;
   }
 
-  private filterByVehicleMake(
-    knowledge: Array<{ vehicleMakes: unknown }>,
-    vehicleMake: string,
-  ) {
+  private filterByVehicleMake<
+    T extends {
+      vehicleMakes: unknown;
+    },
+  >(knowledge: T[], vehicleMake: string): T[] {
     const makeLower = vehicleMake.toLowerCase();
     return knowledge.filter((item) => {
       const makes = Array.isArray(item.vehicleMakes) ? item.vehicleMakes : [];
@@ -233,10 +255,11 @@ export class KnowledgeService {
     });
   }
 
-  private filterByVehicleModel(
-    knowledge: Array<{ vehicleModels: unknown }>,
-    vehicleModel: string,
-  ) {
+  private filterByVehicleModel<
+    T extends {
+      vehicleModels: unknown;
+    },
+  >(knowledge: T[], vehicleModel: string): T[] {
     const modelLower = vehicleModel.toLowerCase();
     return knowledge.filter((item) => {
       const models = Array.isArray(item.vehicleModels)
@@ -248,14 +271,13 @@ export class KnowledgeService {
     });
   }
 
-  private filterBySearchInSymptoms(
-    knowledge: Array<{
+  private filterBySearchInSymptoms<
+    T extends {
       problemTitle: string;
       solutionTitle: string;
       symptoms: unknown;
-    }>,
-    search: string,
-  ) {
+    },
+  >(knowledge: T[], search: string): T[] {
     const searchLower = search.toLowerCase();
     return knowledge.filter((item) => {
       const symptoms = Array.isArray(item.symptoms) ? item.symptoms : [];
