@@ -445,9 +445,10 @@ export class MaintenanceService {
     });
 
     return schedules.map((s): MaintenanceAlertDto => {
-      const isOverdue =
+      const isOverdue: boolean =
         (s.nextDueDate && s.nextDueDate < now) ||
-        (s.nextDueKm && s.vehicle.mileage && s.nextDueKm <= s.vehicle.mileage);
+        (s.nextDueKm && s.vehicle.mileage && s.nextDueKm <= s.vehicle.mileage) ||
+        false;
 
       const daysUntilDue = s.nextDueDate
         ? Math.ceil(

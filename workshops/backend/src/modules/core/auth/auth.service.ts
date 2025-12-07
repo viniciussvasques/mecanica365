@@ -603,8 +603,26 @@ export class AuthService {
           email: normalizedEmail,
         },
       },
-      include: {
-        tenant: true,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isActive: true,
+        passwordResetToken: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            subdomain: true,
+            plan: true,
+            status: true,
+            documentType: true,
+            document: true,
+            createdAt: true,
+            updatedAt: true,
+            adminEmail: true,
+          },
+        },
       },
     });
 
