@@ -217,24 +217,24 @@ export class PlansService {
   ): Prisma.PlanUpdateInput {
     const updateData: Prisma.PlanUpdateInput = {};
 
+    this.applyBasicFields(updatePlanDto, updateData);
+    this.applyPriceFields(updatePlanDto, updateData);
+    this.applyLimitFields(updatePlanDto, updateData);
+    this.applyStripeFields(updatePlanDto, updateData);
+
+    return updateData;
+  }
+
+  private applyBasicFields(
+    updatePlanDto: UpdatePlanDto,
+    updateData: Prisma.PlanUpdateInput,
+  ): void {
     if (updatePlanDto.code !== undefined)
       updateData.code = updatePlanDto.code;
     if (updatePlanDto.name !== undefined)
       updateData.name = updatePlanDto.name;
     if (updatePlanDto.description !== undefined)
       updateData.description = updatePlanDto.description;
-    if (updatePlanDto.monthlyPrice !== undefined)
-      updateData.monthlyPrice = new Prisma.Decimal(
-        updatePlanDto.monthlyPrice,
-      );
-    if (updatePlanDto.annualPrice !== undefined)
-      updateData.annualPrice = new Prisma.Decimal(updatePlanDto.annualPrice);
-    if (updatePlanDto.serviceOrdersLimit !== undefined)
-      updateData.serviceOrdersLimit = updatePlanDto.serviceOrdersLimit;
-    if (updatePlanDto.partsLimit !== undefined)
-      updateData.partsLimit = updatePlanDto.partsLimit;
-    if (updatePlanDto.usersLimit !== undefined)
-      updateData.usersLimit = updatePlanDto.usersLimit;
     if (updatePlanDto.features !== undefined)
       updateData.features = updatePlanDto.features;
     if (updatePlanDto.isActive !== undefined)
@@ -245,14 +245,42 @@ export class PlansService {
       updateData.sortOrder = updatePlanDto.sortOrder;
     if (updatePlanDto.highlightText !== undefined)
       updateData.highlightText = updatePlanDto.highlightText;
+  }
+
+  private applyPriceFields(
+    updatePlanDto: UpdatePlanDto,
+    updateData: Prisma.PlanUpdateInput,
+  ): void {
+    if (updatePlanDto.monthlyPrice !== undefined)
+      updateData.monthlyPrice = new Prisma.Decimal(
+        updatePlanDto.monthlyPrice,
+      );
+    if (updatePlanDto.annualPrice !== undefined)
+      updateData.annualPrice = new Prisma.Decimal(updatePlanDto.annualPrice);
+  }
+
+  private applyLimitFields(
+    updatePlanDto: UpdatePlanDto,
+    updateData: Prisma.PlanUpdateInput,
+  ): void {
+    if (updatePlanDto.serviceOrdersLimit !== undefined)
+      updateData.serviceOrdersLimit = updatePlanDto.serviceOrdersLimit;
+    if (updatePlanDto.partsLimit !== undefined)
+      updateData.partsLimit = updatePlanDto.partsLimit;
+    if (updatePlanDto.usersLimit !== undefined)
+      updateData.usersLimit = updatePlanDto.usersLimit;
+  }
+
+  private applyStripeFields(
+    updatePlanDto: UpdatePlanDto,
+    updateData: Prisma.PlanUpdateInput,
+  ): void {
     if (updatePlanDto.stripePriceIdMonthly !== undefined)
       updateData.stripePriceIdMonthly = updatePlanDto.stripePriceIdMonthly;
     if (updatePlanDto.stripePriceIdAnnual !== undefined)
       updateData.stripePriceIdAnnual = updatePlanDto.stripePriceIdAnnual;
     if (updatePlanDto.stripeProductId !== undefined)
       updateData.stripeProductId = updatePlanDto.stripeProductId;
-
-    return updateData;
   }
 
   async remove(id: string): Promise<void> {

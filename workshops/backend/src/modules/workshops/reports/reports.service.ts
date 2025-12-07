@@ -1001,59 +1001,121 @@ export class ReportsService {
     worksheet: ExcelJS.Worksheet,
     data: Record<string, unknown>,
     startRow: number,
-  ): void {
+  ): number {
     let currentRow = startRow;
 
     for (const [key, value] of Object.entries(data)) {
       if (Array.isArray(value)) {
-        // Se for array, criar tabela
-        if (value.length > 0 && typeof value[0] === 'object') {
-          // Array de objetos - criar cabeçalho
-          const headers = Object.keys(value[0] as Record<string, unknown>);
-          for (let colIndex = 0; colIndex < headers.length; colIndex++) {
-            const header = headers[colIndex];
-            worksheet.getCell(currentRow, colIndex + 1).value =
-              this.formatKey(header);
-            worksheet.getCell(currentRow, colIndex + 1).font = { bold: true };
-          }
-          currentRow++;
-
-          // Dados
-          for (const item of value) {
-            const itemObj = item as Record<string, unknown>;
-            for (let colIndex = 0; colIndex < headers.length; colIndex++) {
-              const header = headers[colIndex];
-              worksheet.getCell(currentRow, colIndex + 1).value =
-                this.formatValue(itemObj[header]);
-            }
-            currentRow++;
-          }
-        } else {
-          // Array simples
-          worksheet.getCell(currentRow, 1).value = this.formatKey(key);
-          worksheet.getCell(currentRow, 2).value = (value as unknown[]).join(
-            ', ',
-          );
-          currentRow++;
-        }
-      } else if (value !== null && typeof value === 'object') {
-        // Objeto aninhado - recursão
-        worksheet.getCell(currentRow, 1).value = this.formatKey(key);
-        worksheet.getCell(currentRow, 1).font = { bold: true };
-        currentRow++;
-        this.flattenDataToSheet(
+        currentRow = this.flattenArrayValue(
           worksheet,
+          key,
+          value,
+          currentRow,
+        );
+      } else if (value !== null && typeof value === 'object') {
+        currentRow = this.flattenObjectValue(
+          worksheet,
+          key,
           value as Record<string, unknown>,
           currentRow,
         );
-        currentRow += 10; // Espaço aproximado
       } else {
-        // Valor simples
-        worksheet.getCell(currentRow, 1).value = this.formatKey(key);
-        worksheet.getCell(currentRow, 2).value = this.formatValue(value);
-        currentRow++;
+        currentRow = this.flattenSimpleValue(worksheet, key, value, currentRow);
       }
     }
+
+    return currentRow;
+  }
+
+  private flattenArrayValue(
+    worksheet: ExcelJS.Worksheet,
+    key: string,
+    value: unknown[],
+    currentRow: number,
+  ): number {
+    if (value.length > 0 && typeof value[0] === 'object') {
+      return this.flattenObjectArray(worksheet, value, currentRow);
+    }
+    return this.flattenSimpleArray(worksheet, key, value, currentRow);
+  }
+
+  private flattenObjectArray(
+    worksheet: ExcelJS.Worksheet,
+    value: unknown[],
+    currentRow: number,
+  ): number {
+    const headers = Object.keys(value[0] as Record<string, unknown>);
+    this.writeArrayHeaders(worksheet, headers, currentRow);
+    currentRow++;
+
+    for (const item of value) {
+      const itemObj = item as Record<string, unknown>;
+      this.writeArrayRow(worksheet, itemObj, headers, currentRow);
+      currentRow++;
+    }
+
+    return currentRow;
+  }
+
+  private writeArrayHeaders(
+    worksheet: ExcelJS.Worksheet,
+    headers: string[],
+    row: number,
+  ): void {
+    for (let colIndex = 0; colIndex < headers.length; colIndex++) {
+      const header = headers[colIndex];
+      const cell = worksheet.getCell(row, colIndex + 1);
+      cell.value = this.formatKey(header);
+      cell.font = { bold: true };
+    }
+  }
+
+  private writeArrayRow(
+    worksheet: ExcelJS.Worksheet,
+    itemObj: Record<string, unknown>,
+    headers: string[],
+    row: number,
+  ): void {
+    for (let colIndex = 0; colIndex < headers.length; colIndex++) {
+      const header = headers[colIndex];
+      worksheet.getCell(row, colIndex + 1).value =
+        this.formatValue(itemObj[header]);
+    }
+  }
+
+  private flattenSimpleArray(
+    worksheet: ExcelJS.Worksheet,
+    key: string,
+    value: unknown[],
+    currentRow: number,
+  ): number {
+    worksheet.getCell(currentRow, 1).value = this.formatKey(key);
+    worksheet.getCell(currentRow, 2).value = value.join(', ');
+    return currentRow + 1;
+  }
+
+  private flattenObjectValue(
+    worksheet: ExcelJS.Worksheet,
+    key: string,
+    value: Record<string, unknown>,
+    currentRow: number,
+  ): number {
+    worksheet.getCell(currentRow, 1).value = this.formatKey(key);
+    worksheet.getCell(currentRow, 1).font = { bold: true };
+    currentRow++;
+    const endRow = this.flattenDataToSheet(worksheet, value, currentRow);
+    return endRow + 10; // Espaço aproximado
+  }
+
+  private flattenSimpleValue(
+    worksheet: ExcelJS.Worksheet,
+    key: string,
+    value: unknown,
+    currentRow: number,
+  ): number {
+    worksheet.getCell(currentRow, 1).value = this.formatKey(key);
+    worksheet.getCell(currentRow, 2).value = this.formatValue(value);
+    return currentRow + 1;
   }
 
   /**
