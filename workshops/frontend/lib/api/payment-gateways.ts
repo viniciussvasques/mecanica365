@@ -104,54 +104,51 @@ export interface CreatePaymentGatewayDto {
  * Nota: Esta API será implementada no backend futuramente.
  * Por enquanto, podemos usar o workshop-settings para armazenar essas configurações.
  */
+import api from '../api';
+
 export const paymentGatewaysApi = {
-  /**
-   * Lista todos os gateways configurados
-   */
   findAll: async (): Promise<PaymentGatewayConfig[]> => {
-    // TODO: Implementar endpoint no backend
-    // Por enquanto, retornar array vazio ou usar localStorage
-    return [];
+    const response = await api.get<PaymentGatewayConfig[]>('/payment-gateways');
+    return response.data;
   },
 
-  /**
-   * Busca um gateway por ID
-   */
-  findOne: async (id: string): Promise<PaymentGatewayConfig> => {
-    // TODO: Implementar endpoint no backend
-    throw new Error('Not implemented');
+  create: async (
+    data: CreatePaymentGatewayDto,
+  ): Promise<PaymentGatewayConfig> => {
+    const response = await api.post<PaymentGatewayConfig>(
+      '/payment-gateways',
+      data,
+    );
+    return response.data;
   },
 
-  /**
-   * Cria um novo gateway
-   */
-  create: async (data: CreatePaymentGatewayDto): Promise<PaymentGatewayConfig> => {
-    // TODO: Implementar endpoint no backend
-    throw new Error('Not implemented');
+  update: async (
+    id: string,
+    data: Partial<CreatePaymentGatewayDto>,
+  ): Promise<PaymentGatewayConfig> => {
+    const response = await api.patch<PaymentGatewayConfig>(
+      `/payment-gateways/${id}`,
+      data,
+    );
+    return response.data;
   },
 
-  /**
-   * Atualiza um gateway
-   */
-  update: async (id: string, data: Partial<CreatePaymentGatewayDto>): Promise<PaymentGatewayConfig> => {
-    // TODO: Implementar endpoint no backend
-    throw new Error('Not implemented');
+  setDefault: async (id: string): Promise<void> => {
+    await api.patch(`/payment-gateways/${id}/default`);
   },
 
-  /**
-   * Remove um gateway
-   */
   remove: async (id: string): Promise<void> => {
-    // TODO: Implementar endpoint no backend
-    throw new Error('Not implemented');
+    await api.delete(`/payment-gateways/${id}`);
   },
 
-  /**
-   * Testa a conexão com um gateway
-   */
-  testConnection: async (id: string): Promise<{ success: boolean; message: string }> => {
-    // TODO: Implementar endpoint no backend
-    throw new Error('Not implemented');
+  testConnection: async (
+    id: string,
+  ): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post<{ success: boolean; message: string }>(
+      `/payment-gateways/${id}/test`,
+      {},
+    );
+    return response.data;
   },
 };
 

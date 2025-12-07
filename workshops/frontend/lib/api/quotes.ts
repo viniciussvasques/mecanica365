@@ -46,7 +46,7 @@ export interface QuoteItem {
   description?: string;
   quantity: number;
   unitCost: number;
-  totalCost: number;
+  totalCost?: number;
   hours?: number;
 }
 

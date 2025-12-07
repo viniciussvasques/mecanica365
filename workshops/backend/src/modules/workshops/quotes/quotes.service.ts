@@ -1521,31 +1521,37 @@ export class QuotesService {
     serviceOrder: { id: string; number: string },
   ): Promise<void> {
     try {
-      const receptionists = await this.prisma.user.findMany({
+      // Notificar admins, managers e recepcionistas
+      const staffToNotify = await this.prisma.user.findMany({
         where: {
           tenantId: quote.tenantId,
-          role: 'receptionist',
+          role: { in: ['admin', 'manager', 'receptionist'] },
           isActive: true,
         },
-        select: { id: true },
+        select: { id: true, role: true },
       });
 
-      for (const receptionist of receptionists) {
+      for (const staff of staffToNotify) {
         await this.notificationsService.create({
           tenantId: quote.tenantId,
-          userId: receptionist.id,
+          userId: staff.id,
           type: NotificationType.QUOTE_APPROVED,
           title: '✅ Orçamento Aprovado pelo Cliente',
-          message: `Orçamento ${quote.number} foi aprovado digitalmente e a OS ${serviceOrder.number} foi criada automaticamente`,
+          message: `Orçamento ${quote.number} foi APROVADO E ASSINADO DIGITALMENTE pelo cliente. A OS ${serviceOrder.number} foi criada automaticamente.`,
           data: {
             quoteId: quote.id,
             quoteNumber: quote.number,
             serviceOrderId: serviceOrder.id,
             serviceOrderNumber: serviceOrder.number,
             approvalMethod: 'digital',
+            hasSignature: true,
           },
         });
       }
+
+      this.logger.log(
+        `✅ Notificação de aprovação enviada para ${staffToNotify.length} usuários (admins, managers, recepcionistas)`,
+      );
     } catch (notificationError) {
       this.logger.warn(
         `Erro ao criar notificação de aprovação: ${getErrorMessage(notificationError)}`,

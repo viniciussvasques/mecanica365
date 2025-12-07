@@ -109,7 +109,7 @@ export class SupportController {
     @Param('id') id: string,
     @CurrentUser('id') userId?: string,
     @TenantId() tenantId?: string,
-  ): Promise<SupportTicketResponseDto & { replies?: any[] }> {
+  ): Promise<SupportTicketResponseDto & { replies?: unknown[] }> {
     return this.supportService.findOne(id, userId, tenantId);
   }
 
@@ -162,8 +162,12 @@ export class SupportController {
     @Param('id') ticketId: string,
     @Body() createSupportReplyDto: CreateSupportReplyDto,
     @CurrentUser('id') userId: string,
-  ): Promise<any> {
-    return this.supportService.addReply(ticketId, createSupportReplyDto, userId);
+  ): Promise<unknown> {
+    return this.supportService.addReply(
+      ticketId,
+      createSupportReplyDto,
+      userId,
+    );
   }
 
   /**

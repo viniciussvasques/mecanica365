@@ -110,6 +110,33 @@ export interface UsageStats {
   };
 }
 
+type ApiPlanResponse = {
+  id?: string;
+  code?: string;
+  name: string;
+  description?: string | null;
+  monthlyPrice?: number | null;
+  annualPrice?: number | null;
+  serviceOrdersLimit?: number | null;
+  partsLimit?: number | null;
+  usersLimit?: number | null;
+  features?: string[] | null;
+  highlightText?: string | null;
+  isDefault?: boolean;
+  isActive?: boolean;
+  sortOrder?: number | null;
+  price?: {
+    monthly?: number | null;
+    annual?: number | null;
+  };
+  limits?: {
+    serviceOrdersLimit?: number | null;
+    partsLimit?: number | null;
+    usersLimit?: number | null;
+    features?: string[] | null;
+  };
+};
+
 export const billingApi = {
   // Obter assinatura atual
   getSubscription: async (): Promise<Subscription> => {
@@ -119,8 +146,48 @@ export const billingApi = {
 
   // Listar planos disponíveis
   getPlans: async (): Promise<Plan[]> => {
-    const response = await api.get<Plan[]>('/billing/plans');
-    return response.data;
+    const response = await api.get<ApiPlanResponse[]>('/billing/plans');
+    return response.data.map((plan, index) => {
+      const monthlyPrice =
+        plan.monthlyPrice ?? plan.price?.monthly ?? 0;
+      const annualPrice =
+        plan.annualPrice ?? plan.price?.annual ?? 0;
+      const serviceOrdersLimit =
+        plan.serviceOrdersLimit ?? plan.limits?.serviceOrdersLimit ?? null;
+      const partsLimit =
+        plan.partsLimit ?? plan.limits?.partsLimit ?? null;
+      const usersLimit =
+        plan.usersLimit ?? plan.limits?.usersLimit ?? null;
+      const features =
+        plan.features ?? plan.limits?.features ?? [];
+
+      return {
+        id: plan.id ?? plan.code ?? plan.name,
+        code: (plan.code ?? plan.id ?? plan.name) as PlanCode,
+        name: plan.name,
+        description: plan.description ?? undefined,
+        monthlyPrice,
+        annualPrice,
+        serviceOrdersLimit,
+        partsLimit,
+        usersLimit,
+        features,
+        isActive: plan.isActive ?? true,
+        isDefault: plan.isDefault ?? false,
+        sortOrder: plan.sortOrder ?? index,
+        highlightText: plan.highlightText ?? undefined,
+        price: {
+          monthly: monthlyPrice,
+          annual: annualPrice,
+        },
+        limits: {
+          serviceOrdersLimit,
+          partsLimit,
+          usersLimit,
+          features,
+        },
+      };
+    });
   },
 
   // Fazer upgrade de plano

@@ -955,6 +955,7 @@ describe('OnboardingService', () => {
       await service.handleInvoicePaymentSucceeded(invoiceWithoutIds);
 
       expect(
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         emailService.sendInvoicePaymentSucceededEmail,
       ).not.toHaveBeenCalled();
     });
@@ -968,6 +969,7 @@ describe('OnboardingService', () => {
       await service.handleInvoicePaymentSucceeded(mockInvoice);
 
       expect(
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         emailService.sendInvoicePaymentSucceededEmail,
       ).not.toHaveBeenCalled();
     });
@@ -1720,6 +1722,7 @@ describe('OnboardingService', () => {
       await service.handleInvoicePaymentSucceeded(mockInvoice);
 
       expect(
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         emailService.sendInvoicePaymentSucceededEmail,
       ).not.toHaveBeenCalled();
     });

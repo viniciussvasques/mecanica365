@@ -111,7 +111,11 @@ export class TenantResolverMiddleware implements NestMiddleware {
     return (
       (pathWithoutQuery === '/api/auth/find-tenant' && method === 'POST') ||
       (pathWithoutQuery === '/api/auth/login' && method === 'POST') ||
-      (pathWithoutQuery === '/api/auth/refresh' && method === 'POST')
+      (pathWithoutQuery === '/api/auth/refresh' && method === 'POST') ||
+      (pathWithoutQuery === '/api/auth/forgot-password' && method === 'POST') ||
+      (pathWithoutQuery === '/api/auth/reset-password' && method === 'POST') ||
+      (pathWithoutQuery === '/api/auth/validate-reset-token' &&
+        method === 'GET')
     );
   }
 

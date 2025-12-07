@@ -272,4 +272,98 @@ export class EmailService {
       );
     }
   }
+
+  /**
+   * Envia email de recuperação de senha
+   */
+  async sendPasswordResetEmail(data: {
+    name: string;
+    email: string;
+    resetUrl: string;
+    expiresInMinutes: number;
+    workshopName?: string;
+  }): Promise<void> {
+    try {
+      const html = this.templatesService.getPasswordResetEmailTemplate({
+        name: data.name,
+        resetUrl: data.resetUrl,
+        expiresInMinutes: data.expiresInMinutes,
+        workshopName: data.workshopName,
+      });
+      await this.sendEmail(
+        data.email,
+        '🔐 Recuperação de Senha - Mecânica365',
+        html,
+      );
+      this.logger.log(
+        `Email de recuperação de senha enviado para ${data.email}`,
+      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send password reset email: ${err.message || String(error)}`,
+        err.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Envia email de confirmação de senha alterada
+   */
+  async sendPasswordChangedEmail(data: {
+    name: string;
+    email: string;
+    changedAt: Date;
+    workshopName?: string;
+  }): Promise<void> {
+    try {
+      const html = this.templatesService.getPasswordChangedEmailTemplate({
+        name: data.name,
+        changedAt: data.changedAt,
+        workshopName: data.workshopName,
+      });
+      await this.sendEmail(data.email, '🔐 Senha Alterada - Mecânica365', html);
+      this.logger.log(
+        `Email de confirmação de alteração de senha enviado para ${data.email}`,
+      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send password changed email: ${err.message || String(error)}`,
+        err.stack,
+      );
+    }
+  }
+
+  /**
+   * Envia email de reset de senha pelo admin
+   */
+  async sendAdminPasswordResetEmail(data: {
+    userName: string;
+    userEmail: string;
+    workshopName: string;
+    tempPassword: string;
+    loginUrl: string;
+  }): Promise<void> {
+    try {
+      const html =
+        this.templatesService.getAdminPasswordResetEmailTemplate(data);
+      await this.sendEmail(
+        data.userEmail,
+        '🔐 Sua Senha Foi Redefinida - Mecânica365',
+        html,
+      );
+      this.logger.log(
+        `Email de reset de senha (admin) enviado para ${data.userEmail}`,
+      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send admin password reset email: ${err.message || String(error)}`,
+        err.stack,
+      );
+      throw error;
+    }
+  }
 }

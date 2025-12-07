@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
 import {
   CreateSupportTicketDto,
@@ -17,6 +12,7 @@ import { CreateSupportReplyDto } from './dto/create-support-reply.dto';
 import { SupportTicketFiltersDto } from './dto/support-ticket-filters.dto';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
 import { Prisma } from '@prisma/client';
+import type { SupportTicket as SupportTicketModel } from '@prisma/client';
 
 @Injectable()
 export class SupportService {
@@ -152,7 +148,7 @@ export class SupportService {
     id: string,
     userId?: string,
     tenantId?: string,
-  ): Promise<SupportTicketResponseDto & { replies?: any[] }> {
+  ): Promise<SupportTicketResponseDto & { replies?: unknown[] }> {
     try {
       const ticket = await this.prisma.supportTicket.findFirst({
         where: {
@@ -217,10 +213,14 @@ export class SupportService {
         }
       }
 
-      if (updateDto.priority !== undefined) updateData.priority = updateDto.priority;
-      if (updateDto.category !== undefined) updateData.category = updateDto.category;
-      if (updateDto.assignedToId !== undefined) updateData.assignedTo = { connect: { id: updateDto.assignedToId } };
-      if (updateDto.internalNotes !== undefined) updateData.internalNotes = updateDto.internalNotes;
+      if (updateDto.priority !== undefined)
+        updateData.priority = updateDto.priority;
+      if (updateDto.category !== undefined)
+        updateData.category = updateDto.category;
+      if (updateDto.assignedToId !== undefined)
+        updateData.assignedTo = { connect: { id: updateDto.assignedToId } };
+      if (updateDto.internalNotes !== undefined)
+        updateData.internalNotes = updateDto.internalNotes;
 
       const ticket = await this.prisma.supportTicket.update({
         where: { id },
@@ -275,7 +275,7 @@ export class SupportService {
     ticketId: string,
     replyDto: CreateSupportReplyDto,
     userId: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     try {
       // Verifica se o ticket existe
       const ticket = await this.findOne(ticketId, userId);
@@ -366,21 +366,21 @@ export class SupportService {
   /**
    * Converte para DTO de resposta
    */
-  private toResponseDto(ticket: any): SupportTicketResponseDto {
+  private toResponseDto(ticket: SupportTicketModel): SupportTicketResponseDto {
     return {
       id: ticket.id,
       subject: ticket.subject,
       message: ticket.message,
-      status: ticket.status,
-      priority: ticket.priority,
-      category: ticket.category,
-      userId: ticket.userId,
-      userEmail: ticket.userEmail,
-      userName: ticket.userName,
-      tenantId: ticket.tenantId,
-      assignedToId: ticket.assignedToId,
-      lastReplyAt: ticket.lastReplyAt,
-      resolvedAt: ticket.resolvedAt,
+      status: ticket.status as SupportStatus,
+      priority: ticket.priority as SupportPriority,
+      category: ticket.category as SupportCategory,
+      userId: ticket.userId || undefined,
+      userEmail: ticket.userEmail || undefined,
+      userName: ticket.userName || undefined,
+      tenantId: ticket.tenantId || undefined,
+      assignedToId: ticket.assignedToId || undefined,
+      lastReplyAt: ticket.lastReplyAt || undefined,
+      resolvedAt: ticket.resolvedAt || undefined,
       createdAt: ticket.createdAt,
       updatedAt: ticket.updatedAt,
     };

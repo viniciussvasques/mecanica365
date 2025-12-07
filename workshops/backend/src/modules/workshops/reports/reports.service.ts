@@ -38,59 +38,59 @@ export class ReportsService {
     endDate?: string,
     filters?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-      switch (type) {
-        case ReportType.SALES:
+    switch (type) {
+      case ReportType.SALES:
         return this.generateSalesReport(tenantId, startDate, endDate, filters);
-        case ReportType.SERVICES:
+      case ReportType.SERVICES:
         return this.generateServicesReport(
-            tenantId,
-            startDate,
-            endDate,
-            filters,
-          );
-        case ReportType.FINANCIAL:
+          tenantId,
+          startDate,
+          endDate,
+          filters,
+        );
+      case ReportType.FINANCIAL:
         return this.generateFinancialReport(
-            tenantId,
-            startDate,
-            endDate,
-            filters,
-          );
-        case ReportType.INVENTORY:
+          tenantId,
+          startDate,
+          endDate,
+          filters,
+        );
+      case ReportType.INVENTORY:
         return this.generateInventoryReport(tenantId, filters);
-        case ReportType.CUSTOMERS:
+      case ReportType.CUSTOMERS:
         return this.generateCustomersReport(
-            tenantId,
-            startDate,
-            endDate,
-            filters,
-          );
-        case ReportType.MECHANICS:
+          tenantId,
+          startDate,
+          endDate,
+          filters,
+        );
+      case ReportType.MECHANICS:
         return this.generateMechanicsReport(
-            tenantId,
-            startDate,
-            endDate,
-            filters,
-          );
-        case ReportType.QUOTES:
+          tenantId,
+          startDate,
+          endDate,
+          filters,
+        );
+      case ReportType.QUOTES:
         return this.generateQuotesReport(tenantId, startDate, endDate, filters);
-        case ReportType.INVOICES:
+      case ReportType.INVOICES:
         return this.generateInvoicesReport(
-            tenantId,
-            startDate,
-            endDate,
-            filters,
-          );
-        case ReportType.PAYMENTS:
+          tenantId,
+          startDate,
+          endDate,
+          filters,
+        );
+      case ReportType.PAYMENTS:
         return this.generatePaymentsReport(
-            tenantId,
-            startDate,
-            endDate,
-            filters,
-          );
-        default:
-          throw new BadRequestException(
-            `Tipo de relatório inválido: ${String(type)}`,
-          );
+          tenantId,
+          startDate,
+          endDate,
+          filters,
+        );
+      default:
+        throw new BadRequestException(
+          `Tipo de relatório inválido: ${String(type)}`,
+        );
     }
   }
 

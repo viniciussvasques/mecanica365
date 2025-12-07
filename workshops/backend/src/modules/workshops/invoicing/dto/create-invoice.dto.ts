@@ -14,6 +14,7 @@ import {
   InvoiceType,
   InvoiceStatus,
   PaymentStatus,
+  PaymentPreference,
 } from './invoice-status.enum';
 import { InvoiceItemDto } from './invoice-item.dto';
 
@@ -95,6 +96,21 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsString()
   paymentMethod?: string;
+
+  @ApiPropertyOptional({
+    description: 'Preferência de pagamento',
+    enum: PaymentPreference,
+  })
+  @IsOptional()
+  @IsEnum(PaymentPreference)
+  paymentPreference?: PaymentPreference;
+
+  @ApiPropertyOptional({
+    description: 'Gateway selecionado',
+  })
+  @IsOptional()
+  @IsString()
+  paymentGatewayId?: string;
 
   @ApiPropertyOptional({
     description: 'Status do pagamento',

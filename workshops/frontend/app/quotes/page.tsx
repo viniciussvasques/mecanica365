@@ -283,7 +283,25 @@ export default function QuotesPage() {
                           {quote.vehicle?.placa || quote.vehicle?.make || '-'}
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          {getStatusBadge(quote.status)}
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(quote.status)}
+                            {quote.customerSignature && (
+                              <span 
+                                className="text-[#00E0B8]" 
+                                title="Assinado digitalmente pelo cliente"
+                              >
+                                ✍️
+                              </span>
+                            )}
+                            {quote.status === QuoteStatus.VIEWED && !quote.acceptedAt && (
+                              <span 
+                                className="text-[#FFAA00]" 
+                                title="Cliente visualizou - aguardando decisão"
+                              >
+                                👁️
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-[#D0D6DE] font-medium">
                           {formatCurrency(quote.totalCost)}

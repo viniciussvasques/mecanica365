@@ -174,7 +174,13 @@ export default function EditQuotePage() {
   };
 
   const calculateTotal = () => {
-    const itemsTotal = (formData.items || []).reduce((sum, item) => sum + item.totalCost, 0);
+    const itemsTotal = (formData.items || []).reduce((sum, item) => {
+      const itemTotal =
+        item.totalCost !== undefined
+          ? item.totalCost
+          : (item.unitCost || 0) * (item.quantity || 1);
+      return sum + itemTotal;
+    }, 0);
     const laborCost = formData.laborCost || 0;
     const partsCost = formData.partsCost || 0;
     const subtotal = itemsTotal + laborCost + partsCost;
@@ -236,7 +242,8 @@ export default function EditQuotePage() {
               partId: item.partId || undefined,
             };
           }).filter(item => item.name && item.unitCost > 0); // Remover itens inválidos
-          data.items = formattedItems;
+          const payloadItems = formattedItems.map(({ totalCost, ...rest }) => rest);
+          data.items = payloadItems;
         }
       }
 
@@ -496,9 +503,12 @@ export default function EditQuotePage() {
                         {item.description && (
                           <p className="text-sm text-[#7E8691] mt-1">{item.description}</p>
                         )}
-                        <div className="text-sm text-[#7E8691] mt-1">
-                          {item.quantity}x R$ {item.unitCost.toFixed(2)} = R$ {item.totalCost.toFixed(2)}
-                        </div>
+                    <div className="text-sm text-[#7E8691] mt-1">
+                      {item.quantity}x R$ {item.unitCost.toFixed(2)} = R${' '}
+                      {(item.totalCost ??
+                        (item.unitCost || 0) * (item.quantity || 1)
+                      ).toFixed(2)}
+                    </div>
                       </div>
                       <Button
                         type="button"

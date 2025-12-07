@@ -24,6 +24,7 @@ import {
   getErrorStack,
 } from '../../../common/utils/error.utils';
 import { Prisma } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 // Tipo para Tenant com subscription incluída
 type TenantWithSubscription = Prisma.TenantGetPayload<{
@@ -489,5 +490,117 @@ export class TenantsService {
       createdAt: tenant.createdAt,
       updatedAt: tenant.updatedAt,
     };
+  }
+
+  /**
+   * Listar usuários de um tenant (para superadmin)
+   */
+  async getTenantUsers(tenantId: string): Promise<
+    Array<{
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+      isActive: boolean;
+      createdAt: Date;
+    }>
+  > {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${tenantId} não encontrado`);
+    }
+
+    const users = await this.prisma.user.findMany({
+      where: { tenantId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return users;
+  }
+
+  /**
+   * Resetar senha de usuário (para superadmin)
+   */
+  async resetUserPassword(
+    tenantId: string,
+    userId: string,
+  ): Promise<{ message: string; tempPassword: string }> {
+    // Verificar se tenant existe
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${tenantId} não encontrado`);
+    }
+
+    // Verificar se usuário existe e pertence ao tenant
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuário ${userId} não encontrado`);
+    }
+
+    if (user.tenantId !== tenantId) {
+      throw new BadRequestException('Usuário não pertence a este tenant');
+    }
+
+    // Gerar senha temporária
+    const tempPassword = this.generateTempPassword();
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    // Atualizar senha
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+
+    this.logger.log(
+      `Senha do usuário ${user.email} (tenant: ${tenantId}) foi resetada pelo superadmin`,
+    );
+
+    return {
+      message: `Senha do usuário ${user.email} foi resetada com sucesso`,
+      tempPassword,
+    };
+  }
+
+  /**
+   * Gera uma senha temporária segura
+   */
+  private generateTempPassword(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const specials = '!@#$%';
+    let password = '';
+
+    // 6 caracteres alfanuméricos
+    for (let i = 0; i < 6; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    // 1 especial
+    password += specials.charAt(Math.floor(Math.random() * specials.length));
+
+    // 1 número
+    password += Math.floor(Math.random() * 10);
+
+    return password;
   }
 }

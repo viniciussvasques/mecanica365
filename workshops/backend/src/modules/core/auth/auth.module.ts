@@ -9,11 +9,13 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { PrismaModule } from '../../../database/prisma.module';
 import { TenantsModule } from '../tenants/tenants.module';
+import { EmailModule } from '../../shared/email/email.module';
 
 @Module({
   imports: [
     PrismaModule,
     TenantsModule,
+    EmailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

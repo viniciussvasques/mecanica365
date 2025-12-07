@@ -520,4 +520,278 @@ export class AuthService {
       return null;
     }
   }
+
+  /**
+   * Solicita recuperação de senha
+   * Gera um token único e envia email com link para reset
+   */
+  async forgotPassword(
+    email: string,
+    tenantId: string,
+  ): Promise<{ message: string }> {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Buscar usuário
+    const user = await this.prisma.user.findUnique({
+      where: {
+        tenantId_email: {
+          tenantId,
+          email: normalizedEmail,
+        },
+      },
+      include: {
+        tenant: true,
+      },
+    });
+
+    // SEMPRE retornar sucesso para não revelar se email existe
+    if (!user || !user.isActive) {
+      this.logger.warn(
+        `Tentativa de recuperação de senha para email inexistente ou inativo: ${normalizedEmail}`,
+      );
+      return {
+        message:
+          'Se o email existir em nossa base, você receberá as instruções de recuperação.',
+      };
+    }
+
+    // Gerar token único
+    const resetToken = randomUUID() + '-' + randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutos
+
+    // Salvar token no banco
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: resetToken,
+        passwordResetExpiresAt: expiresAt,
+      },
+    });
+
+    this.logger.log(
+      `Token de recuperação gerado para usuário ${user.email} (tenant: ${tenantId})`,
+    );
+
+    // Retornar dados para envio de email (será tratado no controller)
+    return {
+      message:
+        'Se o email existir em nossa base, você receberá as instruções de recuperação.',
+      // Dados internos para envio de email (não expostos na resposta)
+      // O controller irá usar esses dados para enviar o email
+    };
+  }
+
+  /**
+   * Busca usuário por token de reset para envio de email
+   * Uso interno - não exposto via API
+   */
+  async getUserForPasswordReset(
+    email: string,
+    tenantId: string,
+  ): Promise<{
+    user: { id: string; email: string; name: string };
+    tenant: { subdomain: string; name: string };
+    resetToken: string;
+    resetUrl: string;
+  } | null> {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        tenantId_email: {
+          tenantId,
+          email: normalizedEmail,
+        },
+      },
+      include: {
+        tenant: true,
+      },
+    });
+
+    if (!user || !user.isActive || !user.passwordResetToken) {
+      return null;
+    }
+
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ||
+      `http://${user.tenant.subdomain}.localhost:3000`;
+    const resetUrl = `${frontendUrl}/reset-password?token=${user.passwordResetToken}`;
+
+    return {
+      user: { id: user.id, email: user.email, name: user.name },
+      tenant: { subdomain: user.tenant.subdomain, name: user.tenant.name },
+      resetToken: user.passwordResetToken,
+      resetUrl,
+    };
+  }
+
+  /**
+   * Redefine a senha usando o token
+   */
+  async resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    // Buscar usuário pelo token
+    const user = await this.prisma.user.findFirst({
+      where: {
+        passwordResetToken: token,
+        passwordResetExpiresAt: {
+          gt: new Date(), // Token ainda não expirou
+        },
+      },
+      include: {
+        tenant: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException(
+        'Token inválido ou expirado. Solicite uma nova recuperação de senha.',
+      );
+    }
+
+    // Validar se usuário está ativo
+    if (!user.isActive) {
+      throw new BadRequestException(
+        'Usuário inativo. Entre em contato com o suporte.',
+      );
+    }
+
+    // Hash da nova senha
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Atualizar senha e limpar token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+
+    this.logger.log(
+      `Senha redefinida com sucesso para usuário ${user.email} (tenant: ${user.tenantId})`,
+    );
+
+    return {
+      message: 'Senha alterada com sucesso! Você já pode fazer login.',
+    };
+  }
+
+  /**
+   * Busca usuário pelo token de reset (para validação)
+   */
+  async validateResetToken(
+    token: string,
+  ): Promise<{ valid: boolean; email?: string }> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        passwordResetToken: token,
+        passwordResetExpiresAt: {
+          gt: new Date(),
+        },
+        isActive: true,
+      },
+      select: {
+        email: true,
+      },
+    });
+
+    if (!user) {
+      return { valid: false };
+    }
+
+    // Mascarar email para segurança
+    const emailParts = user.email.split('@');
+    const maskedEmail = emailParts[0].substring(0, 2) + '***@' + emailParts[1];
+
+    return { valid: true, email: maskedEmail };
+  }
+
+  /**
+   * Reset de senha pelo admin (gera senha temporária)
+   */
+  async adminResetPassword(
+    adminUserId: string,
+    targetUserId: string,
+    tenantId: string,
+  ): Promise<{
+    tempPassword: string;
+    user: { id: string; email: string; name: string };
+  }> {
+    // Verificar se admin tem permissão
+    const adminUser = await this.prisma.user.findUnique({
+      where: { id: adminUserId },
+    });
+
+    if (!adminUser || !['admin', 'manager'].includes(adminUser.role)) {
+      throw new UnauthorizedException('Sem permissão para redefinir senhas');
+    }
+
+    // Buscar usuário alvo
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      include: { tenant: true },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    // Verificar se é do mesmo tenant
+    if (targetUser.tenantId !== tenantId) {
+      throw new UnauthorizedException('Sem permissão para este usuário');
+    }
+
+    // Gerar senha temporária
+    const tempPassword = this.generateTempPassword();
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    // Atualizar senha
+    await this.prisma.user.update({
+      where: { id: targetUserId },
+      data: {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+
+    this.logger.log(
+      `Senha redefinida pelo admin ${adminUser.email} para usuário ${targetUser.email}`,
+    );
+
+    return {
+      tempPassword,
+      user: {
+        id: targetUser.id,
+        email: targetUser.email,
+        name: targetUser.name,
+      },
+    };
+  }
+
+  /**
+   * Gera uma senha temporária segura
+   */
+  private generateTempPassword(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const specials = '!@#$%';
+    let password = '';
+
+    // 6 caracteres alfanuméricos
+    for (let i = 0; i < 6; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    // 1 especial
+    password += specials.charAt(Math.floor(Math.random() * specials.length));
+
+    // 1 número
+    password += Math.floor(Math.random() * 10);
+
+    return password;
+  }
 }

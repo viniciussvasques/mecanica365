@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEmail, IsOptional, IsEnum, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  IsNotEmpty,
+} from 'class-validator';
 
 export enum SupportPriority {
   LOW = 'low',
@@ -53,7 +59,8 @@ export class CreateSupportTicketDto {
   priority?: SupportPriority = SupportPriority.NORMAL;
 
   @ApiProperty({
-    description: 'Email do usuário (opcional, será preenchido automaticamente se logado)',
+    description:
+      'Email do usuário (opcional, será preenchido automaticamente se logado)',
     required: false,
   })
   @IsEmail()
@@ -61,7 +68,8 @@ export class CreateSupportTicketDto {
   userEmail?: string;
 
   @ApiProperty({
-    description: 'Nome do usuário (opcional, será preenchido automaticamente se logado)',
+    description:
+      'Nome do usuário (opcional, será preenchido automaticamente se logado)',
     required: false,
   })
   @IsString()

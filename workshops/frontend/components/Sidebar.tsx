@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  GearIcon,
   CarIcon,
   WrenchIcon,
   BrakePadIcon,
@@ -17,6 +16,15 @@ import {
   ClockIcon,
   CreditCardIcon,
   HelpIcon,
+  UsersIcon,
+  TruckIcon,
+  FileTextIcon,
+  DollarIcon,
+  ChartIcon,
+  DashboardIcon,
+  SettingsIcon,
+  GearIcon,
+  GaugeIcon,
 } from './icons/MechanicIcons';
 
 interface MenuItem {
@@ -29,28 +37,31 @@ interface MenuItem {
 }
 
 const allMenuItems: MenuItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: GearIcon, roles: ['admin', 'manager', 'receptionist', 'accountant'] },
-  { label: 'Meu Dashboard', href: '/mechanic/dashboard', icon: GearIcon, roles: ['mechanic'] },
+  { label: 'Dashboard', href: '/dashboard', icon: DashboardIcon, roles: ['admin', 'manager', 'receptionist', 'accountant'] },
+  { label: 'Meu Dashboard', href: '/mechanic/dashboard', icon: DashboardIcon, roles: ['mechanic'] },
   { label: 'Clientes', href: '/customers', icon: CarIcon, roles: ['admin', 'manager', 'receptionist'] },
   { label: 'Ordens de Serviço', href: '/service-orders', icon: WrenchIcon, roles: ['admin', 'manager', 'receptionist', 'mechanic'] },
   { label: 'Orçamentos', href: '/quotes', icon: BrakePadIcon, roles: ['admin', 'manager', 'receptionist'] },
   { label: 'Meus Orçamentos', href: '/mechanic/quotes', icon: BrakePadIcon, roles: ['mechanic'] },
   { label: 'Agendamentos', href: '/appointments', icon: ClockIcon, roles: ['admin', 'manager', 'receptionist', 'mechanic'] },
-  { label: 'Usuários', href: '/users', icon: GearIcon, roles: ['admin', 'manager'] },
+  { label: 'Usuários', href: '/users', icon: UsersIcon, roles: ['admin', 'manager'] },
   { label: 'Estoque', href: '/inventory', icon: OilIcon, roles: ['admin', 'manager'] },
   { label: 'Peças', href: '/parts', icon: FilterIcon, roles: ['admin', 'manager'] },
-  { label: 'Fornecedores', href: '/suppliers', icon: GearIcon, roles: ['admin', 'manager'] },
-  { label: 'Faturas', href: '/invoicing', icon: GearIcon, roles: ['admin', 'manager', 'receptionist', 'accountant'] },
-  { label: 'Pagamentos', href: '/payments', icon: GearIcon, roles: ['admin', 'manager', 'receptionist', 'accountant'] },
-  { label: 'Relatórios', href: '/reports', icon: GearIcon, roles: ['admin', 'manager', 'accountant'] },
+  { label: 'Fornecedores', href: '/suppliers', icon: TruckIcon, roles: ['admin', 'manager'] },
+  { label: 'Faturas', href: '/invoicing', icon: FileTextIcon, roles: ['admin', 'manager', 'receptionist', 'accountant'] },
+  { label: 'Pagamentos', href: '/payments', icon: DollarIcon, roles: ['admin', 'manager', 'receptionist', 'accountant'] },
+  { label: 'Relatórios', href: '/reports', icon: ChartIcon, roles: ['admin', 'manager', 'accountant'] },
+  { label: 'Analytics', href: '/analytics', icon: ScannerIcon, roles: ['admin', 'manager'] },
   { label: 'Veículos', href: '/vehicles', icon: EngineIcon, roles: ['admin', 'manager', 'receptionist'] },
   { label: 'Elevadores', href: '/elevators', icon: ElevatorIcon, roles: ['admin', 'manager', 'receptionist', 'mechanic'] },
   { label: 'Diagnóstico', href: '/diagnostics', icon: ScannerIcon, roles: ['admin', 'manager'] },
+  { label: 'Base de Conhecimento', href: '/knowledge', icon: FileTextIcon, roles: ['admin', 'manager', 'receptionist', 'mechanic'] },
+  { label: 'Previsão Inteligente', href: '/predictive', icon: GaugeIcon, roles: ['admin', 'manager'] },
   { label: 'Notificações', href: '/mechanic/notifications', icon: BellIcon, roles: ['mechanic'] },
   // Seção de Conta
-  { label: 'Minha Assinatura', href: '/subscription', icon: CreditCardIcon, roles: ['admin', 'manager'], dividerBefore: true },
+  { label: 'Assinatura', href: '/subscription', icon: CreditCardIcon, roles: ['admin', 'manager'], dividerBefore: true },
   { label: 'Suporte', href: '/support', icon: HelpIcon, roles: ['admin', 'manager', 'receptionist', 'accountant', 'mechanic'] },
-  { label: 'Configurações', href: '/settings', icon: GearIcon, roles: ['admin', 'manager'] },
+  { label: 'Configurações', href: '/settings', icon: SettingsIcon, roles: ['admin', 'manager'] },
 ];
 
 interface SidebarProps {
@@ -221,23 +232,23 @@ export function Sidebar({ onToggle }: SidebarProps) {
       className={`
         fixed left-0 top-0 h-screen bg-[#1A1E23] border-r border-[#2A3038] z-50
         transition-all duration-300 ease-in-out
-        ${collapsed ? 'w-20' : 'w-64'}
+        ${collapsed ? 'w-16' : 'w-52'}
         flex flex-col
       `}
     >
       {/* Header */}
-      <div className="p-4 border-b border-[#2A3038] flex items-center justify-between">
+      <div className="p-3 border-b border-[#2A3038] flex items-center justify-between">
         {!collapsed && (
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#00E0B8] to-[#3ABFF8] rounded-lg flex items-center justify-center">
-              <GearIcon className="w-5 h-5 text-[#0F1115]" />
+            <div className="w-7 h-7 bg-gradient-to-br from-[#00E0B8] to-[#3ABFF8] rounded-lg flex items-center justify-center">
+              <GearIcon className="w-4 h-4 text-[#0F1115]" />
             </div>
-            <span className="text-lg font-bold text-[#D0D6DE]">Mecânica365</span>
+            <span className="text-sm font-bold text-[#D0D6DE]">Mecânica365</span>
           </div>
         )}
         {collapsed && (
-          <div className="w-8 h-8 bg-gradient-to-br from-[#00E0B8] to-[#3ABFF8] rounded-lg flex items-center justify-center mx-auto">
-            <GearIcon className="w-5 h-5 text-[#0F1115]" />
+          <div className="w-7 h-7 bg-gradient-to-br from-[#00E0B8] to-[#3ABFF8] rounded-lg flex items-center justify-center mx-auto">
+            <GearIcon className="w-4 h-4 text-[#0F1115]" />
           </div>
         )}
         <button
@@ -247,11 +258,11 @@ export function Sidebar({ onToggle }: SidebarProps) {
             localStorage.setItem('sidebarCollapsed', String(newState));
             onToggle?.(newState);
           }}
-          className="p-2 rounded-lg hover:bg-[#2A3038] text-[#7E8691] hover:text-[#D0D6DE] transition-colors"
+          className="p-1.5 rounded-lg hover:bg-[#2A3038] text-[#7E8691] hover:text-[#D0D6DE] transition-colors"
           aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           <svg
-            className={`w-5 h-5 transition-transform ${collapsed ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -267,7 +278,7 @@ export function Sidebar({ onToggle }: SidebarProps) {
       </div>
 
       {/* Menu Items */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+      <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
         {menuItems.map((item, index) => {
           const active = isActive(item.href);
           const Icon = item.icon;
@@ -276,12 +287,12 @@ export function Sidebar({ onToggle }: SidebarProps) {
             <div key={item.href}>
               {/* Divisor antes do item se necessário */}
               {item.dividerBefore && index > 0 && (
-                <div className={`my-4 border-t border-[#2A3038] ${collapsed ? 'mx-2' : ''}`} />
+                <div className={`my-2 border-t border-[#2A3038] ${collapsed ? 'mx-1' : ''}`} />
               )}
               <Link
                 href={item.href}
                 className={`
-                  flex items-center space-x-3 px-4 py-3 rounded-lg
+                  flex items-center space-x-2.5 px-3 py-2 rounded-lg
                   transition-all duration-200
                   group
                   ${
@@ -294,16 +305,16 @@ export function Sidebar({ onToggle }: SidebarProps) {
               >
                 <Icon
                   className={`
-                    w-5 h-5 flex-shrink-0
+                    w-4 h-4 flex-shrink-0
                     ${active ? 'text-[#00E0B8]' : 'text-[#7E8691] group-hover:text-[#D0D6DE]'}
                     transition-colors
                   `}
                 />
                 {!collapsed && (
                   <>
-                    <span className="flex-1 font-medium">{item.label}</span>
+                    <span className="flex-1 text-sm">{item.label}</span>
                     {item.badge && (
-                      <span className="px-2 py-1 text-xs font-bold rounded-full bg-[#FF4E3D] text-white">
+                      <span className="px-1.5 py-0.5 text-xs font-bold rounded-full bg-[#FF4E3D] text-white">
                         {item.badge}
                       </span>
                     )}

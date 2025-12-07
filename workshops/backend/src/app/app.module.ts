@@ -34,6 +34,11 @@ import { AutomationsModule } from '../modules/shared/automations/automations.mod
 import { NotificationsModule } from '../modules/core/notifications/notifications.module';
 import { PlansModule } from '../modules/core/plans/plans.module';
 import { SupportModule } from '../modules/core/support/support.module';
+import { PaymentGatewaysModule } from '../modules/workshops/payment-gateways/payment-gateways.module';
+import { MaintenanceModule } from '../modules/workshops/maintenance/maintenance.module';
+import { AnalyticsModule } from '../modules/workshops/analytics/analytics.module';
+import { KnowledgeModule } from '../modules/workshops/knowledge/knowledge.module';
+import { PredictiveModule } from '../modules/workshops/predictive/predictive.module';
 import { TenantResolverMiddleware } from '../common/middleware/tenant-resolver.middleware';
 import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
 import { ValidationPipe } from '../common/pipes/validation.pipe';
@@ -78,6 +83,11 @@ import appConfig from '../config/app.config';
     NotificationsModule,
     PlansModule,
     SupportModule,
+    PaymentGatewaysModule,
+    MaintenanceModule,
+    AnalyticsModule,
+    KnowledgeModule,
+    PredictiveModule,
     // Módulos adicionais serão adicionados conforme necessário
   ],
   controllers: [AppController],

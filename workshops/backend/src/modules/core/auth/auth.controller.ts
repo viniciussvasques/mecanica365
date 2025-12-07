@@ -9,12 +9,14 @@ import {
   HttpStatus,
   Headers,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -23,11 +25,14 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
 import { FindTenantByEmailDto } from './dto/find-tenant-by-email.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { TenantId } from '../../../common/decorators/tenant.decorator';
 import { Public } from '../../../common/decorators/public.decorator';
 import { TenantsService } from '../../core/tenants/tenants.service';
+import { EmailService } from '../../shared/email/email.service';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -35,6 +40,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly tenantsService: TenantsService,
+    private readonly emailService: EmailService,
   ) {}
 
   @Post('login')
@@ -266,5 +272,141 @@ export class AuthController {
     @Body() findTenantDto: FindTenantByEmailDto,
   ): Promise<{ subdomain: string; tenantId: string } | null> {
     return this.authService.findTenantByEmail(findTenantDto);
+  }
+
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Solicitar recuperação de senha',
+    description:
+      'Envia um email com link para redefinição de senha. Requer header X-Tenant-Subdomain.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email enviado (se o email existir)',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+      },
+    },
+  })
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+    @Headers('x-tenant-subdomain') subdomain?: string,
+    @TenantId() tenantId?: string,
+  ): Promise<{ message: string }> {
+    // Resolver tenant
+    let resolvedTenantId = tenantId;
+
+    if (!resolvedTenantId && subdomain) {
+      try {
+        const tenant = await this.tenantsService.findBySubdomain(subdomain);
+        resolvedTenantId = tenant.id;
+      } catch {
+        // Retornar mensagem genérica para não revelar se tenant existe
+        return {
+          message:
+            'Se o email existir em nossa base, você receberá as instruções de recuperação.',
+        };
+      }
+    }
+
+    if (!resolvedTenantId) {
+      throw new BadRequestException(
+        'Tenant subdomain é obrigatório. Use o header X-Tenant-Subdomain.',
+      );
+    }
+
+    // Processar solicitação
+    await this.authService.forgotPassword(
+      forgotPasswordDto.email,
+      resolvedTenantId,
+    );
+
+    // Buscar dados para envio de email
+    const resetData = await this.authService.getUserForPasswordReset(
+      forgotPasswordDto.email,
+      resolvedTenantId,
+    );
+
+    if (resetData) {
+      // Enviar email de recuperação
+      try {
+        await this.emailService.sendPasswordResetEmail({
+          name: resetData.user.name,
+          email: resetData.user.email,
+          resetUrl: resetData.resetUrl,
+          expiresInMinutes: 30,
+          workshopName: resetData.tenant.name,
+        });
+      } catch (error) {
+        console.error('Erro ao enviar email de recuperação:', error);
+        // Não falhar - apenas logar
+      }
+    }
+
+    return {
+      message:
+        'Se o email existir em nossa base, você receberá as instruções de recuperação.',
+    };
+  }
+
+  @Post('reset-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Redefinir senha com token',
+    description: 'Redefine a senha usando o token recebido por email.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Senha alterada com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Token inválido ou expirado',
+  })
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
+    return this.authService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.newPassword,
+    );
+  }
+
+  @Get('validate-reset-token')
+  @Public()
+  @ApiOperation({
+    summary: 'Validar token de reset',
+    description: 'Verifica se o token de reset é válido.',
+  })
+  @ApiQuery({ name: 'token', required: true, type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Token válido ou inválido',
+    schema: {
+      type: 'object',
+      properties: {
+        valid: { type: 'boolean' },
+        email: { type: 'string', nullable: true },
+      },
+    },
+  })
+  async validateResetToken(
+    @Query('token') token: string,
+  ): Promise<{ valid: boolean; email?: string }> {
+    if (!token) {
+      return { valid: false };
+    }
+    return this.authService.validateResetToken(token);
   }
 }

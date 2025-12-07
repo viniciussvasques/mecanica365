@@ -37,10 +37,10 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
         className={`
           transition-all duration-300 ease-in-out
           ${sidebarCollapsed ? 'ml-20' : 'ml-64'}
-          min-h-screen
+          min-h-screen overflow-x-hidden
         `}
       >
-        <div className="p-8">
+        <div className="p-6 lg:p-8">
           {children}
         </div>
       </main>

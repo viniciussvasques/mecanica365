@@ -177,4 +177,45 @@ export class TenantsController {
   async cancel(@Param('id') id: string): Promise<TenantResponseDto> {
     return this.tenantsService.cancel(id);
   }
+
+  @Get(':id/users')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('superadmin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Listar usuários do tenant (superadmin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de usuários do tenant',
+  })
+  async getTenantUsers(@Param('id') id: string): Promise<
+    Array<{
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+      isActive: boolean;
+      createdAt: Date;
+    }>
+  > {
+    return this.tenantsService.getTenantUsers(id);
+  }
+
+  @Post(':tenantId/users/:userId/reset-password')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('superadmin')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resetar senha de usuário do tenant (superadmin only)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Senha resetada com sucesso',
+  })
+  async resetUserPassword(
+    @Param('tenantId') tenantId: string,
+    @Param('userId') userId: string,
+  ): Promise<{ message: string; tempPassword: string }> {
+    return this.tenantsService.resetUserPassword(tenantId, userId);
+  }
 }

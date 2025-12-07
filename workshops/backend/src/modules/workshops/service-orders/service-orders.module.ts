@@ -6,6 +6,8 @@ import { ElevatorsModule } from '../elevators/elevators.module';
 import { ChecklistsModule } from '../checklists/checklists.module';
 import { AttachmentsModule } from '../attachments/attachments.module';
 import { NotificationsModule } from '@core/notifications/notifications.module';
+import { InvoicingModule } from '../invoicing/invoicing.module';
+import { PaymentGatewaysModule } from '../payment-gateways/payment-gateways.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { NotificationsModule } from '@core/notifications/notifications.module';
     ChecklistsModule,
     AttachmentsModule,
     NotificationsModule,
+    InvoicingModule,
+    PaymentGatewaysModule,
   ],
   controllers: [ServiceOrdersController],
   providers: [ServiceOrdersService],

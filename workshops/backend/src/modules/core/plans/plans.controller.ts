@@ -34,7 +34,11 @@ export class PlansController {
   @Roles('superadmin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Criar novo plano (superadmin only)' })
-  @ApiResponse({ status: 201, description: 'Plano criado com sucesso', type: PlanResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Plano criado com sucesso',
+    type: PlanResponseDto,
+  })
   @ApiResponse({ status: 409, description: 'Plano com código já existe' })
   async create(@Body() createPlanDto: CreatePlanDto): Promise<PlanResponseDto> {
     return this.plansService.create(createPlanDto);
@@ -43,7 +47,11 @@ export class PlansController {
   @Get()
   @ApiOperation({ summary: 'Listar todos os planos' })
   @ApiQuery({ name: 'includeInactive', required: false, type: Boolean })
-  @ApiResponse({ status: 200, description: 'Lista de planos', type: [PlanResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de planos',
+    type: [PlanResponseDto],
+  })
   async findAll(
     @Query('includeInactive', new DefaultValuePipe(false), ParseBoolPipe)
     includeInactive: boolean,
@@ -63,7 +71,11 @@ export class PlansController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Buscar plano por ID' })
-  @ApiResponse({ status: 200, description: 'Plano encontrado', type: PlanResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Plano encontrado',
+    type: PlanResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Plano não encontrado' })
   async findOne(@Param('id') id: string): Promise<PlanResponseDto> {
     return this.plansService.findOne(id);
@@ -71,7 +83,11 @@ export class PlansController {
 
   @Get('code/:code')
   @ApiOperation({ summary: 'Buscar plano por código' })
-  @ApiResponse({ status: 200, description: 'Plano encontrado', type: PlanResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Plano encontrado',
+    type: PlanResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Plano não encontrado' })
   async findByCode(@Param('code') code: string): Promise<PlanResponseDto> {
     return this.plansService.findByCode(code);
@@ -82,7 +98,11 @@ export class PlansController {
   @Roles('superadmin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Atualizar plano (superadmin only)' })
-  @ApiResponse({ status: 200, description: 'Plano atualizado', type: PlanResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Plano atualizado',
+    type: PlanResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Plano não encontrado' })
   async update(
     @Param('id') id: string,
@@ -103,4 +123,3 @@ export class PlansController {
     return this.plansService.remove(id);
   }
 }
-

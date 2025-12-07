@@ -621,4 +621,115 @@ Se você tiver dúvidas, entre em contato com nosso suporte.
       </div>
       `;
   }
+
+  /**
+   * Template de email para recuperação de senha
+   */
+  getPasswordResetEmailTemplate(data: {
+    name: string;
+    resetUrl: string;
+    expiresInMinutes: number;
+    workshopName?: string;
+  }): string {
+    const content = `
+      <p style="font-size: 16px; margin: 0 0 20px 0;">Olá <strong>${data.name}</strong>,</p>
+      
+      <p style="font-size: 16px; color: #555; margin: 0 0 20px 0;">
+        Recebemos uma solicitação para redefinir a senha da sua conta${data.workshopName ? ` na oficina <strong>${data.workshopName}</strong>` : ''}.
+      </p>
+
+      <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffcc00;">
+        <p style="margin: 0; color: #856404;">
+          <strong>⚠️ Importante:</strong><br>
+          Este link é válido por <strong>${data.expiresInMinutes} minutos</strong>.<br>
+          Se você não solicitou essa alteração, ignore este email.
+        </p>
+      </div>
+
+      <p style="font-size: 16px; color: #555; margin: 0 0 20px 0;">
+        Clique no botão abaixo para criar uma nova senha:
+      </p>
+    `;
+
+    return this.getBaseTemplate(
+      '🔐 Recuperação de Senha',
+      content,
+      'Redefinir Minha Senha',
+      data.resetUrl,
+    );
+  }
+
+  /**
+   * Template de email para confirmação de senha alterada
+   */
+  getPasswordChangedEmailTemplate(data: {
+    name: string;
+    changedAt: Date;
+    workshopName?: string;
+  }): string {
+    const content = `
+      <p style="font-size: 16px; margin: 0 0 20px 0;">Olá <strong>${data.name}</strong>,</p>
+      
+      <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+        <p style="margin: 0; color: #155724;">
+          <strong>✅ Senha Alterada com Sucesso!</strong><br>
+          Sua senha foi alterada em ${this.formatDate(data.changedAt)}${data.workshopName ? ` para a oficina <strong>${data.workshopName}</strong>` : ''}.
+        </p>
+      </div>
+
+      <p style="font-size: 16px; color: #555; margin: 0 0 20px 0;">
+        Se você não realizou essa alteração, entre em contato imediatamente com o suporte.
+      </p>
+
+      <div style="background: #f8d7da; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545;">
+        <p style="margin: 0; color: #721c24;">
+          <strong>🚨 Não foi você?</strong><br>
+          Se você não alterou sua senha, sua conta pode ter sido comprometida. 
+          Entre em contato com o suporte imediatamente.
+        </p>
+      </div>
+    `;
+
+    return this.getBaseTemplate('🔐 Senha Alterada', content);
+  }
+
+  /**
+   * Template de email para reset de senha pelo admin
+   */
+  getAdminPasswordResetEmailTemplate(data: {
+    userName: string;
+    userEmail: string;
+    workshopName: string;
+    tempPassword: string;
+    loginUrl: string;
+  }): string {
+    const content = `
+      <p style="font-size: 16px; margin: 0 0 20px 0;">Olá <strong>${data.userName}</strong>,</p>
+      
+      <p style="font-size: 16px; color: #555; margin: 0 0 20px 0;">
+        O administrador da oficina <strong>${data.workshopName}</strong> redefiniu sua senha.
+      </p>
+
+      <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0066cc;">
+        <p style="margin: 0; color: #004085;">
+          <strong>📧 Email:</strong> ${data.userEmail}<br>
+          <strong>🔑 Senha Temporária:</strong> <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 18px;">${data.tempPassword}</code>
+        </p>
+      </div>
+
+      <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffcc00;">
+        <p style="margin: 0; color: #856404;">
+          <strong>⚠️ Importante:</strong><br>
+          Você será solicitado a alterar sua senha no primeiro acesso.
+        </p>
+      </div>
+    `;
+
+    return this.getBaseTemplate(
+      '🔐 Sua Senha Foi Redefinida',
+      content,
+      'Acessar Sistema',
+      data.loginUrl,
+    );
+  }
 }

@@ -11,7 +11,10 @@ import {
 } from 'class-validator';
 
 export class CreatePlanDto {
-  @ApiProperty({ description: 'Código único do plano', example: 'workshops_starter' })
+  @ApiProperty({
+    description: 'Código único do plano',
+    example: 'workshops_starter',
+  })
   @IsString()
   @MaxLength(50)
   code: string;
@@ -26,35 +29,47 @@ export class CreatePlanDto {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ description: 'Preço mensal', example: 99.00 })
+  @ApiProperty({ description: 'Preço mensal', example: 99.0 })
   @IsNumber()
   @Min(0)
   monthlyPrice: number;
 
-  @ApiProperty({ description: 'Preço anual', example: 990.00 })
+  @ApiProperty({ description: 'Preço anual', example: 990.0 })
   @IsNumber()
   @Min(0)
   annualPrice: number;
 
-  @ApiProperty({ description: 'Limite de ordens de serviço (null = ilimitado)', required: false })
+  @ApiProperty({
+    description: 'Limite de ordens de serviço (null = ilimitado)',
+    required: false,
+  })
   @IsInt()
   @IsOptional()
   @Min(0)
   serviceOrdersLimit?: number | null;
 
-  @ApiProperty({ description: 'Limite de peças (null = ilimitado)', required: false })
+  @ApiProperty({
+    description: 'Limite de peças (null = ilimitado)',
+    required: false,
+  })
   @IsInt()
   @IsOptional()
   @Min(0)
   partsLimit?: number | null;
 
-  @ApiProperty({ description: 'Limite de usuários (null = ilimitado)', required: false })
+  @ApiProperty({
+    description: 'Limite de usuários (null = ilimitado)',
+    required: false,
+  })
   @IsInt()
   @IsOptional()
   @Min(0)
   usersLimit?: number | null;
 
-  @ApiProperty({ description: 'Features incluídas', example: ['basic_service_orders', 'basic_customers'] })
+  @ApiProperty({
+    description: 'Features incluídas',
+    example: ['basic_service_orders', 'basic_customers'],
+  })
   @IsArray()
   @IsString({ each: true })
   features: string[];
@@ -64,7 +79,10 @@ export class CreatePlanDto {
   @IsOptional()
   isActive?: boolean;
 
-  @ApiProperty({ description: 'Plano padrão para novos tenants', default: false })
+  @ApiProperty({
+    description: 'Plano padrão para novos tenants',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   isDefault?: boolean;
@@ -74,7 +92,10 @@ export class CreatePlanDto {
   @IsOptional()
   sortOrder?: number;
 
-  @ApiProperty({ description: 'Texto de destaque (ex: Popular)', required: false })
+  @ApiProperty({
+    description: 'Texto de destaque (ex: Popular)',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   @MaxLength(50)
@@ -95,4 +116,3 @@ export class CreatePlanDto {
   @IsOptional()
   stripeProductId?: string;
 }
-

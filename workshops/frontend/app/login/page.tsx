@@ -10,6 +10,34 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { GearIcon, WrenchIcon } from '@/components/icons/MechanicIcons';
 
+// Função para extrair subdomain da URL atual
+const getSubdomainFromUrl = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  
+  const hostname = window.location.hostname;
+  
+  // Padrão: subdomain.localhost ou subdomain.domain.com
+  // Exemplo: oficinartee.localhost -> oficinartee
+  const parts = hostname.split('.');
+  
+  // Se for localhost simples ou IP, não tem subdomain
+  if (hostname === 'localhost' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+    return null;
+  }
+  
+  // Se for subdomain.localhost ou subdomain.localhost:3000
+  if (parts.length >= 2 && parts[parts.length - 1].startsWith('localhost')) {
+    return parts[0]; // Retorna o subdomain (ex: oficinartee)
+  }
+  
+  // Para domínios reais (subdomain.domain.com)
+  if (parts.length >= 3) {
+    return parts[0];
+  }
+  
+  return null;
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -17,6 +45,7 @@ export default function LoginPage() {
     email: '',
     password: '',
   });
+  const [urlSubdomain, setUrlSubdomain] = useState<string | null>(null);
   const [subdomain, setSubdomain] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,10 +54,24 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Detectar subdomain da URL atual
+    const detectedSubdomain = getSubdomainFromUrl();
+    if (detectedSubdomain) {
+      setUrlSubdomain(detectedSubdomain);
+      setSubdomain(detectedSubdomain);
+      console.log('[Login] Subdomain detectado na URL:', detectedSubdomain);
+    }
   }, []);
 
+  // Só buscar tenant por email se NÃO houver subdomain na URL
   useEffect(() => {
     const findTenant = async () => {
+      // Se já tem subdomain da URL, não buscar automaticamente
+      if (urlSubdomain) {
+        return;
+      }
+      
       if (formData.email.includes('@') && formData.email.length > 5 && !subdomain && !findingTenant) {
         setFindingTenant(true);
         try {
@@ -46,7 +89,7 @@ export default function LoginPage() {
 
     const timeoutId = setTimeout(findTenant, 800);
     return () => clearTimeout(timeoutId);
-  }, [formData.email]);
+  }, [formData.email, urlSubdomain, subdomain, findingTenant]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +100,11 @@ export default function LoginPage() {
       return;
     }
 
-    let tenantSubdomain = subdomain;
+    // IMPORTANTE: Se tem subdomain na URL, usar ESSE subdomain (não buscar outro)
+    // Isso garante que usuário só pode logar no tenant da URL
+    let tenantSubdomain = urlSubdomain || subdomain;
+    
+    // Só buscar tenant por email se não houver subdomain na URL
     if (!tenantSubdomain) {
       setFindingTenant(true);
       try {
@@ -91,6 +138,14 @@ export default function LoginPage() {
         localStorage.setItem('refreshToken', response.refreshToken || '');
         localStorage.setItem('subdomain', tenantSubdomain);
         
+        // Salvar nome e email do usuário
+        if (response.user?.name) {
+          localStorage.setItem('userName', response.user.name);
+        }
+        if (response.user?.email) {
+          localStorage.setItem('userEmail', response.user.email);
+        }
+        
         if (response.user?.id) {
           localStorage.setItem('userId', response.user.id);
         }
@@ -121,8 +176,22 @@ export default function LoginPage() {
           router.push(`/dashboard?${queryParams}`);
         }
       }
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Erro ao fazer login. Verifique suas credenciais.';
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } }; message?: string };
+      let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
+      
+      if (axiosError.response?.data?.message) {
+        errorMessage = axiosError.response.data.message;
+        
+        // Se houver subdomain na URL e o erro for credenciais inválidas,
+        // dar uma mensagem mais específica
+        if (urlSubdomain && errorMessage === 'Credenciais inválidas') {
+          errorMessage = 'Email ou senha incorretos para esta oficina. Verifique se você está acessando a URL correta.';
+        }
+      } else if (axiosError.message) {
+        errorMessage = axiosError.message;
+      }
+      
       setError(errorMessage);
       console.error('Login error:', err);
     } finally {
@@ -219,6 +288,15 @@ export default function LoginPage() {
             >
               {findingTenant ? 'Buscando conta...' : loading ? 'Entrando...' : 'Entrar'}
             </Button>
+
+            <div className="text-center">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-[#7E8691] hover:text-[#00E0B8] transition-colors"
+              >
+                Esqueceu sua senha?
+              </Link>
+            </div>
           </form>
         </div>
       </div>

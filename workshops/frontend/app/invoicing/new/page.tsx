@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 import Link from 'next/link';
-import { invoicingApi, CreateInvoiceDto, InvoiceType, InvoiceItemType, InvoiceItem } from '@/lib/api/invoicing';
+import { invoicingApi, CreateInvoiceDto, InvoiceType, InvoiceItemType, InvoiceItem, PaymentPreference } from '@/lib/api/invoicing';
 import { customersApi, Customer } from '@/lib/api/customers';
 import { serviceOrdersApi, ServiceOrder } from '@/lib/api/service-orders';
+import { paymentGatewaysApi, PaymentGatewayConfig, GatewayType } from '@/lib/api/payment-gateways';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -33,6 +34,7 @@ export default function NewInvoicePage() {
     items: [],
     discount: 0,
     taxAmount: 0,
+    paymentPreference: PaymentPreference.MANUAL,
   });
   const [editingItem, setEditingItem] = useState<Partial<InvoiceItem>>({
     type: InvoiceItemType.SERVICE,
@@ -42,6 +44,7 @@ export default function NewInvoicePage() {
     unitPrice: 0,
     totalPrice: 0,
   });
+  const [gateways, setGateways] = useState<PaymentGatewayConfig[]>([]);
 
   useEffect(() => {
     loadInitialData();
@@ -58,9 +61,12 @@ export default function NewInvoicePage() {
   const loadInitialData = async () => {
     try {
       setLoadingData(true);
-      
-      const customersResponse = await customersApi.findAll({ limit: 100 });
+      const [customersResponse, gatewaysResponse] = await Promise.all([
+        customersApi.findAll({ limit: 100 }),
+        paymentGatewaysApi.findAll().catch(() => []),
+      ]);
       setCustomers(customersResponse.data);
+      setGateways(gatewaysResponse);
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
       showNotification('Erro ao carregar dados', 'error');
@@ -123,6 +129,12 @@ export default function NewInvoicePage() {
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+    const onlineGateways = gateways.filter(
+      gateway => gateway.type !== GatewayType.PHYSICAL_TERMINAL && gateway.isActive,
+    );
+    const terminalGateways = gateways.filter(
+      gateway => gateway.type === GatewayType.PHYSICAL_TERMINAL && gateway.isActive,
+    );
 
     if (!formData.customerId && !formData.serviceOrderId) {
       newErrors.customerId = 'Cliente ou Ordem de Serviço é obrigatório';
@@ -130,6 +142,22 @@ export default function NewInvoicePage() {
 
     if (formData.items.length === 0) {
       newErrors.items = 'Adicione pelo menos um item à fatura';
+    }
+
+    if (
+      formData.paymentPreference === PaymentPreference.ONLINE_GATEWAY &&
+      onlineGateways.length > 0 &&
+      !formData.paymentGatewayId
+    ) {
+      newErrors.paymentPreference = 'Selecione um gateway online';
+    }
+
+    if (
+      formData.paymentPreference === PaymentPreference.POS_TERMINAL &&
+      terminalGateways.length > 0 &&
+      !formData.paymentGatewayId
+    ) {
+      newErrors.paymentPreference = 'Selecione uma maquininha configurada';
     }
 
     setErrors(newErrors);
@@ -151,6 +179,10 @@ export default function NewInvoicePage() {
       const data: CreateInvoiceDto = {
         ...formData,
         total,
+        paymentGatewayId:
+          formData.paymentPreference === PaymentPreference.MANUAL
+            ? undefined
+            : formData.paymentGatewayId,
       };
 
       const invoice = await invoicingApi.create(data);
@@ -185,6 +217,13 @@ export default function NewInvoicePage() {
       </div>
     );
   }
+
+  const onlineGateways = gateways.filter(
+    (gateway) => gateway.type !== GatewayType.PHYSICAL_TERMINAL && gateway.isActive,
+  );
+  const terminalGateways = gateways.filter(
+    (gateway) => gateway.type === GatewayType.PHYSICAL_TERMINAL && gateway.isActive,
+  );
 
   return (
     <div className="min-h-screen bg-[#0F1115] text-[#D0D6DE] p-6">
@@ -236,6 +275,76 @@ export default function NewInvoicePage() {
                 { value: InvoiceType.PART, label: 'Peça' },
               ]}
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Preferência de Pagamento"
+                value={formData.paymentPreference || PaymentPreference.MANUAL}
+                onChange={(e) => {
+                  const preference = e.target.value as PaymentPreference;
+                  setFormData({
+                    ...formData,
+                    paymentPreference: preference,
+                    paymentGatewayId: undefined,
+                  });
+                  setErrors({ ...errors, paymentPreference: '' });
+                }}
+                options={[
+                  { value: PaymentPreference.MANUAL, label: 'Sem cobrança automática' },
+                  { value: PaymentPreference.ONLINE_GATEWAY, label: 'Gateway Online' },
+                  { value: PaymentPreference.POS_TERMINAL, label: 'Maquininha Física' },
+                ]}
+              />
+
+              {formData.paymentPreference === PaymentPreference.ONLINE_GATEWAY && (
+                <Select
+                  label="Gateway Online"
+                  value={formData.paymentGatewayId || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, paymentGatewayId: e.target.value || undefined })
+                  }
+                  disabled={onlineGateways.length === 0}
+                  options={[
+                    { value: '', label: onlineGateways.length > 0 ? 'Selecione um gateway' : 'Nenhum gateway disponível' },
+                    ...onlineGateways.map((gateway) => ({
+                      value: gateway.id,
+                      label: gateway.name,
+                    })),
+                  ]}
+                />
+              )}
+
+              {formData.paymentPreference === PaymentPreference.POS_TERMINAL && (
+                <Select
+                  label="Maquininha Física"
+                  value={formData.paymentGatewayId || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, paymentGatewayId: e.target.value || undefined })
+                  }
+                  disabled={terminalGateways.length === 0}
+                  options={[
+                    { value: '', label: terminalGateways.length > 0 ? 'Selecione uma maquininha' : 'Nenhuma maquininha disponível' },
+                    ...terminalGateways.map((gateway) => ({
+                      value: gateway.id,
+                      label: gateway.name,
+                    })),
+                  ]}
+                />
+              )}
+            </div>
+            {errors.paymentPreference && (
+              <p className="text-sm text-[#FF4E3D]">{errors.paymentPreference}</p>
+            )}
+            {formData.paymentPreference === PaymentPreference.ONLINE_GATEWAY && onlineGateways.length === 0 && (
+              <p className="text-sm text-[#F59E0B]">
+                Configure um gateway online em <Link href="/payments/settings" className="text-[#00E0B8] underline">Pagamentos &gt; Configurações</Link>.
+              </p>
+            )}
+            {formData.paymentPreference === PaymentPreference.POS_TERMINAL && terminalGateways.length === 0 && (
+              <p className="text-sm text-[#F59E0B]">
+                Configure uma maquininha física em <Link href="/payments/settings" className="text-[#00E0B8] underline">Pagamentos &gt; Configurações</Link>.
+              </p>
+            )}
 
             {/* Itens */}
             <div>

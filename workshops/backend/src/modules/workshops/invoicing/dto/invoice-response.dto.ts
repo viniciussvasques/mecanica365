@@ -3,6 +3,7 @@ import {
   InvoiceStatus,
   PaymentStatus,
   InvoiceType,
+  PaymentPreference,
 } from './invoice-status.enum';
 
 export class InvoiceItemResponseDto {
@@ -89,6 +90,25 @@ export class InvoiceResponseDto {
 
   @ApiPropertyOptional({ description: 'Método de pagamento' })
   paymentMethod?: string;
+
+  @ApiPropertyOptional({
+    description: 'Preferência de pagamento',
+    enum: PaymentPreference,
+  })
+  paymentPreference?: PaymentPreference;
+
+  @ApiPropertyOptional({ description: 'ID do gateway associado' })
+  paymentGatewayId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Gateway associado',
+    type: Object,
+  })
+  paymentGateway?: {
+    id: string;
+    name: string;
+    type: string;
+  };
 
   @ApiProperty({ description: 'Status do pagamento', enum: PaymentStatus })
   paymentStatus: PaymentStatus;

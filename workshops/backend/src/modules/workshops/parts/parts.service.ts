@@ -12,7 +12,6 @@ import {
   PartFiltersDto,
   ImportPartsDto,
   ImportPartsResponseDto,
-  ImportPartItemDto,
 } from './dto';
 import { Prisma } from '@prisma/client';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';

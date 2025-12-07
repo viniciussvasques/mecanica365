@@ -109,13 +109,14 @@ export const authApi = {
       console.log('[authApi] Buscando tenant em:', apiUrl);
       const response = await axios.post(apiUrl, { email });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { status?: number }; message?: string };
       // Se não encontrar tenant (404) ou erro de rede, retornar null
-      if (error.response?.status === 404 || !error.response) {
+      if (axiosError.response?.status === 404 || !axiosError.response) {
         return null;
       }
       // Para outros erros, retornar null também para não bloquear o login
-      console.warn('Erro ao buscar tenant:', error.message);
+      console.warn('Erro ao buscar tenant:', axiosError.message);
       return null;
     }
   },
@@ -132,6 +133,57 @@ export const authApi = {
         'X-Tenant-Subdomain': subdomain,
       },
     });
+    return response.data;
+  },
+
+  forgotPassword: async (data: { email: string }) => {
+    // Usar URL com subdomain se disponível
+    const subdomain = typeof window !== 'undefined' ? localStorage.getItem('subdomain') : null;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl = subdomain && baseUrl.includes('localhost')
+      ? `http://${subdomain}.localhost:3001/api`
+      : `${baseUrl}/api`;
+
+    const response = await axios.post(`${apiUrl}/auth/forgot-password`, data, {
+      headers: subdomain ? { 'X-Tenant-Subdomain': subdomain } : {},
+    });
+    return response.data;
+  },
+
+  resetPassword: async (data: { token: string; newPassword: string }) => {
+    // Reset password é público, usar URL base
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl = `${baseUrl.replace(/\/api\/?$/, '')}/api`;
+
+    const response = await axios.post(`${apiUrl}/auth/reset-password`, data);
+    return response.data;
+  },
+
+  validateResetToken: async (token: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl = `${baseUrl.replace(/\/api\/?$/, '')}/api`;
+
+    const response = await axios.get(`${apiUrl}/auth/validate-reset-token?token=${token}`);
+    return response.data;
+  },
+
+  changePassword: async (data: { currentPassword: string; newPassword: string; confirmPassword: string }) => {
+    const response = await api.patch('/auth/change-password', data);
+    return response.data;
+  },
+
+  getProfile: async () => {
+    const response = await api.get('/auth/profile');
+    return response.data;
+  },
+
+  logout: async (refreshToken: string) => {
+    const response = await api.post('/auth/logout', { refreshToken });
+    return response.data;
+  },
+
+  refresh: async (refreshToken: string) => {
+    const response = await api.post('/auth/refresh', { refreshToken });
     return response.data;
   },
 };

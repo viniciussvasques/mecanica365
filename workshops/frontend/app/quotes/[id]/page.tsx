@@ -330,7 +330,7 @@ export default function QuoteDetailPage() {
     try {
       setSaving(true);
       
-      // Formatar items corretamente antes de enviar (totalCost é necessário para o tipo QuoteItem)
+      // Formatar items corretamente antes de enviar
       const formattedItems: QuoteItem[] = editingItems.map(item => {
         const calculatedTotalCost = (item.quantity || 1) * (item.unitCost || 0);
         return {
@@ -351,8 +351,10 @@ export default function QuoteDetailPage() {
         return;
       }
       
+      const payloadItems = formattedItems.map(({ totalCost, ...rest }) => rest);
+
       const updateData: UpdateQuoteDto = {
-        items: formattedItems,
+        items: payloadItems,
         laborCost: editingLaborCost || 0,
         partsCost: editingPartsCost || 0,
         discount: editingDiscount || 0,
@@ -827,8 +829,8 @@ export default function QuoteDetailPage() {
             )}
 
             {/* Itens do Orçamento */}
-            <div className="bg-[#1A1E23] border border-[#2A3038] rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-[#1A1E23] border border-[#2A3038] rounded-xl p-6 lg:p-8">
+              <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-[#D0D6DE]">Itens do Orçamento</h2>
                 {isEditing && (
                   <Button variant="outline" onClick={addItem} className="text-sm">
@@ -837,106 +839,220 @@ export default function QuoteDetailPage() {
                 )}
               </div>
               {isEditing ? (
-                <form onSubmit={handleSaveItems} className="space-y-4">
+                <form onSubmit={handleSaveItems} className="space-y-6">
+                  {/* Cabeçalho da tabela - visível apenas em desktop */}
+                  {editingItems.length > 0 && (
+                    <div className="hidden lg:grid lg:grid-cols-12 gap-4 px-4 pb-2 border-b border-[#2A3038]">
+                      <div className="lg:col-span-4 text-sm font-medium text-[#7E8691]">Nome do Item</div>
+                      <div className="lg:col-span-3 text-sm font-medium text-[#7E8691]">Descrição</div>
+                      <div className="lg:col-span-1 text-sm font-medium text-[#7E8691] text-center">Qtd</div>
+                      <div className="lg:col-span-2 text-sm font-medium text-[#7E8691]">Valor Unit.</div>
+                      <div className="lg:col-span-1 text-sm font-medium text-[#7E8691] text-right">Total</div>
+                      <div className="lg:col-span-1"></div>
+                    </div>
+                  )}
+                  
                   {editingItems.map((item, index) => {
                     const itemKey = item.id || `item-${item.name || 'unnamed'}-${item.type || 'service'}-${index}`;
+                    const itemTotal = (item.quantity || 1) * (item.unitCost || 0);
                     return (
-                      <div key={itemKey} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038]">
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                        <div className="md:col-span-4">
-                          <Input
-                            label="Nome do Item"
-                            value={item.name || ''}
-                            onChange={(e) => updateEditingItem(index, 'name', e.target.value)}
-                            placeholder="Ex: Troca de óleo"
-                            required
-                          />
+                      <div key={itemKey} className="bg-[#0F1115] p-5 rounded-xl border border-[#2A3038] hover:border-[#00E0B8]/30 transition-colors">
+                        {/* Layout Desktop */}
+                        <div className="hidden lg:grid lg:grid-cols-12 gap-4 items-center">
+                          <div className="lg:col-span-4">
+                            <input
+                              type="text"
+                              value={item.name || ''}
+                              onChange={(e) => updateEditingItem(index, 'name', e.target.value)}
+                              placeholder="Ex: Troca de óleo"
+                              className="w-full px-4 py-3 bg-[#1A1E23] border border-[#2A3038] rounded-lg text-[#D0D6DE] placeholder-[#7E8691]/50 focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50 focus:border-[#00E0B8]"
+                              required
+                            />
+                          </div>
+                          <div className="lg:col-span-3">
+                            <input
+                              type="text"
+                              value={item.description || ''}
+                              onChange={(e) => updateEditingItem(index, 'description', e.target.value)}
+                              placeholder="Descrição opcional"
+                              className="w-full px-4 py-3 bg-[#1A1E23] border border-[#2A3038] rounded-lg text-[#D0D6DE] placeholder-[#7E8691]/50 focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50 focus:border-[#00E0B8]"
+                            />
+                          </div>
+                          <div className="lg:col-span-1">
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantity || 1}
+                              onChange={(e) => updateEditingItem(index, 'quantity', Number.parseInt(e.target.value, 10) || 1)}
+                              className="w-full px-3 py-3 bg-[#1A1E23] border border-[#2A3038] rounded-lg text-[#D0D6DE] text-center focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50 focus:border-[#00E0B8]"
+                              required
+                            />
+                          </div>
+                          <div className="lg:col-span-2">
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7E8691]">R$</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={item.unitCost || 0}
+                                onChange={(e) => updateEditingItem(index, 'unitCost', Number.parseFloat(e.target.value) || 0)}
+                                className="w-full pl-10 pr-4 py-3 bg-[#1A1E23] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50 focus:border-[#00E0B8]"
+                                required
+                              />
+                            </div>
+                          </div>
+                          <div className="lg:col-span-1 text-right">
+                            <span className="text-[#00E0B8] font-bold text-lg">
+                              {formatCurrency(itemTotal)}
+                            </span>
+                          </div>
+                          <div className="lg:col-span-1 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => removeEditingItem(index)}
+                              className="px-4 py-2 text-[#FF4E3D] border border-[#FF4E3D]/50 rounded-lg hover:bg-[#FF4E3D]/10 transition-colors font-medium"
+                            >
+                              Remover
+                            </button>
+                          </div>
                         </div>
-                        <div className="md:col-span-3">
-                          <Input
-                            label="Descrição"
-                            value={item.description || ''}
-                            onChange={(e) => updateEditingItem(index, 'description', e.target.value)}
-                            placeholder="Descrição opcional"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <Input
-                            label="Quantidade"
-                            type="number"
-                            min="1"
-                            value={item.quantity || 1}
-                            onChange={(e) => updateEditingItem(index, 'quantity', Number.parseInt(e.target.value, 10) || 1)}
-                            required
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <Input
-                            label="Valor Unitário"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={item.unitCost || 0}
-                            onChange={(e) => updateEditingItem(index, 'unitCost', Number.parseFloat(e.target.value) || 0)}
-                            required
-                          />
-                        </div>
-                        <div className="md:col-span-1 flex items-end">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => removeEditingItem(index)}
-                            className="w-full"
-                          >
-                            Remover
-                          </Button>
+
+                        {/* Layout Mobile/Tablet */}
+                        <div className="lg:hidden space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-[#7E8691] mb-2">Nome do Item</label>
+                              <input
+                                type="text"
+                                value={item.name || ''}
+                                onChange={(e) => updateEditingItem(index, 'name', e.target.value)}
+                                placeholder="Ex: Troca de óleo"
+                                className="w-full px-4 py-3 bg-[#1A1E23] border border-[#2A3038] rounded-lg text-[#D0D6DE] placeholder-[#7E8691]/50 focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-[#7E8691] mb-2">Descrição</label>
+                              <input
+                                type="text"
+                                value={item.description || ''}
+                                onChange={(e) => updateEditingItem(index, 'description', e.target.value)}
+                                placeholder="Descrição opcional"
+                                className="w-full px-4 py-3 bg-[#1A1E23] border border-[#2A3038] rounded-lg text-[#D0D6DE] placeholder-[#7E8691]/50 focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-[#7E8691] mb-2">Quantidade</label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantity || 1}
+                                onChange={(e) => updateEditingItem(index, 'quantity', Number.parseInt(e.target.value, 10) || 1)}
+                                className="w-full px-4 py-3 bg-[#1A1E23] border border-[#2A3038] rounded-lg text-[#D0D6DE] text-center focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-[#7E8691] mb-2">Valor Unitário</label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7E8691]">R$</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={item.unitCost || 0}
+                                  onChange={(e) => updateEditingItem(index, 'unitCost', Number.parseFloat(e.target.value) || 0)}
+                                  className="w-full pl-10 pr-4 py-3 bg-[#1A1E23] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50"
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div className="col-span-2 sm:col-span-1 flex items-end">
+                              <button
+                                type="button"
+                                onClick={() => removeEditingItem(index)}
+                                className="w-full px-4 py-3 text-[#FF4E3D] border border-[#FF4E3D]/50 rounded-lg hover:bg-[#FF4E3D]/10 transition-colors font-medium"
+                              >
+                                Remover
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex justify-end pt-2 border-t border-[#2A3038]/50">
+                            <p className="text-[#7E8691]">
+                              Total: <span className="text-[#00E0B8] font-bold text-lg ml-2">{formatCurrency(itemTotal)}</span>
+                            </p>
+                          </div>
                         </div>
                       </div>
-                      <div className="mt-2 text-right">
-                        <p className="text-sm text-[#7E8691]">
-                          Total: <span className="text-[#00E0B8] font-semibold">{formatCurrency(item.totalCost || 0)}</span>
-                        </p>
-                      </div>
-                    </div>
                     );
                   })}
                   {editingItems.length === 0 && (
-                    <p className="text-[#7E8691] text-center py-8">Nenhum item adicionado. Clique em "Adicionar Item" para começar.</p>
+                    <div className="text-center py-12 border-2 border-dashed border-[#2A3038] rounded-xl">
+                      <p className="text-[#7E8691]">Nenhum item adicionado.</p>
+                      <p className="text-sm text-[#7E8691]/70 mt-1">Clique em "+ Adicionar Item" para começar.</p>
+                    </div>
                   )}
                   
                   {/* Campos de custos */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                    <Input
-                      label="Mão de Obra"
-                      type="number"
-                      step="0.01"
-                      value={editingLaborCost}
-                      onChange={(e) => setEditingLaborCost(Number.parseFloat(e.target.value) || 0)}
-                    />
-                    <Input
-                      label="Peças"
-                      type="number"
-                      step="0.01"
-                      value={editingPartsCost}
-                      onChange={(e) => setEditingPartsCost(Number.parseFloat(e.target.value) || 0)}
-                    />
-                    <Input
-                      label="Desconto"
-                      type="number"
-                      step="0.01"
-                      value={editingDiscount}
-                      onChange={(e) => setEditingDiscount(Number.parseFloat(e.target.value) || 0)}
-                    />
-                    <Input
-                      label="Impostos"
-                      type="number"
-                      step="0.01"
-                      value={editingTaxAmount}
-                      onChange={(e) => setEditingTaxAmount(Number.parseFloat(e.target.value) || 0)}
-                    />
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-6 border-t border-[#2A3038]">
+                    <div>
+                      <label className="block text-sm font-medium text-[#7E8691] mb-2">Mão de Obra</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7E8691]">R$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editingLaborCost}
+                          onChange={(e) => setEditingLaborCost(Number.parseFloat(e.target.value) || 0)}
+                          className="w-full pl-10 pr-4 py-3 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#7E8691] mb-2">Peças</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7E8691]">R$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editingPartsCost}
+                          onChange={(e) => setEditingPartsCost(Number.parseFloat(e.target.value) || 0)}
+                          className="w-full pl-10 pr-4 py-3 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#7E8691] mb-2">Desconto</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7E8691]">R$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editingDiscount}
+                          onChange={(e) => setEditingDiscount(Number.parseFloat(e.target.value) || 0)}
+                          className="w-full pl-10 pr-4 py-3 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#7E8691] mb-2">Impostos</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7E8691]">R$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editingTaxAmount}
+                          onChange={(e) => setEditingTaxAmount(Number.parseFloat(e.target.value) || 0)}
+                          className="w-full pl-10 pr-4 py-3 bg-[#0F1115] border border-[#2A3038] rounded-lg text-[#D0D6DE] focus:outline-none focus:ring-2 focus:ring-[#00E0B8]/50"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex gap-3 mt-6">
+                  <div className="flex flex-wrap gap-3 mt-8">
                     <Button type="submit" variant="primary" disabled={saving || editingItems.length === 0}>
                       {saving ? 'Salvando...' : 'Salvar e Enviar'}
                     </Button>
@@ -967,7 +1083,8 @@ export default function QuoteDetailPage() {
                                 <p className="text-sm text-[#7E8691] mb-2">{item.description}</p>
                               )}
                               <div className="text-sm text-[#7E8691]">
-                                Quantidade: {item.quantity} × {formatCurrency(item.unitCost)} = {formatCurrency(item.totalCost)}
+                                Quantidade: {item.quantity} × {formatCurrency(item.unitCost)} ={' '}
+                                {formatCurrency(item.totalCost ?? item.unitCost * item.quantity)}
                               </div>
                             </div>
                           </div>
@@ -1130,6 +1247,113 @@ export default function QuoteDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* Seção de Aprovação e Assinatura */}
+            {(quote.status === QuoteStatus.ACCEPTED || quote.acceptedAt || quote.customerSignature) && (
+              <div className="bg-gradient-to-br from-[#00E0B8]/10 to-[#3ABFF8]/10 border-2 border-[#00E0B8] rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">✅</span>
+                  <h2 className="text-xl font-bold text-[#00E0B8]">Orçamento Aprovado</h2>
+                </div>
+                <div className="space-y-4">
+                  {/* Informações da aprovação */}
+                  <div className="bg-[#0F1115]/50 rounded-lg p-4 space-y-3">
+                    {quote.acceptedAt && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#7E8691]">Data de Aprovação:</span>
+                        <span className="text-[#D0D6DE] font-medium">
+                          {new Date(quote.acceptedAt).toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    {quote.viewedAt && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#7E8691]">Visualizado em:</span>
+                        <span className="text-[#D0D6DE]">
+                          {new Date(quote.viewedAt).toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    {quote.approvalMethod && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#7E8691]">Método de Aprovação:</span>
+                        <span className={`px-2 py-1 rounded text-sm font-medium ${
+                          quote.approvalMethod === 'digital' 
+                            ? 'bg-[#00E0B8]/20 text-[#00E0B8]' 
+                            : 'bg-[#FFAA00]/20 text-[#FFAA00]'
+                        }`}>
+                          {quote.approvalMethod === 'digital' ? '📱 Digital (Link)' : '✍️ Manual (Presencial)'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Assinatura do Cliente */}
+                  {quote.customerSignature && (
+                    <div className="bg-[#0F1115]/50 rounded-lg p-4">
+                      <p className="text-sm text-[#7E8691] mb-3">Assinatura do Cliente:</p>
+                      <div className="bg-white rounded-lg p-4 flex items-center justify-center">
+                        <img 
+                          src={quote.customerSignature} 
+                          alt="Assinatura do cliente" 
+                          className="max-w-full max-h-32 object-contain"
+                        />
+                      </div>
+                      <p className="text-xs text-[#7E8691] mt-2 text-center italic">
+                        Assinatura digital registrada pelo cliente
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Link para OS */}
+                  {quote.serviceOrderId && (
+                    <Link 
+                      href={`/service-orders/${quote.serviceOrderId}`}
+                      className="block w-full mt-4"
+                    >
+                      <Button variant="primary" className="w-full bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115]">
+                        📋 Ver Ordem de Serviço
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Status de Visualização (quando visualizado mas não aprovado) */}
+            {quote.status === QuoteStatus.VIEWED && !quote.acceptedAt && (
+              <div className="bg-[#FFAA00]/10 border border-[#FFAA00] rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">👁️</span>
+                  <h2 className="text-lg font-semibold text-[#FFAA00]">Cliente Visualizou</h2>
+                </div>
+                <p className="text-[#7E8691] text-sm">
+                  O cliente visualizou este orçamento em{' '}
+                  <span className="text-[#D0D6DE] font-medium">
+                    {quote.viewedAt && new Date(quote.viewedAt).toLocaleString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  , mas ainda não tomou uma decisão.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

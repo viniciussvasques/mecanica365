@@ -27,6 +27,12 @@ export enum InvoiceItemType {
   PART = 'part',
 }
 
+export enum PaymentPreference {
+  ONLINE_GATEWAY = 'online_gateway',
+  POS_TERMINAL = 'pos_terminal',
+  MANUAL = 'manual',
+}
+
 export interface InvoiceItem {
   id?: string;
   type: InvoiceItemType;
@@ -67,6 +73,13 @@ export interface Invoice {
   nfePdfUrl?: string;
   nfeStatus?: string;
   paymentMethod?: string;
+  paymentPreference?: PaymentPreference;
+  paymentGatewayId?: string;
+  paymentGateway?: {
+    id: string;
+    name: string;
+    type: string;
+  };
   paymentStatus: PaymentStatus;
   paidAt?: string;
   status: InvoiceStatus;
@@ -87,6 +100,8 @@ export interface CreateInvoiceDto {
   discount?: number;
   taxAmount?: number;
   paymentMethod?: string;
+  paymentPreference?: PaymentPreference;
+  paymentGatewayId?: string;
   paymentStatus?: PaymentStatus;
   status?: InvoiceStatus;
   dueDate?: string;
@@ -104,6 +119,8 @@ export interface UpdateInvoiceDto {
   discount?: number;
   taxAmount?: number;
   paymentMethod?: string;
+  paymentPreference?: PaymentPreference;
+  paymentGatewayId?: string;
   paymentStatus?: PaymentStatus;
   status?: InvoiceStatus;
   dueDate?: string;

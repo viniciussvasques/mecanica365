@@ -238,7 +238,9 @@ export class BillingService {
           updateSubscriptionDto.plan,
         );
         updateData.plan = updateSubscriptionDto.plan;
-        updateData.planRef = planFromDb ? { connect: { id: planFromDb.id } } : undefined;
+        updateData.planRef = planFromDb
+          ? { connect: { id: planFromDb.id } }
+          : undefined;
         updateData.activeFeatures = enabledFeatures;
         updateData.serviceOrdersLimit = planConfig.serviceOrdersLimit;
         updateData.partsLimit = planConfig.partsLimit;
@@ -524,7 +526,8 @@ export class BillingService {
           name: 'Professional',
           description: 'Para oficinas em crescimento',
           price: { monthly: 299, annual: 2990 },
-          limits: this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_PROFESSIONAL],
+          limits:
+            this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_PROFESSIONAL],
           highlightText: 'Popular',
           isDefault: false,
         },
@@ -533,7 +536,8 @@ export class BillingService {
           name: 'Enterprise',
           description: 'Para grandes operações',
           price: { monthly: 999, annual: 9990 },
-          limits: this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_ENTERPRISE],
+          limits:
+            this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_ENTERPRISE],
           highlightText: null,
           isDefault: false,
         },
@@ -558,7 +562,8 @@ export class BillingService {
           name: 'Professional',
           description: 'Para oficinas em crescimento',
           price: { monthly: 299, annual: 2990 },
-          limits: this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_PROFESSIONAL],
+          limits:
+            this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_PROFESSIONAL],
           highlightText: 'Popular',
           isDefault: false,
         },
@@ -567,7 +572,8 @@ export class BillingService {
           name: 'Enterprise',
           description: 'Para grandes operações',
           price: { monthly: 999, annual: 9990 },
-          limits: this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_ENTERPRISE],
+          limits:
+            this.fallbackPlanLimits[SubscriptionPlan.WORKSHOPS_ENTERPRISE],
           highlightText: null,
           isDefault: false,
         },

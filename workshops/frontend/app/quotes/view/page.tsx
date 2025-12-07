@@ -329,7 +329,9 @@ export default function QuoteViewPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-[#00E0B8]">{formatCurrency(item.totalCost)}</p>
+                    <p className="text-lg font-bold text-[#00E0B8]">
+                      {formatCurrency(item.totalCost ?? item.unitCost * item.quantity)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -359,7 +361,12 @@ export default function QuoteViewPage() {
             <div className="flex justify-between items-center py-2 border-b border-[#2A3038]/50">
               <span className="text-sm text-[#7E8691]">Itens do Orçamento</span>
               <span className="text-base text-[#D0D6DE] font-medium">
-                {formatCurrency(quote.items.reduce((sum, item) => sum + item.totalCost, 0))}
+                {formatCurrency(
+                  quote.items.reduce(
+                    (sum, item) => sum + (item.totalCost ?? item.unitCost * item.quantity),
+                    0,
+                  ),
+                )}
               </span>
             </div>
             {quote.discount > 0 && (

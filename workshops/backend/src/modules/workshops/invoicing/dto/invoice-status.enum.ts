@@ -20,6 +20,12 @@ export enum PaymentStatus {
   CANCELLED = 'cancelled', // Cancelada
 }
 
+export enum PaymentPreference {
+  ONLINE_GATEWAY = 'online_gateway',
+  POS_TERMINAL = 'pos_terminal',
+  MANUAL = 'manual',
+}
+
 /**
  * Tipo de fatura
  */

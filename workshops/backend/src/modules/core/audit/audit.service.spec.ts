@@ -192,6 +192,7 @@ describe('AuditService', () => {
 
       expect(mockPrismaService.auditLog.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           where: expect.objectContaining({
             tenantId: mockTenantId,
             userId: mockUserId,

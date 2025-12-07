@@ -13,7 +13,9 @@ import {
   InvoiceStatus,
   PaymentStatus,
   InvoiceType,
+  PaymentPreference,
 } from './dto';
+import { PaymentGatewayType } from '../payment-gateways/dto/payment-gateway-types.enum';
 import { Prisma } from '@prisma/client';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -23,6 +25,32 @@ export class InvoicingService {
   private readonly logger = new Logger(InvoicingService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly invoiceInclude: Prisma.InvoiceInclude = {
+    customer: {
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+      },
+    },
+    serviceOrder: {
+      select: {
+        id: true,
+        number: true,
+        status: true,
+      },
+    },
+    paymentGateway: {
+      select: {
+        id: true,
+        name: true,
+        type: true,
+      },
+    },
+    items: true,
+  };
 
   /**
    * Gera número único de fatura para o tenant
@@ -50,6 +78,67 @@ export class InvoicingService {
    */
   private calculateTotal(items: CreateInvoiceDto['items']): number {
     return items.reduce((sum, item) => sum + item.totalPrice, 0);
+  }
+
+  private getPreferenceForGateway(
+    gateway: { type: string } | null,
+  ): PaymentPreference {
+    if (!gateway) {
+      return PaymentPreference.MANUAL;
+    }
+
+    const gatewayType = gateway.type as PaymentGatewayType;
+
+    return gatewayType === PaymentGatewayType.PHYSICAL_TERMINAL
+      ? PaymentPreference.POS_TERMINAL
+      : PaymentPreference.ONLINE_GATEWAY;
+  }
+
+  private resolvePaymentPreference(
+    requested: PaymentPreference | undefined,
+    gateway: { type: string } | null,
+  ): PaymentPreference {
+    if (requested === PaymentPreference.MANUAL) {
+      return PaymentPreference.MANUAL;
+    }
+
+    if (requested && !gateway) {
+      throw new BadRequestException(
+        'Selecione um gateway para esta preferência de pagamento',
+      );
+    }
+
+    if (requested && gateway) {
+      const inferred = this.getPreferenceForGateway(gateway);
+      if (requested !== inferred) {
+        throw new BadRequestException(
+          'O gateway selecionado não suporta esta preferência',
+        );
+      }
+      return requested;
+    }
+
+    if (gateway) {
+      return this.getPreferenceForGateway(gateway);
+    }
+
+    return PaymentPreference.MANUAL;
+  }
+
+  private async validateGatewayOwnership(tenantId: string, gatewayId?: string) {
+    if (!gatewayId) {
+      return null;
+    }
+
+    const gateway = await this.prisma.paymentGateway.findFirst({
+      where: { id: gatewayId, tenantId, isActive: true },
+    });
+
+    if (!gateway) {
+      throw new NotFoundException('Gateway de pagamento não encontrado');
+    }
+
+    return gateway;
   }
 
   /**
@@ -333,6 +422,25 @@ export class InvoicingService {
         throw new BadRequestException('Já existe uma fatura com este número');
       }
 
+      if (
+        createInvoiceDto.paymentPreference === PaymentPreference.MANUAL &&
+        createInvoiceDto.paymentGatewayId
+      ) {
+        throw new BadRequestException(
+          'Selecione um gateway apenas para pagamentos online ou com maquininha',
+        );
+      }
+
+      const gateway = await this.validateGatewayOwnership(
+        tenantId,
+        createInvoiceDto.paymentGatewayId,
+      );
+
+      const paymentPreference = this.resolvePaymentPreference(
+        createInvoiceDto.paymentPreference,
+        gateway,
+      );
+
       // Criar fatura
       const invoice = await this.prisma.invoice.create({
         data: {
@@ -345,6 +453,8 @@ export class InvoicingService {
           discount: new Decimal(discount),
           taxAmount: new Decimal(taxAmount),
           paymentMethod: createInvoiceDto.paymentMethod || null,
+          paymentPreference,
+          paymentGatewayId: gateway?.id || null,
           paymentStatus:
             createInvoiceDto.paymentStatus || PaymentStatus.PENDING,
           status: createInvoiceDto.status || InvoiceStatus.DRAFT,
@@ -366,24 +476,7 @@ export class InvoicingService {
             })),
           },
         },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              email: true,
-            },
-          },
-          serviceOrder: {
-            select: {
-              id: true,
-              number: true,
-              status: true,
-            },
-          },
-          items: true,
-        },
+        include: this.invoiceInclude,
       });
 
       this.logger.log(`Fatura criada: ${invoice.id} (tenant: ${tenantId})`);
@@ -468,24 +561,7 @@ export class InvoicingService {
           skip,
           take: limit,
           orderBy: { createdAt: 'desc' },
-          include: {
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                phone: true,
-                email: true,
-              },
-            },
-            serviceOrder: {
-              select: {
-                id: true,
-                number: true,
-                status: true,
-              },
-            },
-            items: true,
-          },
+          include: this.invoiceInclude,
         }),
         this.prisma.invoice.count({ where }),
       ]);
@@ -518,24 +594,7 @@ export class InvoicingService {
           id,
           tenantId,
         },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              email: true,
-            },
-          },
-          serviceOrder: {
-            select: {
-              id: true,
-              number: true,
-              status: true,
-            },
-          },
-          items: true,
-        },
+        include: this.invoiceInclude,
       });
 
       if (!invoice) {
@@ -592,28 +651,65 @@ export class InvoicingService {
         updateInvoiceDto,
       );
 
+      let targetGatewayId =
+        invoice.paymentGatewayId !== null ? invoice.paymentGatewayId : null;
+      let shouldUpdateGateway = false;
+
+      if (updateInvoiceDto.paymentGatewayId !== undefined) {
+        shouldUpdateGateway = true;
+        targetGatewayId = updateInvoiceDto.paymentGatewayId || null;
+      }
+
+      if (updateInvoiceDto.paymentPreference === PaymentPreference.MANUAL) {
+        shouldUpdateGateway = true;
+        targetGatewayId = null;
+      }
+
+      if (
+        updateInvoiceDto.paymentPreference === PaymentPreference.MANUAL &&
+        updateInvoiceDto.paymentGatewayId
+      ) {
+        throw new BadRequestException(
+          'Não selecione um gateway ao usar pagamento manual',
+        );
+      }
+
+      let gatewayEntity: { id: string; type: string } | null = null;
+      if (targetGatewayId) {
+        gatewayEntity = await this.validateGatewayOwnership(
+          tenantId,
+          targetGatewayId,
+        );
+      }
+
+      if (
+        updateInvoiceDto.paymentPreference !== undefined ||
+        shouldUpdateGateway
+      ) {
+        const resolvedPreference = this.resolvePaymentPreference(
+          updateInvoiceDto.paymentPreference,
+          gatewayEntity,
+        );
+
+        updateData.paymentPreference = resolvedPreference;
+        if (resolvedPreference === PaymentPreference.MANUAL) {
+          targetGatewayId = null;
+        } else if (gatewayEntity) {
+          targetGatewayId = gatewayEntity.id;
+        }
+      }
+
+      if (shouldUpdateGateway) {
+        updateData.paymentGateway = targetGatewayId
+          ? { connect: { id: targetGatewayId } }
+          : { disconnect: true };
+      }
+
       // Atualizar fatura
       const updatedInvoice = await this.prisma.invoice.update({
         where: { id },
         data: updateData,
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              email: true,
-            },
-          },
-          serviceOrder: {
-            select: {
-              id: true,
-              number: true,
-              status: true,
-            },
-          },
-          items: true,
-        },
+        include: this.invoiceInclude,
       });
 
       this.logger.log(`Fatura atualizada: ${id} (tenant: ${tenantId})`);
@@ -718,24 +814,7 @@ export class InvoicingService {
           status: InvoiceStatus.ISSUED,
           issuedAt: new Date(),
         },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              email: true,
-            },
-          },
-          serviceOrder: {
-            select: {
-              id: true,
-              number: true,
-              status: true,
-            },
-          },
-          items: true,
-        },
+        include: this.invoiceInclude,
       });
 
       this.logger.log(`Fatura emitida: ${id} (tenant: ${tenantId})`);
@@ -791,24 +870,7 @@ export class InvoicingService {
         data: {
           status: InvoiceStatus.CANCELLED,
         },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              email: true,
-            },
-          },
-          serviceOrder: {
-            select: {
-              id: true,
-              number: true,
-              status: true,
-            },
-          },
-          items: true,
-        },
+        include: this.invoiceInclude,
       });
 
       this.logger.log(`Fatura cancelada: ${id} (tenant: ${tenantId})`);
@@ -849,6 +911,13 @@ export class InvoicingService {
     nfePdfUrl?: string | null;
     nfeStatus?: string | null;
     paymentMethod?: string | null;
+    paymentPreference?: string | null;
+    paymentGatewayId?: string | null;
+    paymentGateway?: {
+      id: string;
+      name: string;
+      type: string;
+    } | null;
     paymentStatus: string;
     paidAt?: Date | null;
     status: string;
@@ -916,6 +985,17 @@ export class InvoicingService {
       nfePdfUrl: invoice.nfePdfUrl || undefined,
       nfeStatus: invoice.nfeStatus || undefined,
       paymentMethod: invoice.paymentMethod || undefined,
+      paymentPreference: invoice.paymentPreference
+        ? (invoice.paymentPreference as PaymentPreference)
+        : undefined,
+      paymentGatewayId: invoice.paymentGatewayId || undefined,
+      paymentGateway: invoice.paymentGateway
+        ? {
+            id: invoice.paymentGateway.id,
+            name: invoice.paymentGateway.name,
+            type: invoice.paymentGateway.type,
+          }
+        : undefined,
       paymentStatus: invoice.paymentStatus as PaymentStatus,
       paidAt: invoice.paidAt || undefined,
       status: invoice.status as InvoiceStatus,

@@ -107,13 +107,8 @@ export default function PaymentGatewaysSettingsPage() {
     try {
       setLoading(true);
       setError(null);
-      // Por enquanto, usar localStorage até implementar backend
-      const stored = localStorage.getItem('paymentGateways');
-      if (stored) {
-        setGateways(JSON.parse(stored));
-      } else {
-        setGateways([]);
-      }
+      const data = await paymentGatewaysApi.findAll();
+      setGateways(data);
     } catch (err: unknown) {
       console.error('[PaymentGatewaysSettingsPage] Erro ao carregar gateways:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar gateways';
@@ -121,11 +116,6 @@ export default function PaymentGatewaysSettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const saveGateways = (newGateways: PaymentGatewayConfig[]) => {
-    localStorage.setItem('paymentGateways', JSON.stringify(newGateways));
-    setGateways(newGateways);
   };
 
   const getCredentialsFields = (type: GatewayType) => {
@@ -407,9 +397,7 @@ export default function PaymentGatewaysSettingsPage() {
     e.preventDefault();
 
     try {
-      const newGateway: PaymentGatewayConfig = {
-        id: editingGateway?.id || `gateway-${Date.now()}`,
-        tenantId: subdomain || 'current-tenant',
+      const payload: CreatePaymentGatewayDto = {
         name: formData.name,
         type: formData.type,
         isActive: formData.isActive,
@@ -420,26 +408,15 @@ export default function PaymentGatewaysSettingsPage() {
           webhookUrl: getWebhookUrl(formData.type),
           notificationUrl: getWebhookUrl(formData.type),
         },
-        createdAt: editingGateway?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
 
-      let updatedGateways: PaymentGatewayConfig[];
       if (editingGateway) {
-        updatedGateways = gateways.map(g => g.id === editingGateway.id ? newGateway : g);
+        await paymentGatewaysApi.update(editingGateway.id, payload);
       } else {
-        updatedGateways = [...gateways, newGateway];
+        await paymentGatewaysApi.create(payload);
       }
 
-      // Se marcado como padrão, desmarcar outros
-      if (newGateway.isDefault) {
-        updatedGateways = updatedGateways.map(g => ({
-          ...g,
-          isDefault: g.id === newGateway.id,
-        }));
-      }
-
-      saveGateways(updatedGateways);
+      await loadGateways();
       showNotification(editingGateway ? 'Gateway atualizado com sucesso!' : 'Gateway criado com sucesso!', 'success');
       resetForm();
     } catch (err: unknown) {
@@ -469,14 +446,30 @@ export default function PaymentGatewaysSettingsPage() {
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este gateway?')) {
       return;
     }
 
-    const updatedGateways = gateways.filter(g => g.id !== id);
-    saveGateways(updatedGateways);
-    showNotification('Gateway excluído com sucesso!', 'success');
+    try {
+      await paymentGatewaysApi.remove(id);
+      await loadGateways();
+      showNotification('Gateway excluído com sucesso!', 'success');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir gateway';
+      showNotification(errorMessage, 'error');
+    }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    try {
+      await paymentGatewaysApi.setDefault(id);
+      await loadGateways();
+      showNotification('Gateway definido como padrão', 'success');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao definir gateway padrão';
+      showNotification(errorMessage, 'error');
+    }
   };
 
   const resetForm = () => {
@@ -501,8 +494,8 @@ export default function PaymentGatewaysSettingsPage() {
 
   const handleTestConnection = async (id: string) => {
     try {
-      // TODO: Implementar teste de conexão no backend
-      showNotification('Teste de conexão será implementado em breve', 'info');
+      const result = await paymentGatewaysApi.testConnection(id);
+      showNotification(result.message, result.success ? 'success' : 'error');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao testar conexão';
       showNotification(errorMessage, 'error');
@@ -930,6 +923,15 @@ export default function PaymentGatewaysSettingsPage() {
                           >
                             Editar
                           </Button>
+                          {!gateway.isDefault && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleSetDefault(gateway.id)}
+                            >
+                              Definir padrão
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"

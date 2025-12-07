@@ -24,7 +24,9 @@ export class PlansService {
       });
 
       if (existingPlan) {
-        throw new ConflictException(`Plano com código '${createPlanDto.code}' já existe`);
+        throw new ConflictException(
+          `Plano com código '${createPlanDto.code}' já existe`,
+        );
       }
 
       // Se este plano for marcado como default, remover default dos outros
@@ -133,7 +135,10 @@ export class PlansService {
     }
   }
 
-  async update(id: string, updatePlanDto: UpdatePlanDto): Promise<PlanResponseDto> {
+  async update(
+    id: string,
+    updatePlanDto: UpdatePlanDto,
+  ): Promise<PlanResponseDto> {
     try {
       const existingPlan = await this.prisma.plan.findUnique({
         where: { id },
@@ -149,7 +154,9 @@ export class PlansService {
           where: { code: updatePlanDto.code },
         });
         if (planWithCode) {
-          throw new ConflictException(`Plano com código '${updatePlanDto.code}' já existe`);
+          throw new ConflictException(
+            `Plano com código '${updatePlanDto.code}' já existe`,
+          );
         }
       }
 
@@ -162,23 +169,41 @@ export class PlansService {
       }
 
       const updateData: Prisma.PlanUpdateInput = {};
-      
-      if (updatePlanDto.code !== undefined) updateData.code = updatePlanDto.code;
-      if (updatePlanDto.name !== undefined) updateData.name = updatePlanDto.name;
-      if (updatePlanDto.description !== undefined) updateData.description = updatePlanDto.description;
-      if (updatePlanDto.monthlyPrice !== undefined) updateData.monthlyPrice = new Prisma.Decimal(updatePlanDto.monthlyPrice);
-      if (updatePlanDto.annualPrice !== undefined) updateData.annualPrice = new Prisma.Decimal(updatePlanDto.annualPrice);
-      if (updatePlanDto.serviceOrdersLimit !== undefined) updateData.serviceOrdersLimit = updatePlanDto.serviceOrdersLimit;
-      if (updatePlanDto.partsLimit !== undefined) updateData.partsLimit = updatePlanDto.partsLimit;
-      if (updatePlanDto.usersLimit !== undefined) updateData.usersLimit = updatePlanDto.usersLimit;
-      if (updatePlanDto.features !== undefined) updateData.features = updatePlanDto.features;
-      if (updatePlanDto.isActive !== undefined) updateData.isActive = updatePlanDto.isActive;
-      if (updatePlanDto.isDefault !== undefined) updateData.isDefault = updatePlanDto.isDefault;
-      if (updatePlanDto.sortOrder !== undefined) updateData.sortOrder = updatePlanDto.sortOrder;
-      if (updatePlanDto.highlightText !== undefined) updateData.highlightText = updatePlanDto.highlightText;
-      if (updatePlanDto.stripePriceIdMonthly !== undefined) updateData.stripePriceIdMonthly = updatePlanDto.stripePriceIdMonthly;
-      if (updatePlanDto.stripePriceIdAnnual !== undefined) updateData.stripePriceIdAnnual = updatePlanDto.stripePriceIdAnnual;
-      if (updatePlanDto.stripeProductId !== undefined) updateData.stripeProductId = updatePlanDto.stripeProductId;
+
+      if (updatePlanDto.code !== undefined)
+        updateData.code = updatePlanDto.code;
+      if (updatePlanDto.name !== undefined)
+        updateData.name = updatePlanDto.name;
+      if (updatePlanDto.description !== undefined)
+        updateData.description = updatePlanDto.description;
+      if (updatePlanDto.monthlyPrice !== undefined)
+        updateData.monthlyPrice = new Prisma.Decimal(
+          updatePlanDto.monthlyPrice,
+        );
+      if (updatePlanDto.annualPrice !== undefined)
+        updateData.annualPrice = new Prisma.Decimal(updatePlanDto.annualPrice);
+      if (updatePlanDto.serviceOrdersLimit !== undefined)
+        updateData.serviceOrdersLimit = updatePlanDto.serviceOrdersLimit;
+      if (updatePlanDto.partsLimit !== undefined)
+        updateData.partsLimit = updatePlanDto.partsLimit;
+      if (updatePlanDto.usersLimit !== undefined)
+        updateData.usersLimit = updatePlanDto.usersLimit;
+      if (updatePlanDto.features !== undefined)
+        updateData.features = updatePlanDto.features;
+      if (updatePlanDto.isActive !== undefined)
+        updateData.isActive = updatePlanDto.isActive;
+      if (updatePlanDto.isDefault !== undefined)
+        updateData.isDefault = updatePlanDto.isDefault;
+      if (updatePlanDto.sortOrder !== undefined)
+        updateData.sortOrder = updatePlanDto.sortOrder;
+      if (updatePlanDto.highlightText !== undefined)
+        updateData.highlightText = updatePlanDto.highlightText;
+      if (updatePlanDto.stripePriceIdMonthly !== undefined)
+        updateData.stripePriceIdMonthly = updatePlanDto.stripePriceIdMonthly;
+      if (updatePlanDto.stripePriceIdAnnual !== undefined)
+        updateData.stripePriceIdAnnual = updatePlanDto.stripePriceIdAnnual;
+      if (updatePlanDto.stripeProductId !== undefined)
+        updateData.stripeProductId = updatePlanDto.stripeProductId;
 
       const plan = await this.prisma.plan.update({
         where: { id },
@@ -188,7 +213,10 @@ export class PlansService {
       this.logger.log(`Plano atualizado: ${plan.id} (${plan.code})`);
       return this.toResponseDto(plan);
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ConflictException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
       this.logger.error(
@@ -223,7 +251,10 @@ export class PlansService {
 
       this.logger.log(`Plano excluído: ${id}`);
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       this.logger.error(
@@ -238,7 +269,11 @@ export class PlansService {
     totalPlans: number;
     activePlans: number;
     totalSubscriptions: number;
-    subscriptionsByPlan: Array<{ planId: string; planName: string; count: number }>;
+    subscriptionsByPlan: Array<{
+      planId: string;
+      planName: string;
+      count: number;
+    }>;
   }> {
     try {
       const [totalPlans, activePlans, subscriptionsByPlan] = await Promise.all([
@@ -313,4 +348,3 @@ export class PlansService {
     };
   }
 }
-

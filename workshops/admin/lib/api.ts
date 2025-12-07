@@ -115,6 +115,23 @@ export const tenantsApi = {
     const response = await api.post<Tenant>(`/tenants/${id}/cancel`);
     return response.data;
   },
+
+  getUsers: async (tenantId: string): Promise<Array<{
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    isActive: boolean;
+    createdAt: string;
+  }>> => {
+    const response = await api.get(`/tenants/${tenantId}/users`);
+    return response.data;
+  },
+
+  resetUserPassword: async (tenantId: string, userId: string): Promise<{ message: string; tempPassword: string }> => {
+    const response = await api.post(`/tenants/${tenantId}/users/${userId}/reset-password`);
+    return response.data;
+  },
 };
 
 // ========================

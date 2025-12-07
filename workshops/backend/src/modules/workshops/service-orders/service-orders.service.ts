@@ -23,6 +23,13 @@ import {
   NotificationsService,
   NotificationType,
 } from '@core/notifications/notifications.service';
+import { InvoicingService } from '../invoicing/invoicing.service';
+import {
+  CreateInvoiceDto,
+  InvoiceItemType,
+  InvoiceType,
+} from '../invoicing/dto';
+import { PaymentGatewaysService } from '../payment-gateways/payment-gateways.service';
 
 @Injectable()
 export class ServiceOrdersService {
@@ -34,6 +41,8 @@ export class ServiceOrdersService {
     private readonly checklistsService: ChecklistsService,
     private readonly attachmentsService: AttachmentsService,
     private readonly notificationsService: NotificationsService,
+    private readonly invoicingService: InvoicingService,
+    private readonly paymentGatewaysService: PaymentGatewaysService,
   ) {}
 
   /**
@@ -1316,6 +1325,14 @@ export class ServiceOrdersService {
     responseDto.attachments = relations.attachments;
     responseDto.checklists = relations.checklists;
 
+    const generatedInvoiceId = await this.autoGenerateInvoiceForCompletedOrder(
+      tenantId,
+      updatedOrder,
+    );
+    if (generatedInvoiceId) {
+      responseDto.invoiceId = generatedInvoiceId;
+    }
+
     return responseDto;
   }
 
@@ -1449,6 +1466,184 @@ export class ServiceOrdersService {
     });
 
     this.logger.log(`Ordem de serviço removida: ${serviceOrder.number}`);
+  }
+
+  private decimalToNumber(value: unknown, fallback = 0): number {
+    if (value && typeof value === 'object' && 'toNumber' in value) {
+      return (value as { toNumber(): number }).toNumber();
+    }
+    const numeric = Number(value);
+    return Number.isNaN(numeric) ? fallback : numeric;
+  }
+
+  private buildInvoiceItemsFromServiceOrder(serviceOrder: {
+    number: string;
+    services?: Array<{
+      serviceName: string;
+      description?: string | null;
+      cost?: unknown;
+    }>;
+    partsConsumed?: Array<{
+      partName: string;
+      quantity: number;
+      unitCost: unknown;
+      totalCost?: unknown;
+      part?: { description?: string | null } | null;
+    }>;
+    totalCost?: unknown;
+    laborCost?: unknown;
+    partsCost?: unknown;
+  }): CreateInvoiceDto['items'] {
+    const items: CreateInvoiceDto['items'] = [];
+
+    for (const service of serviceOrder.services || []) {
+      const cost = this.decimalToNumber(service.cost, 0);
+      if (cost <= 0) {
+        continue;
+      }
+      items.push({
+        type: InvoiceItemType.SERVICE,
+        name: service.serviceName || `Serviço OS ${serviceOrder.number}`,
+        description: service.description || undefined,
+        quantity: 1,
+        unitPrice: cost,
+        totalPrice: cost,
+      });
+    }
+
+    for (const part of serviceOrder.partsConsumed || []) {
+      const unitPrice = this.decimalToNumber(part.unitCost, 0);
+      const quantity = part.quantity || 1;
+      if (quantity <= 0) {
+        continue;
+      }
+      const totalPrice = this.decimalToNumber(
+        part.totalCost,
+        unitPrice * quantity,
+      );
+      if (totalPrice <= 0) {
+        continue;
+      }
+      items.push({
+        type: InvoiceItemType.PART,
+        name: part.partName || 'Peça',
+        description: part.part?.description || undefined,
+        quantity,
+        unitPrice,
+        totalPrice,
+      });
+    }
+
+    if (
+      items.length === 0 &&
+      (serviceOrder.totalCost ||
+        serviceOrder.laborCost ||
+        serviceOrder.partsCost)
+    ) {
+      const inferredTotal = this.decimalToNumber(serviceOrder.totalCost, 0);
+      if (inferredTotal > 0) {
+        items.push({
+          type: InvoiceItemType.SERVICE,
+          name: `Serviços OS ${serviceOrder.number}`,
+          quantity: 1,
+          unitPrice: inferredTotal,
+          totalPrice: inferredTotal,
+        });
+      }
+    }
+
+    return items;
+  }
+
+  private async autoGenerateInvoiceForCompletedOrder(
+    tenantId: string,
+    serviceOrder: {
+      id: string;
+      number: string;
+      customerId: string | null;
+      invoiceId: string | null;
+      services?: Array<{
+        serviceName: string;
+        description?: string | null;
+        cost?: unknown;
+      }>;
+      partsConsumed?: Array<{
+        partName: string;
+        quantity: number;
+        unitCost: unknown;
+        totalCost?: unknown;
+        part?: { description?: string | null } | null;
+      }>;
+      totalCost?: unknown;
+      discount?: unknown;
+    },
+  ): Promise<string | null> {
+    try {
+      if (serviceOrder.invoiceId) {
+        return serviceOrder.invoiceId;
+      }
+
+      const existingInvoice = await this.prisma.invoice.findFirst({
+        where: {
+          tenantId,
+          serviceOrderId: serviceOrder.id,
+        },
+      });
+
+      if (existingInvoice) {
+        await this.prisma.serviceOrder.update({
+          where: { id: serviceOrder.id },
+          data: { invoiceId: existingInvoice.id },
+        });
+        return existingInvoice.id;
+      }
+
+      const items = this.buildInvoiceItemsFromServiceOrder(serviceOrder);
+      if (items.length === 0) {
+        this.logger.warn(
+          `OS ${serviceOrder.number} finalizada sem itens para emissão automática de fatura`,
+        );
+        return null;
+      }
+
+      const defaultGateway =
+        await this.paymentGatewaysService.getDefaultGateway(tenantId);
+
+      const invoicePayload: CreateInvoiceDto = {
+        serviceOrderId: serviceOrder.id,
+        customerId: serviceOrder.customerId || undefined,
+        type: InvoiceType.SERVICE,
+        items,
+        total: this.decimalToNumber(
+          serviceOrder.totalCost,
+          items.reduce((sum, item) => sum + item.totalPrice, 0),
+        ),
+        discount: this.decimalToNumber(serviceOrder.discount, 0),
+        taxAmount: 0,
+        ...(defaultGateway && { paymentGatewayId: defaultGateway.id }),
+      };
+
+      const invoice = await this.invoicingService.create(
+        tenantId,
+        invoicePayload,
+      );
+
+      await this.prisma.serviceOrder.update({
+        where: { id: serviceOrder.id },
+        data: { invoiceId: invoice.id },
+      });
+
+      this.logger.log(
+        `Fatura ${invoice.id} gerada automaticamente para OS ${serviceOrder.number}`,
+      );
+
+      return invoice.id;
+    } catch (error) {
+      this.logger.warn(
+        `Falha ao gerar fatura automática para OS ${serviceOrder.number}: ${getErrorMessage(error)}`,
+      );
+      return null;
+    }
   }
 
   /**
