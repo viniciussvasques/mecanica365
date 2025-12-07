@@ -363,16 +363,14 @@ export class InvoicingService {
           createInvoiceDto,
         );
 
-      const invoice = await this.createInvoiceRecord(
+      const invoiceData = {
         tenantId,
         createInvoiceDto,
         invoiceNumber,
-        finalTotal,
-        discount,
-        taxAmount,
-        gateway,
-        paymentPreference,
-      );
+        totals: { finalTotal, discount, taxAmount },
+        payment: { gateway, paymentPreference },
+      };
+      const invoice = await this.createInvoiceRecord(invoiceData);
 
       this.logger.log(`Fatura criada: ${invoice.id} (tenant: ${tenantId})`);
       return this.toResponseDto(invoice);
@@ -507,16 +505,17 @@ export class InvoicingService {
     return { gateway, paymentPreference };
   }
 
-  private async createInvoiceRecord(
-    tenantId: string,
-    createInvoiceDto: CreateInvoiceDto,
-    invoiceNumber: string,
-    finalTotal: number,
-    discount: number,
-    taxAmount: number,
-    gateway: { id: string; type: string } | null,
-    paymentPreference: PaymentPreference,
-  ) {
+  private async createInvoiceRecord(data: {
+    tenantId: string;
+    createInvoiceDto: CreateInvoiceDto;
+    invoiceNumber: string;
+    totals: { finalTotal: number; discount: number; taxAmount: number };
+    payment: {
+      gateway: { id: string; type: string } | null;
+      paymentPreference: PaymentPreference;
+    };
+  }) {
+    const { tenantId, createInvoiceDto, invoiceNumber, totals, payment } = data;
     return this.prisma.invoice.create({
       data: {
         tenantId,
@@ -524,12 +523,12 @@ export class InvoicingService {
         serviceOrderId: createInvoiceDto.serviceOrderId || null,
         customerId: createInvoiceDto.customerId || null,
         type: createInvoiceDto.type,
-        total: new Decimal(finalTotal),
-        discount: new Decimal(discount),
-        taxAmount: new Decimal(taxAmount),
+        total: new Decimal(totals.finalTotal),
+        discount: new Decimal(totals.discount),
+        taxAmount: new Decimal(totals.taxAmount),
         paymentMethod: createInvoiceDto.paymentMethod || null,
-        paymentPreference,
-        paymentGatewayId: gateway?.id || null,
+        paymentPreference: payment.paymentPreference,
+        paymentGatewayId: payment.gateway?.id || null,
         paymentStatus:
           createInvoiceDto.paymentStatus || PaymentStatus.PENDING,
         status: createInvoiceDto.status || InvoiceStatus.DRAFT,
