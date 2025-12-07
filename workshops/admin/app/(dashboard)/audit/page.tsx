@@ -50,7 +50,7 @@ export default function AuditPage() {
           <option value="">Todas as Ações</option>
           {['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'VIEW'].map(a => <option key={a} value={a}>{a}</option>)}
         </select>
-        <select value={filters.resource || ''} onChange={(e) => setFilters({ ...filters, resource: e.target.value || undefined, page: 1 })} className="px-4 py-2 bg-[#12121A] border border-[#1F1F28] rounded-lg text-white focus:border-[#FF6B6B] focus:outline-none">
+        <select value={filters.resourceType || filters.resource || ''} onChange={(e) => setFilters({ ...filters, resourceType: e.target.value || undefined, resource: undefined, page: 1 })} className="px-4 py-2 bg-[#12121A] border border-[#1F1F28] rounded-lg text-white focus:border-[#FF6B6B] focus:outline-none">
           <option value="">Todos os Recursos</option>
           {['customers', 'vehicles', 'service-orders', 'quotes', 'parts', 'users'].map(r => <option key={r} value={r}>{r}</option>)}
         </select>

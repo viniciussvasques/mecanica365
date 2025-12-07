@@ -81,16 +81,21 @@ describe('EmailService', () => {
     };
 
     it('deve logar email se SMTP não estiver configurado', async () => {
-      // Limpar transporter para simular não configurado
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (service as any).transporter = null;
+      // Limpar variável de ambiente para simular não configurado
+      const originalSmtpUser = process.env.SMTP_USER;
+      delete process.env.SMTP_USER;
       const loggerSpy = jest.spyOn(service['logger'], 'log');
 
       await service.sendWelcomeEmail(emailData);
 
-      // Verificar se logger foi chamado (pode ser log ou error)
+      // Verificar se logger foi chamado
       expect(loggerSpy).toHaveBeenCalled();
       expect(mockTransporter.sendMail).not.toHaveBeenCalled();
+      
+      // Restaurar variável de ambiente
+      if (originalSmtpUser) {
+        process.env.SMTP_USER = originalSmtpUser;
+      }
     });
 
     it('deve enviar email se SMTP estiver configurado', async () => {

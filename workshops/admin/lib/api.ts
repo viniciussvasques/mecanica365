@@ -7,8 +7,11 @@ const apiUrl = typeof globalThis.window !== 'undefined'
     || 'http://localhost:3001'
   : 'http://localhost:3001';
 
+// Garantir que a URL não tenha /api duplicado
+const baseUrl = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
+
 const api = axios.create({
-  baseURL: `${apiUrl}/api`,
+  baseURL: baseUrl,
   headers: {
     'Content-Type': 'application/json',
     'X-Tenant-Subdomain': 'system', // Tenant especial para o painel admin
@@ -261,7 +264,8 @@ export interface AuditLog {
 
 export interface AuditFilters {
   action?: string;
-  resource?: string;
+  resourceType?: string;
+  resource?: string; // Mantido para compatibilidade, mas será mapeado para resourceType
   startDate?: string;
   endDate?: string;
   page?: number;
@@ -270,7 +274,13 @@ export interface AuditFilters {
 
 export const auditApi = {
   findAll: async (filters?: AuditFilters) => {
-    const response = await api.get<{ data: AuditLog[]; total: number; totalPages: number }>('/audit', { params: filters });
+    // Mapear 'resource' para 'resourceType' se presente
+    const params: Record<string, unknown> = { ...filters };
+    if (params.resource && !params.resourceType) {
+      params.resourceType = params.resource;
+      delete params.resource;
+    }
+    const response = await api.get<{ data: AuditLog[]; total: number; totalPages: number }>('/audit', { params });
     return response.data;
   },
 };

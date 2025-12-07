@@ -20,7 +20,8 @@ async function bootstrap() {
   const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:3000',
     'http://localhost:3000',
-    'http://localhost:3002', // Painel Admin
+    'http://localhost:3002', // Painel Admin (porta antiga)
+    'http://localhost:3003', // Painel Admin (porta atual)
     /^http:\/\/.*\.localhost:3000$/, // Aceitar qualquer subdomain.localhost:3000
   ];
 

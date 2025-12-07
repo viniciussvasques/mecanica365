@@ -20,7 +20,11 @@ export default function LoginPage() {
       // Chamar API de login do backend diretamente
       // Para o painel admin, usamos o tenant "system"
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
+      // Garantir que a URL não tenha /api duplicado
+      const loginUrl = apiUrl.endsWith('/api') 
+        ? `${apiUrl}/auth/login` 
+        : `${apiUrl}/api/auth/login`;
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

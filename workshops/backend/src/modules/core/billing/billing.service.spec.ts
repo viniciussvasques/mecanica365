@@ -50,6 +50,9 @@ describe('BillingService', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
+    plan: {
+      findMany: jest.fn().mockResolvedValue([]), // Retorna array vazio para usar fallback
+    },
   };
 
   const mockFeatureFlagsService = {
@@ -276,8 +279,8 @@ describe('BillingService', () => {
   });
 
   describe('getAvailablePlans', () => {
-    it('deve retornar lista de planos disponíveis', () => {
-      const plans = service.getAvailablePlans();
+    it('deve retornar lista de planos disponíveis', async () => {
+      const plans = await service.getAvailablePlans();
 
       expect(plans).toHaveLength(3);
       expect(plans[0].id).toBe(SubscriptionPlan.WORKSHOPS_STARTER);

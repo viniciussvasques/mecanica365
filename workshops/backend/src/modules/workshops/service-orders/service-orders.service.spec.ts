@@ -6,6 +6,8 @@ import { ElevatorsService } from '../elevators/elevators.service';
 import { ChecklistsService } from '../checklists/checklists.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { NotificationsService } from '@core/notifications/notifications.service';
+import { InvoicingService } from '../invoicing/invoicing.service';
+import { PaymentGatewaysService } from '../payment-gateways/payment-gateways.service';
 import { CreateServiceOrderDto, ServiceOrderStatus } from './dto';
 import { ChecklistType } from '../checklists/dto';
 
@@ -130,6 +132,19 @@ describe('ServiceOrdersService', () => {
     notifyAllMechanics: jest.fn(),
   };
 
+  const mockInvoicingService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockPaymentGatewaysService = {
+    findAll: jest.fn(),
+    findDefaultGateway: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -153,6 +168,14 @@ describe('ServiceOrdersService', () => {
         {
           provide: NotificationsService,
           useValue: mockNotificationsService,
+        },
+        {
+          provide: InvoicingService,
+          useValue: mockInvoicingService,
+        },
+        {
+          provide: PaymentGatewaysService,
+          useValue: mockPaymentGatewaysService,
         },
       ],
     }).compile();
