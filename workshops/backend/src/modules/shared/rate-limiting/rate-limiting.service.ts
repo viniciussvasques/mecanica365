@@ -29,6 +29,7 @@ export class RateLimitingService {
    * Verifica se uma requisição deve ser bloqueada
    * (Normalmente feito automaticamente pelo ThrottlerGuard)
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   shouldBlock(_identifier: string): boolean {
     // Lógica adicional de rate limiting pode ser implementada aqui
     // Por enquanto, o ThrottlerGuard faz o trabalho principal

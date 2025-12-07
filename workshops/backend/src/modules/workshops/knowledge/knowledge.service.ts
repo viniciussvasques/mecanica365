@@ -226,9 +226,7 @@ export class KnowledgeService {
   ) {
     const makeLower = vehicleMake.toLowerCase();
     return knowledge.filter((item) => {
-      const makes = Array.isArray(item.vehicleMakes)
-        ? item.vehicleMakes
-        : [];
+      const makes = Array.isArray(item.vehicleMakes) ? item.vehicleMakes : [];
       return makes.some((make: { make?: string }) =>
         make.make?.toLowerCase().includes(makeLower),
       );
@@ -523,8 +521,13 @@ export class KnowledgeService {
             : [];
           return symptoms.some((searchSymptom) =>
             itemSymptoms.some((itemSymptom: { symptom?: string } | string) => {
-              const symptom = typeof itemSymptom === 'string' ? itemSymptom : itemSymptom.symptom;
-              return symptom?.toLowerCase().includes(searchSymptom.toLowerCase());
+              const symptom =
+                typeof itemSymptom === 'string'
+                  ? itemSymptom
+                  : itemSymptom.symptom;
+              return symptom
+                ?.toLowerCase()
+                .includes(searchSymptom.toLowerCase());
             }),
           );
         })
@@ -574,10 +577,17 @@ export class KnowledgeService {
       solutionTitle: knowledge.solutionTitle,
       solutionDescription: knowledge.solutionDescription,
       solutionSteps: Array.isArray(knowledge.solutionSteps)
-        ? (knowledge.solutionSteps as Array<{ step: number; description: string }>)
+        ? (knowledge.solutionSteps as Array<{
+            step: number;
+            description: string;
+          }>)
         : [],
       partsNeeded: Array.isArray(knowledge.partsNeeded)
-        ? (knowledge.partsNeeded as Array<{ name: string; partNumber?: string; avgCost?: number }>)
+        ? (knowledge.partsNeeded as Array<{
+            name: string;
+            partNumber?: string;
+            avgCost?: number;
+          }>)
         : [],
       estimatedCost: knowledge.estimatedCost
         ? Number(knowledge.estimatedCost)

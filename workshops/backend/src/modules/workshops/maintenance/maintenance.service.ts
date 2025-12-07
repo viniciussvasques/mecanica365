@@ -144,7 +144,7 @@ export class MaintenanceService {
   async createSchedule(
     tenantId: string,
     dto: CreateVehicleScheduleDto,
-    userId?: string,
+    _userId?: string,
   ): Promise<VehicleScheduleResponseDto> {
     try {
       // Verificar se veículo existe
@@ -447,9 +447,7 @@ export class MaintenanceService {
     return schedules.map((s): MaintenanceAlertDto => {
       const isOverdue =
         (s.nextDueDate && s.nextDueDate < now) ||
-        (s.nextDueKm &&
-          s.vehicle.mileage &&
-          s.nextDueKm <= s.vehicle.mileage);
+        (s.nextDueKm && s.vehicle.mileage && s.nextDueKm <= s.vehicle.mileage);
 
       const daysUntilDue = s.nextDueDate
         ? Math.ceil(
@@ -640,9 +638,7 @@ export class MaintenanceService {
       category: template.category as MaintenanceCategory,
       intervalKm: template.intervalKm ?? undefined,
       intervalMonths: template.intervalMonths ?? undefined,
-      items: Array.isArray(template.items)
-        ? (template.items as unknown[])
-        : [],
+      items: Array.isArray(template.items) ? (template.items as unknown[]) : [],
       estimatedCost: template.estimatedCost?.toNumber(),
       estimatedHours: template.estimatedHours?.toNumber(),
       suggestedParts: Array.isArray(template.suggestedParts)

@@ -175,9 +175,7 @@ export class PredictiveService {
         (prediction) =>
           prediction.urgency === 'urgent' || prediction.urgency === 'high',
       )
-      .map((prediction) =>
-        this.createAlertFromPrediction(prediction, vehicle),
-      );
+      .map((prediction) => this.createAlertFromPrediction(prediction, vehicle));
   }
 
   private createAlertFromPrediction(
@@ -299,10 +297,36 @@ export class PredictiveService {
    * Calcula previsões baseadas em dados históricos
    */
   private async calculatePredictions(
-    vehicle: { id: string; mileage: number | null; make: string | null; model: string | null; year: number | null },
-    maintenanceHistory: Array<{ id: string; category: string; performedAt: Date; mileageAtService: number | null; nextDueKm: number | null; nextDueDate: Date | null }>,
-    scheduledMaintenances: Array<{ id: string; maintenanceName: string; category: string; dueKm: number | null; dueDate: Date | null; priority: string; vehicleId: string; estimatedCost?: any }>,
-    similarVehiclesPatterns: Array<{ category: string; avgInterval: number; count: number }>,
+    vehicle: {
+      id: string;
+      mileage: number | null;
+      make: string | null;
+      model: string | null;
+      year: number | null;
+    },
+    maintenanceHistory: Array<{
+      id: string;
+      category: string;
+      performedAt: Date;
+      mileageAtService: number | null;
+      nextDueKm: number | null;
+      nextDueDate: Date | null;
+    }>,
+    scheduledMaintenances: Array<{
+      id: string;
+      maintenanceName: string;
+      category: string;
+      dueKm: number | null;
+      dueDate: Date | null;
+      priority: string;
+      vehicleId: string;
+      estimatedCost?: unknown;
+    }>,
+    similarVehiclesPatterns: Array<{
+      category: string;
+      avgInterval: number;
+      count: number;
+    }>,
   ): Promise<MaintenancePredictionDto[]> {
     const predictions: MaintenancePredictionDto[] = [];
     const currentKm = vehicle.mileage || 0;
@@ -340,7 +364,16 @@ export class PredictiveService {
    * Cria previsão baseada em manutenção programada
    */
   private createPredictionFromScheduled(
-    scheduled: { id: string; maintenanceName: string; category: string; dueKm: number | null; dueDate: Date | null; priority: string; vehicleId: string; estimatedCost?: any },
+    scheduled: {
+      id: string;
+      maintenanceName: string;
+      category: string;
+      dueKm: number | null;
+      dueDate: Date | null;
+      priority: string;
+      vehicleId: string;
+      estimatedCost?: unknown;
+    },
     currentKm: number,
     currentDate: Date,
   ): MaintenancePredictionDto | null {
@@ -403,9 +436,26 @@ export class PredictiveService {
    * Gera previsões baseadas em padrões históricos
    */
   private async generatePatternBasedPredictions(
-    vehicle: { id: string; mileage: number | null; make: string | null; model: string | null; year: number | null },
-    maintenanceHistory: Array<{ id: string; category: string; performedAt: Date; mileageAtService: number | null; nextDueKm: number | null; nextDueDate: Date | null }>,
-    similarVehiclesPatterns: Array<{ category: string; avgInterval: number; count: number }>,
+    vehicle: {
+      id: string;
+      mileage: number | null;
+      make: string | null;
+      model: string | null;
+      year: number | null;
+    },
+    maintenanceHistory: Array<{
+      id: string;
+      category: string;
+      performedAt: Date;
+      mileageAtService: number | null;
+      nextDueKm: number | null;
+      nextDueDate: Date | null;
+    }>,
+    similarVehiclesPatterns: Array<{
+      category: string;
+      avgInterval: number;
+      count: number;
+    }>,
     currentKm: number,
     currentDate: Date,
   ): Promise<MaintenancePredictionDto[]> {
@@ -427,7 +477,12 @@ export class PredictiveService {
 
   private generateKmBasedPredictions(
     vehicle: { id: string },
-    maintenanceHistory: Array<{ id: string; category: string; performedAt: Date; mileageAtService: number | null }>,
+    maintenanceHistory: Array<{
+      id: string;
+      category: string;
+      performedAt: Date;
+      mileageAtService: number | null;
+    }>,
     currentKm: number,
     currentDate: Date,
   ): MaintenancePredictionDto[] {
@@ -456,7 +511,11 @@ export class PredictiveService {
   private createKmPrediction(
     vehicle: { id: string },
     pattern: { category: string; avgInterval: number; count: number },
-    maintenanceHistory: Array<{ category: string; performedAt: Date; mileageAtService: number | null }>,
+    maintenanceHistory: Array<{
+      category: string;
+      performedAt: Date;
+      mileageAtService: number | null;
+    }>,
     currentKm: number,
     currentDate: Date,
   ): MaintenancePredictionDto | null {
@@ -500,7 +559,11 @@ export class PredictiveService {
 
   private generateTimeBasedPredictions(
     vehicle: { id: string },
-    maintenanceHistory: Array<{ id: string; category: string; performedAt: Date }>,
+    maintenanceHistory: Array<{
+      id: string;
+      category: string;
+      performedAt: Date;
+    }>,
     currentKm: number,
     currentDate: Date,
   ): MaintenancePredictionDto[] {
@@ -576,10 +639,9 @@ export class PredictiveService {
     };
   }
 
-  private findLastMaintenanceByCategory<T extends { category: string; performedAt: Date }>(
-    maintenanceHistory: T[],
-    category: string,
-  ): T | undefined {
+  private findLastMaintenanceByCategory<
+    T extends { category: string; performedAt: Date },
+  >(maintenanceHistory: T[], category: string): T | undefined {
     return maintenanceHistory
       .filter((h) => h.category === category)
       .sort((a, b) => b.performedAt.getTime() - a.performedAt.getTime())[0];
@@ -601,7 +663,15 @@ export class PredictiveService {
   /**
    * Busca padrões de veículos similares
    */
-  private async getSimilarVehiclesPatterns(tenantId: string, vehicle: { id: string; make: string | null; model: string | null; year: number | null }): Promise<Array<{ category: string; avgInterval: number; count: number }>> {
+  private async getSimilarVehiclesPatterns(
+    tenantId: string,
+    vehicle: {
+      id: string;
+      make: string | null;
+      model: string | null;
+      year: number | null;
+    },
+  ): Promise<Array<{ category: string; avgInterval: number; count: number }>> {
     // Buscar veículos da mesma marca/modelo através do relacionamento com Customer
     const similarVehicles = await this.prisma.customerVehicle.findMany({
       where: {
@@ -645,7 +715,9 @@ export class PredictiveService {
   /**
    * Analisa padrões por quilometragem
    */
-  private analyzeKmPatterns(history: Array<{ category: string; mileageAtService: number | null }>): Array<{ category: string; avgInterval: number; count: number }> {
+  private analyzeKmPatterns(
+    history: Array<{ category: string; mileageAtService: number | null }>,
+  ): Array<{ category: string; avgInterval: number; count: number }> {
     const patterns: {
       [category: string]: { intervals: number[]; count: number };
     } = {};
@@ -689,7 +761,9 @@ export class PredictiveService {
   /**
    * Analisa padrões por tempo
    */
-  private analyzeTimePatterns(history: Array<{ category: string; performedAt: Date }>) {
+  private analyzeTimePatterns(
+    history: Array<{ category: string; performedAt: Date }>,
+  ) {
     const patterns: {
       [category: string]: { intervals: number[]; count: number };
     } = {};

@@ -1006,12 +1006,7 @@ export class ReportsService {
 
     for (const [key, value] of Object.entries(data)) {
       if (Array.isArray(value)) {
-        currentRow = this.flattenArrayValue(
-          worksheet,
-          key,
-          value,
-          currentRow,
-        );
+        currentRow = this.flattenArrayValue(worksheet, key, value, currentRow);
       } else if (value !== null && typeof value === 'object') {
         currentRow = this.flattenObjectValue(
           worksheet,
@@ -1078,8 +1073,9 @@ export class ReportsService {
   ): void {
     for (let colIndex = 0; colIndex < headers.length; colIndex++) {
       const header = headers[colIndex];
-      worksheet.getCell(row, colIndex + 1).value =
-        this.formatValue(itemObj[header]);
+      worksheet.getCell(row, colIndex + 1).value = this.formatValue(
+        itemObj[header],
+      );
     }
   }
 

@@ -229,10 +229,8 @@ export class PlansService {
     updatePlanDto: UpdatePlanDto,
     updateData: Prisma.PlanUpdateInput,
   ): void {
-    if (updatePlanDto.code !== undefined)
-      updateData.code = updatePlanDto.code;
-    if (updatePlanDto.name !== undefined)
-      updateData.name = updatePlanDto.name;
+    if (updatePlanDto.code !== undefined) updateData.code = updatePlanDto.code;
+    if (updatePlanDto.name !== undefined) updateData.name = updatePlanDto.name;
     if (updatePlanDto.description !== undefined)
       updateData.description = updatePlanDto.description;
     if (updatePlanDto.features !== undefined)
@@ -252,9 +250,7 @@ export class PlansService {
     updateData: Prisma.PlanUpdateInput,
   ): void {
     if (updatePlanDto.monthlyPrice !== undefined)
-      updateData.monthlyPrice = new Prisma.Decimal(
-        updatePlanDto.monthlyPrice,
-      );
+      updateData.monthlyPrice = new Prisma.Decimal(updatePlanDto.monthlyPrice);
     if (updatePlanDto.annualPrice !== undefined)
       updateData.annualPrice = new Prisma.Decimal(updatePlanDto.annualPrice);
   }

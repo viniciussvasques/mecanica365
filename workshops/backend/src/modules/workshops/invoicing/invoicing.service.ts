@@ -358,10 +358,7 @@ export class InvoicingService {
       const { finalTotal, discount, taxAmount } =
         this.calculateInvoiceTotals(createInvoiceDto);
       const { gateway, paymentPreference } =
-        await this.resolvePaymentConfiguration(
-          tenantId,
-          createInvoiceDto,
-        );
+        await this.resolvePaymentConfiguration(tenantId, createInvoiceDto);
 
       const invoiceData = {
         tenantId,
@@ -403,7 +400,10 @@ export class InvoicingService {
     }
 
     if (createInvoiceDto.serviceOrderId) {
-      await this.validateServiceOrder(tenantId, createInvoiceDto.serviceOrderId);
+      await this.validateServiceOrder(
+        tenantId,
+        createInvoiceDto.serviceOrderId,
+      );
     }
 
     if (!createInvoiceDto.items || createInvoiceDto.items.length === 0) {
@@ -529,8 +529,7 @@ export class InvoicingService {
         paymentMethod: createInvoiceDto.paymentMethod || null,
         paymentPreference: payment.paymentPreference,
         paymentGatewayId: payment.gateway?.id || null,
-        paymentStatus:
-          createInvoiceDto.paymentStatus || PaymentStatus.PENDING,
+        paymentStatus: createInvoiceDto.paymentStatus || PaymentStatus.PENDING,
         status: createInvoiceDto.status || InvoiceStatus.DRAFT,
         dueDate: createInvoiceDto.dueDate
           ? new Date(createInvoiceDto.dueDate)

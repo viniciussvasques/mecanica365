@@ -91,7 +91,7 @@ describe('EmailService', () => {
       // Verificar se logger foi chamado
       expect(loggerSpy).toHaveBeenCalled();
       expect(mockTransporter.sendMail).not.toHaveBeenCalled();
-      
+
       // Restaurar variável de ambiente
       if (originalSmtpUser) {
         process.env.SMTP_USER = originalSmtpUser;

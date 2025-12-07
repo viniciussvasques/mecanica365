@@ -17,8 +17,7 @@ interface AuditContext {
   body: unknown;
   method: string;
   url: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  user: any;
+  user?: { tenantId?: string; id?: string };
   ipAddress: string;
   userAgent: string;
 }
@@ -28,16 +27,18 @@ export class AuditInterceptor implements NestInterceptor {
   constructor(private readonly auditService: AuditService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const request = context.switchToHttp().getRequest();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+    const request = context.switchToHttp().getRequest() as any;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const { method, url, user, body, params, query } = request;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const ipAddress =
       request.ip ||
       (request.connection as { remoteAddress?: string })?.remoteAddress ||
       '';
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    const userAgent = request.get('user-agent') || '';
+    const userAgent = request.get?.('user-agent') || '';
 
     // Determinar ação baseada no método HTTP
     let action: AuditAction;
@@ -62,10 +63,8 @@ export class AuditInterceptor implements NestInterceptor {
     // Extrair resourceType e resourceId da URL
     const resourceType = this.extractResourceType(url);
 
-    const resourceId =
-      (params as { id?: string })?.id ||
-      (body as { id?: string })?.id ||
-      (query as { id?: string })?.id;
+    const bodyWithId = body as { id?: string } | undefined;
+    const resourceId = params?.id || bodyWithId?.id || query?.id;
 
     return next.handle().pipe(
       tap({
@@ -116,9 +115,9 @@ export class AuditInterceptor implements NestInterceptor {
   private async logAudit(auditContext: AuditContext): Promise<void> {
     try {
       const response = auditContext.context.switchToHttp().getResponse();
+      const responseWithStatusCode = response as { statusCode?: number };
 
-      const statusCode =
-        (response as { statusCode?: number })?.statusCode || 200;
+      const statusCode = responseWithStatusCode.statusCode || 200;
 
       const dto: CreateAuditLogDto = {
         action: auditContext.action,
@@ -133,8 +132,8 @@ export class AuditInterceptor implements NestInterceptor {
       };
 
       await this.auditService.create(
-        (auditContext.user as { tenantId?: string })?.tenantId || null,
-        (auditContext.user as { id?: string })?.id || null,
+        auditContext.user?.tenantId || null,
+        auditContext.user?.id || null,
         dto,
         auditContext.ipAddress,
         auditContext.userAgent,
@@ -169,8 +168,8 @@ export class AuditInterceptor implements NestInterceptor {
       };
 
       await this.auditService.create(
-        (auditContext.user as { tenantId?: string })?.tenantId || null,
-        (auditContext.user as { id?: string })?.id || null,
+        auditContext.user?.tenantId || null,
+        auditContext.user?.id || null,
         dto,
         auditContext.ipAddress,
         auditContext.userAgent,

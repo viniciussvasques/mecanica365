@@ -5,8 +5,6 @@ import {
   MaintenancePriority,
 } from './maintenance-category.enum';
 
-type MaintenancePriorityType = MaintenancePriority;
-
 // Template Response
 export class MaintenanceTemplateResponseDto {
   @ApiProperty()
