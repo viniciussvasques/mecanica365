@@ -144,6 +144,7 @@ export class MaintenanceService {
   async createSchedule(
     tenantId: string,
     dto: CreateVehicleScheduleDto,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _userId?: string,
   ): Promise<VehicleScheduleResponseDto> {
     try {
@@ -447,7 +448,9 @@ export class MaintenanceService {
     return schedules.map((s): MaintenanceAlertDto => {
       const isOverdue: boolean =
         (s.nextDueDate && s.nextDueDate < now) ||
-        (s.nextDueKm && s.vehicle.mileage && s.nextDueKm <= s.vehicle.mileage) ||
+        (s.nextDueKm &&
+          s.vehicle.mileage &&
+          s.nextDueKm <= s.vehicle.mileage) ||
         false;
 
       const daysUntilDue = s.nextDueDate
