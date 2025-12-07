@@ -8,6 +8,8 @@ import {
 } from './dto/predictive-response.dto';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
 
+type UrgencyLevel = 'low' | 'medium' | 'high' | 'urgent';
+
 @Injectable()
 export class PredictiveService {
   private readonly logger = new Logger(PredictiveService.name);
@@ -361,7 +363,7 @@ export class PredictiveService {
     }
 
     // Determinar urgência
-    let urgency: 'low' | 'medium' | 'high' | 'urgent' = 'low';
+    let urgency: UrgencyLevel = 'low';
     if (kmUntilMaintenance <= 0 || daysUntilMaintenance <= 0) {
       urgency = 'urgent';
     } else if (kmUntilMaintenance <= 1000 || daysUntilMaintenance <= 7) {
@@ -731,7 +733,7 @@ export class PredictiveService {
   private calculateUrgency(
     kmRemaining?: number,
     daysRemaining?: number,
-  ): 'low' | 'medium' | 'high' | 'urgent' {
+  ): UrgencyLevel {
     if (
       (kmRemaining !== undefined && kmRemaining <= 0) ||
       (daysRemaining !== undefined && daysRemaining <= 0)
@@ -753,9 +755,7 @@ export class PredictiveService {
     return 'low';
   }
 
-  private calculateUrgencyByDays(
-    daysRemaining: number,
-  ): 'low' | 'medium' | 'high' | 'urgent' {
+  private calculateUrgencyByDays(daysRemaining: number): UrgencyLevel {
     return this.calculateUrgency(undefined, daysRemaining);
   }
 

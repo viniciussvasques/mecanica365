@@ -804,8 +804,7 @@ export class InvoicingService {
     shouldUpdate: boolean;
     targetGatewayId: string | null;
   } {
-    let targetGatewayId =
-      invoice.paymentGatewayId !== null ? invoice.paymentGatewayId : null;
+    let targetGatewayId = invoice.paymentGatewayId ?? null;
     let shouldUpdate = false;
 
     if (updateInvoiceDto.paymentGatewayId !== undefined) {
