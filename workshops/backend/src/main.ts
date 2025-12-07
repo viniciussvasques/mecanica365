@@ -6,9 +6,10 @@ import { join } from 'node:path';
 import { AppModule } from './app/app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
-const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-  rawBody: true, // Habilitar rawBody para webhooks do Stripe
-});
+async function bootstrap(): Promise<void> {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true, // Habilitar rawBody para webhooks do Stripe
+  });
 
 // Servir arquivos estáticos (uploads)
 app.useStaticAssets(join(__dirname, '..', 'uploads'), {
@@ -80,8 +81,14 @@ const config = new DocumentBuilder()
 const document = SwaggerModule.createDocument(app, config);
 SwaggerModule.setup('api/docs', app, document);
 
-const port = process.env.PORT || 3001;
-await app.listen(port);
+  const port = process.env.PORT || 3001;
+  await app.listen(port);
 
-console.log(`🚀 Mecânica365 API is running on: http://localhost:${port}`);
-console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
+  console.log(`🚀 Mecânica365 API is running on: http://localhost:${port}`);
+  console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
+}
+
+bootstrap().catch((error) => {
+  console.error('Error starting application:', error);
+  process.exit(1);
+});
