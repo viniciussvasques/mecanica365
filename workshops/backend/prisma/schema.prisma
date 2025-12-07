@@ -47,6 +47,8 @@ model Tenant {
   maintenanceHistory          MaintenanceHistory[]
   vehicleIssuePatterns        VehicleIssuePattern[]
   knowledgeBase               KnowledgeBase[]
+  backups                     Backup[]
+  restoreOperations           RestoreOperation[]
 
   @@map("tenants")
 }
@@ -1349,4 +1351,47 @@ model KnowledgeBase {
   @@index([tenantId, isActive])
   @@index([tenantId, rating])
   @@map("knowledge_base")
+}
+
+// Backup - Sistema de backup automatizado
+model Backup {
+  id                String             @id @default(uuid())
+  tenantId          String?            @map("tenant_id")
+  type              String             @db.VarChar(50) // full, incremental
+  status            String             @default("in_progress") @db.VarChar(50) // in_progress, success, failed
+  size              BigInt? // Tamanho em bytes
+  path              String?            @db.VarChar(500) // Caminho do arquivo local
+  s3Key             String?            @map("s3_key") @db.VarChar(500) // Chave S3 se armazenado no S3
+  encrypted         Boolean            @default(true)
+  startedAt         DateTime           @default(now()) @map("started_at")
+  completedAt       DateTime?          @map("completed_at")
+  expiresAt         DateTime?          @map("expires_at") // Data de expiração (retenção)
+  metadata          Json? // Metadados adicionais
+  error             String?            @db.Text
+  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  restoreOperations RestoreOperation[]
+
+  @@index([tenantId, startedAt])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([type])
+  @@map("backups")
+}
+
+// RestoreOperation - Operações de restauração de backup
+model RestoreOperation {
+  id          String    @id @default(uuid())
+  backupId    String    @map("backup_id")
+  tenantId    String?   @map("tenant_id")
+  status      String    @default("pending") @db.VarChar(50) // pending, in_progress, success, failed
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  error       String?   @db.Text
+  backup      Backup    @relation(fields: [backupId], references: [id], onDelete: Cascade)
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, startedAt])
+  @@index([status])
+  @@index([backupId])
+  @@map("restore_operations")
 }

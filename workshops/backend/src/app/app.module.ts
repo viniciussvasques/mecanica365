@@ -31,6 +31,7 @@ import { SuppliersModule } from '../modules/workshops/suppliers/suppliers.module
 import { WebhooksModule } from '../modules/shared/webhooks/webhooks.module';
 import { JobsModule } from '../modules/shared/jobs/jobs.module';
 import { RateLimitingModule } from '../modules/shared/rate-limiting/rate-limiting.module';
+import { BackupModule } from '../modules/shared/backup/backup.module';
 import { IntegrationsModule } from '../modules/shared/integrations/integrations.module';
 import { AutomationsModule } from '../modules/shared/automations/automations.module';
 import { NotificationsModule } from '../modules/core/notifications/notifications.module';
@@ -80,6 +81,7 @@ import appConfig from '../config/app.config';
     WebhooksModule,
     JobsModule,
     RateLimitingModule,
+    BackupModule,
     IntegrationsModule,
     AutomationsModule,
     NotificationsModule,
