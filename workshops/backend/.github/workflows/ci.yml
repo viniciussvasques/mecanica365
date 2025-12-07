@@ -38,6 +38,7 @@ jobs:
 
       - name: Run linter
         working-directory: workshops/backend
+        timeout-minutes: 10
         run: npm run lint
 
       - name: Build project
