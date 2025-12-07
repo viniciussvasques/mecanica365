@@ -178,16 +178,23 @@ export default function CustomersPage() {
 
         {/* Tabela */}
         <div className="bg-[#1A1E23] border border-[#2A3038] rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E0B8] mx-auto"></div>
-              <p className="mt-4 text-[#7E8691]">Carregando clientes...</p>
-            </div>
-          ) : customers.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-[#7E8691]">Nenhum cliente encontrado</p>
-            </div>
-          ) : (
+          {(() => {
+            if (loading) {
+              return (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E0B8] mx-auto"></div>
+                  <p className="mt-4 text-[#7E8691]">Carregando clientes...</p>
+                </div>
+              );
+            }
+            if (customers.length === 0) {
+              return (
+                <div className="p-8 text-center">
+                  <p className="text-[#7E8691]">Nenhum cliente encontrado</p>
+                </div>
+              );
+            }
+            return (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -273,7 +280,8 @@ export default function CustomersPage() {
                 </div>
               )}
             </>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>
