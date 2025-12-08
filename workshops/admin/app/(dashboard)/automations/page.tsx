@@ -47,6 +47,8 @@ function Modal({ isOpen, automation, onClose, onSubmit }: Readonly<{ isOpen: boo
 
   const toggleAction = (a: string) => setForm(f => ({ ...f, actions: f.actions.includes(a) ? f.actions.filter(x => x !== a) : [...f.actions, a] }));
 
+  const getAction = (a: string) => ACTIONS.find((x) => x.value === a);
+
   if (!isOpen) return null;
 
   return (
@@ -115,8 +117,8 @@ export default function AutomationsPage() {
     try { const res = await automationsApi.execute(id); alert(res.success ? '✅ Executado!' : `❌ Erro: ${res.message}`); load(); } catch (e) { console.error(e); alert('Erro'); } finally { setExecuting(null); }
   };
 
-  const getTrigger = (t: string) => TRIGGERS.find(x => x.value === t);
-  const getAction = (a: string) => ACTIONS.find(x => x.value === a);
+  const getTrigger = (t: string) => TRIGGERS.find((x) => x.value === t);
+  const getAction = (a: string) => ACTIONS.find((x) => x.value === a);
 
   if (isLoading) return <div className="flex items-center justify-center min-h-[400px]"><div className="w-10 h-10 border-4 border-[#FF6B6B]/20 border-t-[#FF6B6B] rounded-full animate-spin" /></div>;
 
