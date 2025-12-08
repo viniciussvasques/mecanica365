@@ -18,6 +18,7 @@ import {
   ChevronRightIcon,
   StackIcon,
   QuestionMarkCircledIcon,
+  FileTextIcon,
 } from '@radix-ui/react-icons';
 
 interface MenuItem {
@@ -34,6 +35,7 @@ const menuItems: MenuItem[] = [
   { label: 'Auditoria', href: '/audit', icon: ActivityLogIcon },
   { label: 'Suporte', href: '/support', icon: QuestionMarkCircledIcon },
   { label: 'Jobs', href: '/jobs', icon: LightningBoltIcon },
+  { label: 'Backups', href: '/backups', icon: FileTextIcon },
   { label: 'Webhooks', href: '/webhooks', icon: Link2Icon },
   { label: 'Integrações', href: '/integrations', icon: MixerHorizontalIcon },
   { label: 'Automações', href: '/automations', icon: BellIcon },

@@ -433,3 +433,81 @@ export const automationsApi = {
   },
 };
 
+// ========================
+// BACKUP API
+// ========================
+
+export interface Backup {
+  id: string;
+  tenantId?: string;
+  type: 'full' | 'incremental';
+  status: 'in_progress' | 'success' | 'failed';
+  size?: bigint;
+  path?: string;
+  s3Key?: string;
+  encrypted: boolean;
+  startedAt: string;
+  completedAt?: string;
+  expiresAt?: string;
+  metadata?: Record<string, unknown>;
+  error?: string;
+}
+
+export interface BackupStatus {
+  total: number;
+  success: number;
+  failed: number;
+  inProgress: number;
+  expired: number;
+}
+
+export interface BackupFilters {
+  tenantId?: string;
+  type?: 'full' | 'incremental';
+  status?: 'in_progress' | 'success' | 'failed';
+  startDate?: string;
+  endDate?: string;
+  page?: string;
+  limit?: string;
+}
+
+export const backupApi = {
+  findAll: async (filters?: BackupFilters): Promise<{ backups: Backup[]; total: number }> => {
+    const params = new URLSearchParams();
+    if (filters?.tenantId) params.append('tenantId', filters.tenantId);
+    if (filters?.type) params.append('type', filters.type);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.page) params.append('page', filters.page);
+    if (filters?.limit) params.append('limit', filters.limit);
+    
+    const response = await api.get<{ backups: Backup[]; total: number }>(`/backup?${params.toString()}`);
+    return response.data;
+  },
+
+  findOne: async (id: string): Promise<Backup> => {
+    const response = await api.get<Backup>(`/backup/${id}`);
+    return response.data;
+  },
+
+  create: async (data: { type: 'full' | 'incremental'; encrypted?: boolean; retentionDays?: number }): Promise<Backup> => {
+    const response = await api.post<Backup>('/backup', data);
+    return response.data;
+  },
+
+  restore: async (id: string, data?: { testRestore?: boolean }): Promise<{ id: string; status: string }> => {
+    const response = await api.post<{ id: string; status: string }>(`/backup/${id}/restore`, data || {});
+    return response.data;
+  },
+
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/backup/${id}`);
+  },
+
+  getStatus: async (): Promise<BackupStatus> => {
+    const response = await api.get<BackupStatus>('/backup/status');
+    return response.data;
+  },
+};
+

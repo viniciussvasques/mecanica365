@@ -1,7 +1,18 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
   "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
   "/(dashboard)/audit/page": "app/(dashboard)/audit/page.js",
+  "/(dashboard)/backups/page": "app/(dashboard)/backups/page.js",
   "/(dashboard)/automations/page": "app/(dashboard)/automations/page.js",
+  "/(dashboard)/integrations/page": "app/(dashboard)/integrations/page.js",
+  "/(dashboard)/billing/page": "app/(dashboard)/billing/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/jobs/page": "app/(dashboard)/jobs/page.js",
+  "/(dashboard)/plans/page": "app/(dashboard)/plans/page.js",
   "/(dashboard)/settings/page": "app/(dashboard)/settings/page.js",
-  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js"
+  "/(dashboard)/webhooks/page": "app/(dashboard)/webhooks/page.js",
+  "/(dashboard)/tenants/[id]/page": "app/(dashboard)/tenants/[id]/page.js",
+  "/(dashboard)/support/page": "app/(dashboard)/support/page.js",
+  "/(dashboard)/tenants/page": "app/(dashboard)/tenants/page.js"
 }
