@@ -6,6 +6,7 @@ import { ProblemCategory } from '@/lib/api/quotes';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 interface DiagnosticPanelProps {
   symptoms: string[];
@@ -101,8 +102,8 @@ export function DiagnosticPanel({
         category: selectedCategory,
       });
       setSuggestions(result);
-    } catch (err) {
-      console.error('Erro ao carregar sugestões:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar sugestões:', err);
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,11 @@
-import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'node:crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  scrypt,
+} from 'node:crypto';
 import { promisify } from 'node:util';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 
 const scryptAsync = promisify(scrypt);
 
@@ -43,10 +47,7 @@ export class EncryptionUtil {
     const cipher = createCipheriv(this.ALGORITHM, key, iv);
 
     const input = readFileSync(inputPath);
-    const encrypted = Buffer.concat([
-      cipher.update(input),
-      cipher.final(),
-    ]);
+    const encrypted = Buffer.concat([cipher.update(input), cipher.final()]);
 
     const authTag = cipher.getAuthTag();
 
@@ -80,9 +81,7 @@ export class EncryptionUtil {
       this.SALT_LENGTH + this.IV_LENGTH,
       this.SALT_LENGTH + this.IV_LENGTH + 16,
     );
-    const encrypted = input.subarray(
-      this.SALT_LENGTH + this.IV_LENGTH + 16,
-    );
+    const encrypted = input.subarray(this.SALT_LENGTH + this.IV_LENGTH + 16);
 
     const key = await this.deriveKey(password, salt);
 
@@ -105,9 +104,8 @@ export class EncryptionUtil {
       return false;
     }
 
-    const stats = require('node:fs').statSync(filePath);
+    const stats = statSync(filePath);
     // Arquivo criptografado deve ter pelo menos salt + iv + authTag = 96 bytes
     return stats.size > 96;
   }
 }
-

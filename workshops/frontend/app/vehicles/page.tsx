@@ -8,6 +8,8 @@ import Link from 'next/link';
 import { vehiclesApi, Vehicle, VehicleFilters } from '@/lib/api/vehicles';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { authStorage } from '@/lib/utils/localStorage';
+import { logger } from '@/lib/utils/logger';
 
 export default function VehiclesPage() {
   const router = useRouter();
@@ -94,8 +96,8 @@ export default function VehiclesPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
@@ -120,7 +122,7 @@ export default function VehiclesPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar veículos';
       setError(errorMessage);
-      console.error('Erro ao carregar veículos:', err);
+      logger.error('Erro ao carregar veículos:', err);
     } finally {
       setLoading(false);
     }
@@ -190,7 +192,7 @@ export default function VehiclesPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir veículo';
       alert(errorMessage);
-      console.error('Erro ao excluir veículo:', err);
+      logger.error('Erro ao excluir veículo:', err);
     }
   };
 

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { partsApi, Part, UpdatePartDto } from '@/lib/api/parts';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { logger } from '@/lib/utils/logger';
 
 export default function EditPartPage() {
   const router = useRouter();
@@ -62,7 +63,7 @@ export default function EditPartPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar peça';
       alert(errorMessage);
-      console.error('Erro ao carregar peça:', err);
+      logger.error('Erro ao carregar peça:', err);
       router.push('/parts');
     } finally {
       setLoadingPart(false);
@@ -129,11 +130,11 @@ export default function EditPartPage() {
         isActive: formData.isActive,
       };
 
-      console.log('[EditPart] Enviando dados:', data);
+      logger.log('[EditPart] Enviando dados:', data);
       await partsApi.update(id, data);
       router.push(`/parts/${id}`);
     } catch (err: unknown) {
-      console.error('Erro ao atualizar peça:', err);
+      logger.error('Erro ao atualizar peça:', err);
       let errorMessage = 'Erro ao atualizar peça';
       
       if (err && typeof err === 'object' && 'response' in err) {

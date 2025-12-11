@@ -7,6 +7,7 @@ import { elevatorsApi, CreateElevatorDto, ElevatorType, ElevatorStatus } from '@
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +67,7 @@ export default function NewElevatorPage() {
       await elevatorsApi.create(data);
       router.push('/elevators');
     } catch (err: unknown) {
-      console.error('Erro ao criar elevador:', err);
+      logger.error('Erro ao criar elevador:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao criar elevador';
       alert(errorMessage);
     } finally {

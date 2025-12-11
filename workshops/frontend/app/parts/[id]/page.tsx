@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { partsApi, Part } from '@/lib/api/parts';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 export default function PartDetailPage() {
   const router = useRouter();
@@ -17,7 +19,7 @@ export default function PartDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = authStorage.getToken();
     if (!token) {
       router.push('/login');
       return;
@@ -35,7 +37,7 @@ export default function PartDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar peça';
       setError(errorMessage);
-      console.error('Erro ao carregar peça:', err);
+      logger.error('Erro ao carregar peça:', err);
     } finally {
       setLoading(false);
     }
@@ -52,7 +54,7 @@ export default function PartDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir peça';
       alert(errorMessage);
-      console.error('Erro ao excluir peça:', err);
+      logger.error('Erro ao excluir peça:', err);
     }
   };
 

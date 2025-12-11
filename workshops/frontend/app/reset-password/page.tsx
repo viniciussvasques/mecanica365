@@ -46,7 +46,7 @@ export default function ResetPasswordPage() {
       
       setValid(response.data.valid);
       setMaskedEmail(response.data.email || '');
-    } catch (err) {
+    } catch (err: unknown) {
       setValid(false);
     } finally {
       setValidating(false);

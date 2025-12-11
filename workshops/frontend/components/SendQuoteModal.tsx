@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from './ui/Button';
 import { useNotification } from './NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 interface SendQuoteModalProps {
   isOpen: boolean;
@@ -39,8 +40,8 @@ export function SendQuoteModal({
       await onSend(method);
       showNotification(`Orçamento enviado por ${method === 'email' ? 'Email' : method === 'whatsapp' ? 'WhatsApp' : method === 'sms' ? 'SMS' : 'Link'} com sucesso!`, 'success');
       onClose();
-    } catch (err) {
-      console.error(`Erro ao enviar por ${method}:`, err);
+    } catch (err: unknown) {
+      logger.error(`Erro ao enviar por ${method}:`, err);
       const errorMessage = err instanceof Error ? err.message : `Erro ao enviar por ${method}`;
       showNotification(errorMessage, 'error');
     } finally {
@@ -70,8 +71,8 @@ export function SendQuoteModal({
       setRegenerating(true);
       await onRegenerateToken();
       showNotification('Link regenerado com sucesso!', 'success');
-    } catch (err) {
-      console.error('Erro ao regenerar token:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao regenerar token:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao regenerar link';
       showNotification(errorMessage, 'error');
     } finally {

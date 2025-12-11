@@ -173,7 +173,7 @@ export class VehicleQueryService {
         );
         return {}; // Retorna vazio para não bloquear o cadastro manual
       }
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao consultar veículo por placa: ${getErrorMessage(error)}`,
       );

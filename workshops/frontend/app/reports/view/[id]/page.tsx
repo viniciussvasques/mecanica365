@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { reportsApi, ReportResponse } from '@/lib/api/reports';
 import { Button } from '@/components/ui/Button';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 import {
   LineChart,
   Line,
@@ -66,8 +67,8 @@ export default function ReportViewPage() {
       if (reportData.summary) {
         processChartData(reportData.type, reportData.summary);
       }
-    } catch (error) {
-      console.error('Erro ao carregar relatório:', error);
+    } catch (error: unknown) {
+      logger.error('[ReportViewPage] Erro ao carregar relatório:', error);
       showNotification('Relatório não encontrado', 'error');
       router.push('/reports/history');
     } finally {
@@ -138,8 +139,8 @@ export default function ReportViewPage() {
       a.remove();
       globalThis.window.URL.revokeObjectURL(url);
       showNotification('Download iniciado!', 'success');
-    } catch (error) {
-      console.error('Erro ao baixar relatório:', error);
+    } catch (error: unknown) {
+      logger.error('[ReportViewPage] Erro ao baixar relatório:', error);
       showNotification('Erro ao baixar relatório', 'error');
     }
   };

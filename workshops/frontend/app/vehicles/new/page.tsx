@@ -7,10 +7,12 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { vehiclesApi, CreateVehicleDto } from '@/lib/api/vehicles';
 import { customersApi, Customer } from '@/lib/api/customers';
+import { getAxiosErrorMessage } from '@/lib/utils/error.utils';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { VEHICLE_BRANDS, VEHICLE_MODELS, VEHICLE_COLORS } from '@/lib/constants/vehicles';
+import { logger } from '@/lib/utils/logger';
 
 export default function NewVehiclePage() {
   const router = useRouter();
@@ -73,7 +75,7 @@ export default function NewVehiclePage() {
 
       setCustomers(allCustomers);
     } catch (err: unknown) {
-      console.error('Erro ao carregar clientes:', err);
+      logger.error('Erro ao carregar clientes:', err);
       alert('Erro ao carregar lista de clientes');
     } finally {
       setLoadingCustomers(false);
@@ -176,51 +178,15 @@ export default function NewVehiclePage() {
         isDefault: formData.isDefault,
       };
 
-      console.log('[NewVehicle] Enviando dados:', data);
-      console.log('[NewVehicle] Dados serializados:', JSON.stringify(data, null, 2));
+      logger.log('[NewVehicle] Enviando dados:', data);
+      logger.log('[NewVehicle] Dados serializados:', JSON.stringify(data, null, 2));
       await vehiclesApi.create(data);
       router.push('/vehicles');
     } catch (err: unknown) {
-      console.error('Erro ao criar veículo:', err);
-      console.error('Erro completo:', JSON.stringify(err, null, 2));
-      let errorMessage = 'Erro ao criar veículo';
-
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { 
-          response?: { 
-            data?: { 
-              message?: string | string[];
-              error?: string;
-              statusCode?: number;
-            };
-            status?: number;
-          } 
-        };
-        
-        console.error('[NewVehicle] Response error:', axiosError.response);
-        
-        if (axiosError.response?.data) {
-          const data = axiosError.response.data;
-          console.error('[NewVehicle] Error data:', data);
-          
-          if (data.message) {
-            const message = data.message;
-            errorMessage = Array.isArray(message) 
-              ? message.map((m: string) => `• ${m}`).join('\n')
-              : message;
-          } else if (data.error) {
-            errorMessage = data.error;
-          } else {
-            errorMessage = `Erro ${axiosError.response.status || 400}: ${JSON.stringify(data, null, 2)}`;
-          }
-        } else if (axiosError.response?.status) {
-          errorMessage = `Erro ${axiosError.response.status}: Requisição falhou`;
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-
-      console.error('Mensagem de erro detalhada:', errorMessage);
+      logger.error('[NewVehicle] Erro ao criar veículo:', err);
+      
+      const errorMessage = getAxiosErrorMessage(err) || 'Erro ao criar veículo';
+      
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -302,9 +268,9 @@ export default function NewVehiclePage() {
                           placa: vehicleData.placa || prev.placa,
                         }));
                       }
-                    } catch (err) {
+                    } catch (err: unknown) {
                       // Silenciosamente ignora erros (API pode não estar configurada)
-                      console.log('Não foi possível buscar dados por RENAVAN:', err);
+                      logger.log('Não foi possível buscar dados por RENAVAN:', err);
                     }
                   }
                 }}
@@ -334,9 +300,9 @@ export default function NewVehiclePage() {
                           renavan: vehicleData.renavan || prev.renavan,
                         }));
                       }
-                    } catch (err) {
+                    } catch (err: unknown) {
                       // Silenciosamente ignora erros (API pode não estar configurada)
-                      console.log('Não foi possível buscar dados por placa:', err);
+                      logger.log('Não foi possível buscar dados por placa:', err);
                     }
                   }
                 }}

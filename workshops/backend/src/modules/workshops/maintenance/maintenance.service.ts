@@ -50,7 +50,7 @@ export class MaintenanceService {
 
       this.logger.log(`Template criado: ${template.id}`);
       return this.toTemplateResponse(template);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar template: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -182,7 +182,7 @@ export class MaintenanceService {
         `Manutenção programada criada: ${schedule.id} para veículo ${dto.vehicleId}`,
       );
       return this.toScheduleResponse(schedule);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar manutenção programada: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -358,7 +358,7 @@ export class MaintenanceService {
 
       this.logger.log(`Histórico de manutenção criado: ${history.id}`);
       return this.toHistoryResponse(history);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar histórico: ${getErrorMessage(error)}`,
         getErrorStack(error),

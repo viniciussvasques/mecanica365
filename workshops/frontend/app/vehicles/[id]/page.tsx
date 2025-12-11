@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { vehiclesApi, Vehicle } from '@/lib/api/vehicles';
 import { customersApi, Customer } from '@/lib/api/customers';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 export default function VehicleDetailPage() {
   const router = useRouter();
@@ -40,14 +41,14 @@ export default function VehicleDetailPage() {
         try {
           const customerData = await customersApi.findOne(data.customerId);
           setCustomer(customerData);
-        } catch (err) {
-          console.error('Erro ao carregar cliente:', err);
+        } catch (err: unknown) {
+          logger.error('Erro ao carregar cliente:', err);
         }
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar veículo';
       setError(errorMessage);
-      console.error('Erro ao carregar veículo:', err);
+      logger.error('Erro ao carregar veículo:', err);
     } finally {
       setLoading(false);
     }
@@ -64,7 +65,7 @@ export default function VehicleDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir veículo';
       alert(errorMessage);
-      console.error('Erro ao excluir veículo:', err);
+      logger.error('Erro ao excluir veículo:', err);
     }
   };
 

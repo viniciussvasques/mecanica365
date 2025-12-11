@@ -233,7 +233,7 @@ export class ReportsService {
         generatedAt: report.createdAt,
         summary,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao gerar relatório: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -874,7 +874,7 @@ export class ReportsService {
         this.renderPdfFooter(doc, workshopSettings);
 
         doc.end();
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.error(`Erro ao gerar PDF: ${getErrorMessage(error)}`);
         reject(error instanceof Error ? error : new Error(String(error)));
       }
@@ -1330,7 +1330,7 @@ export class ReportsService {
           });
           currentY += 70;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.warn(`Erro ao carregar logo: ${getErrorMessage(error)}`);
       }
     }

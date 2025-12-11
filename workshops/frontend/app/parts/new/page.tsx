@@ -9,6 +9,7 @@ import { partsApi, CreatePartDto } from '@/lib/api/parts';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export default function NewPartPage() {
   const router = useRouter();
@@ -85,11 +86,11 @@ export default function NewPartPage() {
         isActive: formData.isActive ?? true,
       };
 
-      console.log('[NewPart] Enviando dados:', data);
+      logger.log('[NewPart] Enviando dados:', data);
       await partsApi.create(data);
       router.push('/parts');
     } catch (err: unknown) {
-      console.error('Erro ao criar peça:', err);
+      logger.error('Erro ao criar peça:', err);
       let errorMessage = 'Erro ao criar peça';
       
       if (err && typeof err === 'object' && 'response' in err) {

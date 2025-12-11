@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { notificationsApi, Notification } from '@/lib/api/notifications';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,8 +42,8 @@ export default function MechanicNotificationsPage() {
       });
       setNotifications(result.notifications);
       setUnreadCount(result.unreadCount || 0);
-    } catch (err) {
-      console.error('Erro ao carregar notificações:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar notificações:', err);
     } finally {
       setLoading(false);
     }
@@ -52,8 +53,8 @@ export default function MechanicNotificationsPage() {
     try {
       await notificationsApi.markAsRead(id);
       await loadNotifications();
-    } catch (err) {
-      console.error('Erro ao marcar como lida:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao marcar como lida:', err);
     }
   };
 
@@ -61,8 +62,8 @@ export default function MechanicNotificationsPage() {
     try {
       await notificationsApi.markAllAsRead();
       await loadNotifications();
-    } catch (err) {
-      console.error('Erro ao marcar todas como lidas:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao marcar todas como lidas:', err);
     }
   };
 

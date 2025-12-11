@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { attachmentsApi, Attachment, AttachmentType, CreateAttachmentDto } from '@/lib/api/attachments';
+import { getAxiosErrorMessage } from '@/lib/utils/error.utils';
 import { Button } from './ui/Button';
 import { Modal } from './ui/Modal';
 
@@ -63,9 +64,10 @@ export function AttachmentsPanel({
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (error) {
-      console.error('Erro ao fazer upload:', error);
-      alert('Erro ao fazer upload do arquivo. Tente novamente.');
+    } catch (error: unknown) {
+      logger.error('[AttachmentsPanel] Erro ao fazer upload:', error);
+      const errorMessage = getAxiosErrorMessage(error) || 'Erro ao fazer upload do arquivo. Tente novamente.';
+      alert(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -79,9 +81,10 @@ export function AttachmentsPanel({
       const updatedAttachments = attachments.filter((att) => att.id !== id);
       setAttachments(updatedAttachments);
       onAttachmentsChange?.(updatedAttachments);
-    } catch (error) {
-      console.error('Erro ao remover anexo:', error);
-      alert('Erro ao remover anexo. Tente novamente.');
+    } catch (error: unknown) {
+      logger.error('[AttachmentsPanel] Erro ao remover anexo:', error);
+      const errorMessage = getAxiosErrorMessage(error) || 'Erro ao remover anexo. Tente novamente.';
+      alert(errorMessage);
     }
   };
 

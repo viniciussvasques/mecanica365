@@ -9,6 +9,8 @@ import { customersApi, Customer, CustomerFilters } from '@/lib/api/customers';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 export default function CustomersPage() {
   const router = useRouter();
@@ -42,8 +44,8 @@ export default function CustomersPage() {
       setError(null);
       
       // Verificar se token e subdomain estão disponíveis
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
@@ -57,7 +59,7 @@ export default function CustomersPage() {
         return;
       }
       
-      console.log('[CustomersPage] Carregando clientes com subdomain:', subdomain);
+      logger.log('[CustomersPage] Carregando clientes com subdomain:', subdomain);
       const response = await customersApi.findAll(filters);
       setCustomers(response.data);
       setPagination({
@@ -67,10 +69,9 @@ export default function CustomersPage() {
         totalPages: response.totalPages,
       });
     } catch (err: unknown) {
-      console.error('[CustomersPage] Erro ao carregar clientes:', err);
+      logger.error('[CustomersPage] Erro ao carregar clientes:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar clientes';
       setError(errorMessage);
-      console.error('Erro ao carregar clientes:', err);
     } finally {
       setLoading(false);
     }
@@ -102,7 +103,7 @@ export default function CustomersPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir cliente';
       alert(errorMessage);
-      console.error('Erro ao excluir cliente:', err);
+      logger.error('Erro ao excluir cliente:', err);
     }
   };
 

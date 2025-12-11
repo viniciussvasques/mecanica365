@@ -51,7 +51,7 @@ export class VehiclesService {
       );
 
       return this.toResponseDto(vehicle);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof ConflictException ||
         error instanceof BadRequestException ||
@@ -160,7 +160,7 @@ export class VehiclesService {
         limit,
         totalPages: Math.ceil(total / limit),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar veículos: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -198,7 +198,7 @@ export class VehiclesService {
       }
 
       return this.toResponseDto(vehicle);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -259,7 +259,7 @@ export class VehiclesService {
 
       this.logger.log(`Veículo atualizado: ${id}`);
       return this.toResponseDto(updatedVehicle);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof ConflictException ||
         error instanceof BadRequestException ||
@@ -323,7 +323,7 @@ export class VehiclesService {
       });
 
       this.logger.log(`Veículo removido: ${id}`);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException

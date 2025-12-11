@@ -7,6 +7,7 @@ import { Quote, QuoteStatus } from '@/lib/api/quotes';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SignaturePad } from '@/components/SignaturePad';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,8 +51,8 @@ export default function QuoteViewPage() {
       } else if (data.status === QuoteStatus.REJECTED) {
         setRejected(true);
       }
-    } catch (err) {
-      console.error('Erro ao carregar orçamento:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar orçamento:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar orçamento');
     } finally {
       setLoading(false);
@@ -73,8 +74,8 @@ export default function QuoteViewPage() {
       await quotesPublicApi.approveByToken(token, signature);
       setApproved(true);
       alert('Orçamento aprovado com sucesso! Você receberá um retorno em breve.');
-    } catch (err) {
-      console.error('Erro ao aprovar orçamento:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao aprovar orçamento:', err);
       alert(err instanceof Error ? err.message : 'Erro ao aprovar orçamento');
     } finally {
       setApproving(false);
@@ -98,8 +99,8 @@ export default function QuoteViewPage() {
       await quotesPublicApi.rejectByToken(token, rejectReason);
       setRejected(true);
       alert('Orçamento rejeitado. Entraremos em contato em breve.');
-    } catch (err) {
-      console.error('Erro ao rejeitar orçamento:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao rejeitar orçamento:', err);
       alert(err instanceof Error ? err.message : 'Erro ao rejeitar orçamento');
     } finally {
       setRejecting(false);

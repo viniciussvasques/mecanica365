@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -37,6 +38,8 @@ import { CurrentUser } from '@core/auth/decorators/current-user.decorator';
 @Controller('checklists')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ChecklistsController {
+  private readonly logger = new Logger(ChecklistsController.name);
+
   constructor(private readonly checklistsService: ChecklistsService) {}
 
   @Post()
@@ -137,15 +140,8 @@ export class ChecklistsController {
     @CurrentUser('id') userId: string,
   ): Promise<ChecklistResponseDto> {
     // Log para debug
-    console.log(
-      '[ChecklistsController] Recebendo requisição para completar checklist:',
-      {
-        checklistId: id,
-        tenantId,
-        userId,
-        itemsCount: completeChecklistDto.items?.length || 0,
-        items: completeChecklistDto.items,
-      },
+    this.logger.log(
+      `Recebendo requisição para completar checklist: ${id} (tenant: ${tenantId}, user: ${userId}, items: ${completeChecklistDto.items?.length || 0})`,
     );
 
     try {
@@ -156,16 +152,10 @@ export class ChecklistsController {
         userId,
       );
 
-      console.log(
-        '[ChecklistsController] Checklist completado com sucesso:',
-        result.id,
-      );
+      this.logger.log(`Checklist completado com sucesso: ${result.id}`);
       return result;
-    } catch (error) {
-      console.error(
-        '[ChecklistsController] Erro ao completar checklist:',
-        error,
-      );
+    } catch (error: unknown) {
+      this.logger.error('Erro ao completar checklist:', error);
       throw error;
     }
   }

@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { inventoryApi, InventoryAlert, AlertStatus } from '@/lib/api/inventory';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 const getStatusBadge = (status: AlertStatus) => {
   const badges = {
@@ -42,8 +43,8 @@ export default function InventoryAlertsPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
@@ -57,11 +58,11 @@ export default function InventoryAlertsPage() {
         return;
       }
       
-      console.log('[InventoryAlertsPage] Carregando alertas com subdomain:', subdomain);
+      logger.log('[InventoryAlertsPage] Carregando alertas com subdomain:', subdomain);
       const alertsData = await inventoryApi.getAlerts();
       setAlerts(alertsData);
     } catch (err: unknown) {
-      console.error('[InventoryAlertsPage] Erro ao carregar alertas:', err);
+      logger.error('[InventoryAlertsPage] Erro ao carregar alertas:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar alertas';
       setError(errorMessage);
     } finally {

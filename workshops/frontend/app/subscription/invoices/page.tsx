@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 interface Invoice {
   id: string;
@@ -76,8 +77,8 @@ export default function InvoicesPage() {
       // Usando dados mockados
       await new Promise(resolve => setTimeout(resolve, 500));
       setInvoices(MOCK_INVOICES);
-    } catch (error) {
-      console.error('Erro ao carregar faturas:', error);
+    } catch (error: unknown) {
+      logger.error('Erro ao carregar faturas:', error);
       showNotification('Erro ao carregar histórico de faturas', 'error');
     } finally {
       setLoading(false);

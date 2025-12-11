@@ -16,6 +16,7 @@ import {
 } from '@/lib/api/billing';
 import { Button } from '@/components/ui/Button';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 export default function SubscriptionPage() {
   const router = useRouter();
@@ -37,8 +38,8 @@ export default function SubscriptionPage() {
       ]);
       setSubscription(subscriptionData);
       setPlans(plansData);
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+    } catch (error: unknown) {
+      logger.error('[SubscriptionPage] Erro ao carregar dados:', error);
       showNotification('Erro ao carregar dados da assinatura', 'error');
     } finally {
       setLoading(false);
@@ -86,8 +87,8 @@ export default function SubscriptionPage() {
       setShowUpgradeModal(false);
       setSelectedPlan(null);
       await loadData();
-    } catch (error) {
-      console.error('Erro ao alterar plano:', error);
+    } catch (error: unknown) {
+      logger.error('[SubscriptionPage] Erro ao alterar plano:', error);
       showNotification('Erro ao alterar plano. Tente novamente.', 'error');
     } finally {
       setProcessing(false);
@@ -101,8 +102,8 @@ export default function SubscriptionPage() {
       showNotification('Assinatura cancelada com sucesso', 'success');
       setShowCancelModal(false);
       await loadData();
-    } catch (error) {
-      console.error('Erro ao cancelar assinatura:', error);
+    } catch (error: unknown) {
+      logger.error('[SubscriptionPage] Erro ao cancelar assinatura:', error);
       showNotification('Erro ao cancelar assinatura. Tente novamente.', 'error');
     } finally {
       setProcessing(false);
@@ -115,8 +116,8 @@ export default function SubscriptionPage() {
       await billingApi.reactivate();
       showNotification('Assinatura reativada com sucesso!', 'success');
       await loadData();
-    } catch (error) {
-      console.error('Erro ao reativar assinatura:', error);
+    } catch (error: unknown) {
+      logger.error('[SubscriptionPage] Erro ao reativar assinatura:', error);
       showNotification('Erro ao reativar assinatura. Tente novamente.', 'error');
     } finally {
       setProcessing(false);

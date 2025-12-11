@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
+import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
 
 export type FeatureName =
   | 'elevators'
@@ -119,7 +120,7 @@ export class FeatureFlagsService {
       const featureConfig = this.getFeatureConfig(plan, feature);
 
       return featureConfig?.enabled || false;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao verificar feature ${feature} para tenant ${tenantId}:`,
         error,
@@ -157,10 +158,10 @@ export class FeatureFlagsService {
       }
 
       return featureConfig.limit || null;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
-        `Erro ao obter limite de ${feature} para tenant ${tenantId}:`,
-        error,
+        `Erro ao obter limite de ${feature} para tenant ${tenantId}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       return null;
     }
@@ -220,10 +221,10 @@ export class FeatureFlagsService {
 
       const plan = tenant.subscription?.plan || tenant.plan;
       return this.featureMatrix[plan] || {};
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
-        `Erro ao obter features para tenant ${tenantId}:`,
-        error,
+        `Erro ao obter features para tenant ${tenantId}: ${getErrorMessage(error)}`,
+        getErrorStack(error),
       );
       return {};
     }

@@ -4,6 +4,8 @@ import { useState, useRef } from 'react';
 import { Button } from './ui/Button';
 import { Modal } from './ui/Modal';
 import { partsApi, CreatePartDto } from '@/lib/api/parts';
+import { getErrorMessage, getAxiosErrorMessage } from '@/lib/utils/error.utils';
+import { logger } from '@/lib/utils/logger';
 
 interface ImportPartsModalProps {
   readonly isOpen: boolean;
@@ -56,7 +58,7 @@ export function ImportPartsModal({
         return decoder();
       } catch (decodeError: unknown) {
         // Ignorar erro de decoder e tentar próximo
-        console.warn('Erro ao decodificar com encoding:', decodeError);
+        logger.warn('Erro ao decodificar com encoding:', decodeError);
         continue;
       }
     }
@@ -346,8 +348,8 @@ export function ImportPartsModal({
       const parsed = parseCSV(normalizedText);
       setParsedParts(parsed);
     } catch (error: unknown) {
-      console.error('Erro ao processar arquivo:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      logger.error('[ImportPartsModal] Erro ao processar arquivo:', error);
+      const errorMessage = getErrorMessage(error);
       alert(`Erro ao processar arquivo: ${errorMessage}`);
       setParsedParts([]);
       setImportResult(null);
@@ -383,9 +385,10 @@ export function ImportPartsModal({
           handleClose();
         }, 2000);
       }
-    } catch (error) {
-      console.error('Erro ao importar peças:', error);
-      alert(`Erro ao importar peças: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    } catch (error: unknown) {
+      logger.error('[ImportPartsModal] Erro ao importar peças:', error);
+      const errorMessage = getAxiosErrorMessage(error) || 'Erro ao importar peças';
+      alert(`Erro ao importar peças: ${errorMessage}`);
     } finally {
       setImporting(false);
     }

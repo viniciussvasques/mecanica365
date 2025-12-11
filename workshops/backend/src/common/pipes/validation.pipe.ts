@@ -3,6 +3,7 @@ import {
   Injectable,
   ArgumentMetadata,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
@@ -11,6 +12,7 @@ type Constructor = new (...args: unknown[]) => unknown;
 
 @Injectable()
 export class ValidationPipe implements PipeTransform<unknown> {
+  private readonly logger = new Logger(ValidationPipe.name);
   async transform(
     value: unknown,
     { metatype }: ArgumentMetadata,
@@ -27,11 +29,11 @@ export class ValidationPipe implements PipeTransform<unknown> {
         Object.values(error.constraints || {}).join(', '),
       );
       // Log detalhado para debug
-      console.error(
+      this.logger.error(
         '[ValidationPipe] Erros de validação:',
         JSON.stringify(errors, null, 2),
       );
-      console.error(
+      this.logger.error(
         '[ValidationPipe] Valor recebido:',
         JSON.stringify(value, null, 2),
       );

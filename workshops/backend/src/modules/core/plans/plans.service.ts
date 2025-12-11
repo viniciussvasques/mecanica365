@@ -60,7 +60,7 @@ export class PlansService {
 
       this.logger.log(`Plano criado: ${plan.id} (${plan.code})`);
       return this.toResponseDto(plan);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ConflictException) {
         throw error;
       }
@@ -80,7 +80,7 @@ export class PlansService {
       });
 
       return plans.map((plan) => this.toResponseDto(plan));
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar planos: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -100,7 +100,7 @@ export class PlansService {
       }
 
       return this.toResponseDto(plan);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -123,7 +123,7 @@ export class PlansService {
       }
 
       return this.toResponseDto(plan);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -152,7 +152,7 @@ export class PlansService {
 
       this.logger.log(`Plano atualizado: ${plan.id} (${plan.code})`);
       return this.toResponseDto(plan);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof ConflictException
@@ -302,7 +302,7 @@ export class PlansService {
       });
 
       this.logger.log(`Plano excluído: ${id}`);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -356,7 +356,7 @@ export class PlansService {
           count: plan._count.subscriptions,
         })),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao obter estatísticas de planos: ${getErrorMessage(error)}`,
         getErrorStack(error),

@@ -77,7 +77,7 @@ export class PartsService {
       this.logger.log(`Peça criada: ${part.id} (tenant: ${tenantId})`);
 
       return this.toResponseDto(part);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -197,7 +197,7 @@ export class PartsService {
           (filters.lowStock ? filteredParts.length : total) / limit,
         ),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar peças: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -231,7 +231,7 @@ export class PartsService {
       }
 
       return this.toResponseDto(part);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -280,7 +280,7 @@ export class PartsService {
       this.logger.log(`Peça atualizada: ${id} (tenant: ${tenantId})`);
 
       return this.toResponseDto(updatedPart);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -339,7 +339,7 @@ export class PartsService {
         });
         this.logger.log(`Peça removida: ${id} (tenant: ${tenantId})`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -534,7 +534,7 @@ export class PartsService {
         this.logger.log(
           `Peça criada via importação: ${part.id} (tenant: ${tenantId})`,
         );
-      } catch (error) {
+      } catch (error: unknown) {
         result.errors++;
         const errorMessage = getErrorMessage(error);
         result.errorDetails.push({

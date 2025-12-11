@@ -7,6 +7,7 @@ import {
   AuditAction,
 } from './dto';
 import { Prisma } from '@prisma/client';
+import { getErrorMessage } from '@common/utils/error.utils';
 
 @Injectable()
 export class AuditService {
@@ -49,8 +50,10 @@ export class AuditService {
       });
 
       return this.toResponseDto(auditLog);
-    } catch (error) {
-      this.logger.error(`Erro ao criar log de auditoria: ${error}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Erro ao criar log de auditoria: ${getErrorMessage(error)}`,
+      );
       throw error;
     }
   }

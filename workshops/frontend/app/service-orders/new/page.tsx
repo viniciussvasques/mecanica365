@@ -12,6 +12,7 @@ import { quotesApi } from '@/lib/api/quotes';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,8 +80,8 @@ export default function NewServiceOrderPage() {
       // Carregar orçamentos pendentes
       const quotesResponse = await quotesApi.findAll({ limit: 100 });
       setQuotes(quotesResponse.data.filter(q => q.status === 'accepted' || q.status === 'sent'));
-    } catch (err) {
-      console.error('Erro ao carregar dados:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar dados:', err);
     } finally {
       setLoadingData(false);
     }
@@ -90,8 +91,8 @@ export default function NewServiceOrderPage() {
     try {
       const response = await vehiclesApi.findAll({ customerId, limit: 100 });
       setVehicles(response.data);
-    } catch (err) {
-      console.error('Erro ao carregar veículos:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar veículos:', err);
     }
   };
 
@@ -128,7 +129,7 @@ export default function NewServiceOrderPage() {
       await serviceOrdersApi.create(data);
       router.push('/service-orders');
     } catch (err: unknown) {
-      console.error('Erro ao criar ordem de serviço:', err);
+      logger.error('Erro ao criar ordem de serviço:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao criar ordem de serviço';
       alert(errorMessage);
     } finally {

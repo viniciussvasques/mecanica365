@@ -9,8 +9,10 @@ import {
   ChecklistStatus,
   ChecklistItem,
 } from '@/lib/api/checklists';
+import { getAxiosErrorMessage } from '@/lib/utils/error.utils';
 import { Button } from './ui/Button';
 import { Modal } from './ui/Modal';
+import { logger } from '@/lib/utils/logger';
 
 interface ChecklistPanelProps {
   entityType: 'quote' | 'service_order';
@@ -51,8 +53,9 @@ export function ChecklistPanel({
       });
       setChecklists(response.data);
       onChecklistsChange?.(response.data);
-    } catch (error) {
-      console.error('Erro ao carregar checklists:', error);
+    } catch (error: unknown) {
+      logger.error('[ChecklistPanel] Erro ao carregar checklists:', error);
+      // Erro silencioso - não precisa mostrar para o usuário em carregamento inicial
     } finally {
       setLoading(false);
     }
@@ -83,7 +86,7 @@ export function ChecklistPanel({
       const items = (selectedChecklist.items || [])
         .filter((item) => {
           if (!item.id) {
-            console.warn('Item sem ID encontrado:', item);
+            logger.warn('Item sem ID encontrado:', item);
             return false;
           }
           return true;
@@ -104,33 +107,31 @@ export function ChecklistPanel({
         return;
       }
 
-      console.log('Enviando items para completar checklist:', JSON.stringify(items, null, 2));
-      console.log('Payload completo:', JSON.stringify({ items }, null, 2));
+      logger.log('Enviando items para completar checklist:', JSON.stringify(items, null, 2));
+      logger.log('Payload completo:', JSON.stringify({ items }, null, 2));
       
       try {
         const result = await checklistsApi.complete(selectedChecklist.id, { items });
-        console.log('Checklist completado com sucesso:', result);
+        logger.log('Checklist completado com sucesso:', result);
         await loadChecklists();
         setShowCompleteModal(false);
         setSelectedChecklist(null);
       } catch (apiError: unknown) {
         // Log detalhado do erro
-        console.error('Erro detalhado ao completar checklist:', apiError);
+        logger.error('[ChecklistPanel] Erro ao completar checklist:', apiError);
         if (apiError && typeof apiError === 'object' && 'response' in apiError) {
           const axiosError = apiError as { response?: { data?: unknown; status?: number } };
-          console.error('Response data:', axiosError.response?.data);
-          console.error('Response status:', axiosError.response?.status);
+          logger.error('[ChecklistPanel] Response data:', axiosError.response?.data);
+          logger.error('[ChecklistPanel] Response status:', axiosError.response?.status);
         }
         
-        const errorMessage = apiError instanceof Error 
-          ? apiError.message 
-          : 'Erro ao completar checklist. Verifique se todos os itens obrigatórios foram marcados.';
+        const errorMessage = getAxiosErrorMessage(apiError) || 'Erro ao completar checklist. Verifique se todos os itens obrigatórios foram marcados.';
         alert(errorMessage);
         throw apiError; // Re-throw para não continuar
       }
-    } catch (error) {
-      console.error('Erro ao completar checklist:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao completar checklist. Verifique se todos os itens obrigatórios foram marcados.';
+    } catch (error: unknown) {
+      logger.error('[ChecklistPanel] Erro ao completar checklist:', error);
+      const errorMessage = getAxiosErrorMessage(error) || 'Erro ao completar checklist. Verifique se todos os itens obrigatórios foram marcados.';
       alert(errorMessage);
     } finally {
       setCompleting(false);

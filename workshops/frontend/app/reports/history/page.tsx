@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { reportsApi, ReportListItem, ReportType, ReportFormat } from '@/lib/api/reports';
 import { Button } from '@/components/ui/Button';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 const REPORT_TYPE_NAMES: Record<ReportType, string> = {
   [ReportType.SALES]: 'Vendas',
@@ -51,8 +52,8 @@ export default function ReportsHistoryPage() {
       const result = await reportsApi.findAll(limit, offset);
       setReports(result.reports);
       setTotal(result.total);
-    } catch (error) {
-      console.error('Erro ao carregar relatórios:', error);
+    } catch (error: unknown) {
+      logger.error('Erro ao carregar relatórios:', error);
       showNotification('Erro ao carregar histórico de relatórios', 'error');
     } finally {
       setLoading(false);
@@ -71,8 +72,8 @@ export default function ReportsHistoryPage() {
       a.remove();
       globalThis.window.URL.revokeObjectURL(url);
       showNotification('Download iniciado com sucesso!', 'success');
-    } catch (error) {
-      console.error('Erro ao baixar relatório:', error);
+    } catch (error: unknown) {
+      logger.error('Erro ao baixar relatório:', error);
       showNotification('Erro ao baixar relatório', 'error');
     }
   };

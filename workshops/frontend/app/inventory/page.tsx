@@ -9,6 +9,8 @@ import { inventoryApi, InventoryItem, InventoryFilters, InventoryStats, StockSta
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -64,8 +66,8 @@ export default function InventoryPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
@@ -79,7 +81,7 @@ export default function InventoryPage() {
         return;
       }
       
-      console.log('[InventoryPage] Carregando estoque com subdomain:', subdomain);
+      logger.log('[InventoryPage] Carregando estoque com subdomain:', subdomain);
       const response = await inventoryApi.findAll(filters);
       setItems(response.data);
       setStats(response.stats || null);
@@ -90,7 +92,7 @@ export default function InventoryPage() {
         totalPages: response.totalPages,
       });
     } catch (err: unknown) {
-      console.error('[InventoryPage] Erro ao carregar estoque:', err);
+      logger.error('[InventoryPage] Erro ao carregar estoque:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar estoque';
       setError(errorMessage);
     } finally {

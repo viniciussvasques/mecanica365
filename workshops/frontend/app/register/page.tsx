@@ -34,7 +34,7 @@ export default function RegisterPage() {
 
   // Recuperar estado do localStorage ao carregar
   useEffect(() => {
-    const savedTenantId = localStorage.getItem(STORAGE_KEY);
+    const savedTenantId = getLocalStorageItem(STORAGE_KEY);
     if (savedTenantId) {
       setTenantId(savedTenantId);
       setStep(2);
@@ -65,9 +65,9 @@ export default function RegisterPage() {
       const response = await onboardingApi.register(registerPayload);
 
       setTenantId(response.tenantId);
-      localStorage.setItem(STORAGE_KEY, response.tenantId);
+      setLocalStorageItem(STORAGE_KEY, response.tenantId);
       setStep(2);
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = 'Erro ao registrar. Tente novamente.';
       
       if (err.response?.data) {
@@ -105,7 +105,7 @@ export default function RegisterPage() {
       if (response.url) {
         window.location.href = response.url;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = 'Erro ao criar checkout. Tente novamente.';
       
       if (err.response?.data) {

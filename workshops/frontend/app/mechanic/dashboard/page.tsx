@@ -8,6 +8,7 @@ import { serviceOrdersApi, ServiceOrder, ServiceOrderStatus } from '@/lib/api/se
 import { appointmentsApi, Appointment, AppointmentStatus } from '@/lib/api/appointments';
 import { notificationsApi } from '@/lib/api/notifications';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +26,8 @@ export default function MechanicDashboardPage() {
   const [inProgressOrders, setInProgressOrders] = useState<ServiceOrder[]>([]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userRole = localStorage.getItem('userRole');
+    const token = authStorage.getToken();
+    const userRole = authStorage.getUserRole();
     
     if (!token) {
       router.push('/login');
@@ -55,13 +56,13 @@ export default function MechanicDashboardPage() {
       setLoading(true);
       
       // Buscar orçamentos aguardando diagnóstico atribuídos ao mecânico atual
-      const userId = localStorage.getItem('userId');
+      const userId = authStorage.getUserId();
       if (!userId) {
         router.push('/login');
         return;
       }
 
-      console.log('[MechanicDashboard] Buscando orçamentos para userId:', userId);
+      logger.log('[MechanicDashboard] Buscando orçamentos para userId:', userId);
 
       // Buscar orçamentos aguardando diagnóstico
       const awaitingResponse = await quotesApi.findAll({ 
@@ -69,8 +70,8 @@ export default function MechanicDashboardPage() {
         limit: 100 
       });
       
-      console.log('[MechanicDashboard] Orçamentos encontrados:', awaitingResponse.data.length);
-      console.log('[MechanicDashboard] Primeiro orçamento:', awaitingResponse.data[0] ? {
+      logger.log('[MechanicDashboard] Orçamentos encontrados:', awaitingResponse.data.length);
+      logger.log('[MechanicDashboard] Primeiro orçamento:', awaitingResponse.data[0] ? {
         id: awaitingResponse.data[0].id,
         number: awaitingResponse.data[0].number,
         assignedMechanicId: awaitingResponse.data[0].assignedMechanicId,
@@ -84,7 +85,7 @@ export default function MechanicDashboardPage() {
         (q: Quote) => !q.assignedMechanicId || q.assignedMechanicId === userId
       );
 
-      console.log('[MechanicDashboard] Orçamentos disponíveis para o mecânico:', awaitingQuotes.length);
+      logger.log('[MechanicDashboard] Orçamentos disponíveis para o mecânico:', awaitingQuotes.length);
 
       // Buscar orçamentos diagnosticados hoje
       const todayStart = new Date();
@@ -147,8 +148,8 @@ export default function MechanicDashboardPage() {
       
       // Ordens de serviço em andamento
       setInProgressOrders(myInProgressOrders.slice(0, 5));
-    } catch (err) {
-      console.error('Erro ao carregar dashboard:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar dashboard:', err);
     } finally {
       setLoading(false);
     }
@@ -158,8 +159,8 @@ export default function MechanicDashboardPage() {
     try {
       const result = await notificationsApi.getUnreadCount();
       setStats(prev => ({ ...prev, unreadNotifications: result }));
-    } catch (err) {
-      console.error('Erro ao carregar notificações:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar notificações:', err);
     }
   };
 
@@ -289,8 +290,8 @@ export default function MechanicDashboardPage() {
                                 try {
                                   await quotesApi.claimQuote(quote.id);
                                   await loadDashboard();
-                                } catch (err) {
-                                  console.error('Erro ao pegar orçamento:', err);
+                                } catch (err: unknown) {
+                                  logger.error('Erro ao pegar orçamento:', err);
                                   const errorMessage = err instanceof Error ? err.message : 'Erro ao pegar orçamento. Tente novamente.';
                                   alert(errorMessage);
                                 }

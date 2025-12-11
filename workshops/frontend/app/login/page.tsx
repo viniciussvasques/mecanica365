@@ -6,9 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
+import { getAxiosErrorMessage } from '@/lib/utils/error.utils';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { GearIcon, WrenchIcon } from '@/components/icons/MechanicIcons';
+import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 // Função para extrair subdomain da URL atual
 const getSubdomainFromUrl = (): string | null => {
@@ -60,7 +63,7 @@ export default function LoginPage() {
     if (detectedSubdomain) {
       setUrlSubdomain(detectedSubdomain);
       setSubdomain(detectedSubdomain);
-      console.log('[Login] Subdomain detectado na URL:', detectedSubdomain);
+      logger.log('[Login] Subdomain detectado na URL:', detectedSubdomain);
     }
   }, []);
 
@@ -79,8 +82,8 @@ export default function LoginPage() {
           if (result && result.subdomain) {
             setSubdomain(result.subdomain);
           }
-        } catch (err) {
-          console.log('Tenant não encontrado automaticamente');
+        } catch (err: unknown) {
+          logger.log('Tenant não encontrado automaticamente');
         } finally {
           setFindingTenant(false);
         }
@@ -113,8 +116,8 @@ export default function LoginPage() {
           tenantSubdomain = result.subdomain;
           setSubdomain(tenantSubdomain);
         }
-      } catch (err) {
-        console.log('Tentando login sem subdomain encontrado');
+      } catch (err: unknown) {
+        logger.log('Tentando login sem subdomain encontrado');
       } finally {
         setFindingTenant(false);
       }
@@ -134,36 +137,35 @@ export default function LoginPage() {
       });
       
       if (response.accessToken) {
-        localStorage.setItem('token', response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken || '');
-        localStorage.setItem('subdomain', tenantSubdomain);
-        
+        authStorage.setToken(response.accessToken);
+        authStorage.setRefreshToken(response.refreshToken || '');
+        authStorage.setSubdomain(tenantSubdomain);
+
         // Salvar nome e email do usuário
         if (response.user?.name) {
-          localStorage.setItem('userName', response.user.name);
+          authStorage.setUserName(response.user.name);
         }
         if (response.user?.email) {
-          localStorage.setItem('userEmail', response.user.email);
+          authStorage.setUserEmail(response.user.email);
         }
-        
+
         if (response.user?.id) {
-          localStorage.setItem('userId', response.user.id);
+          authStorage.setUserId(response.user.id);
         }
-        
+
         if (response.user?.role) {
-          localStorage.setItem('userRole', response.user.role);
-          console.log('[Login] Role salvo no localStorage:', response.user.role);
+          authStorage.setUserRole(response.user.role);
+          logger.log('[Login] Role salvo no localStorage:', response.user.role);
         } else {
-          console.warn('[Login] Role não encontrado na resposta:', response.user);
+          logger.warn('[Login] Role não encontrado na resposta:', response.user);
         }
-        
+
         const isFirstLogin = response.isFirstLogin === true;
-        const passwordChangedKey = response.user?.id ? `passwordChanged_${response.user.id}` : null;
-        const alreadyChanged = passwordChangedKey ? localStorage.getItem(passwordChangedKey) : null;
-        
+        const alreadyChanged = response.user?.id ? authStorage.getPasswordChanged(response.user.id) : false;
+
         if (isFirstLogin && !alreadyChanged) {
-          localStorage.setItem('isFirstLogin', 'true');
-          localStorage.setItem('showPasswordModal', 'true');
+          authStorage.setIsFirstLogin(true);
+          authStorage.setShowPasswordModal(true);
         }
         
         // Redirecionar baseado no role
@@ -177,23 +179,17 @@ export default function LoginPage() {
         }
       }
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { message?: string } }; message?: string };
-      let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
+      logger.error('[LoginPage] Erro ao fazer login:', err);
       
-      if (axiosError.response?.data?.message) {
-        errorMessage = axiosError.response.data.message;
-        
-        // Se houver subdomain na URL e o erro for credenciais inválidas,
-        // dar uma mensagem mais específica
-        if (urlSubdomain && errorMessage === 'Credenciais inválidas') {
-          errorMessage = 'Email ou senha incorretos para esta oficina. Verifique se você está acessando a URL correta.';
-        }
-      } else if (axiosError.message) {
-        errorMessage = axiosError.message;
+      let errorMessage = getAxiosErrorMessage(err) || 'Erro ao fazer login. Verifique suas credenciais.';
+      
+      // Se houver subdomain na URL e o erro for credenciais inválidas,
+      // dar uma mensagem mais específica
+      if (urlSubdomain && errorMessage.includes('Credenciais inválidas')) {
+        errorMessage = 'Email ou senha incorretos para esta oficina. Verifique se você está acessando a URL correta.';
       }
       
       setError(errorMessage);
-      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }

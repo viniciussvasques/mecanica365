@@ -16,7 +16,7 @@ export default function appConfig() {
     },
     jwt: {
       secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRES_IN || '1d',
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     },
     vehicleHistory: {
       apiUrl: process.env.VEHICLE_HISTORY_API_URL || 'http://localhost:3002',

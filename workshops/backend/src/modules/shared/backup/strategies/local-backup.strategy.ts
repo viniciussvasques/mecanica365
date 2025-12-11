@@ -1,8 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  existsSync,
+  statSync,
+  mkdirSync,
+  openSync,
+  readSync,
+  closeSync,
+} from 'node:fs';
+import { dirname } from 'node:path';
 import { ConfigService } from '@nestjs/config';
 import { BackupStrategy, BackupResult } from './backup-strategy.interface';
 import { BackupType } from '../dto';
@@ -36,11 +43,9 @@ export class LocalBackupStrategy implements BackupStrategy {
       const dbPassword = url.password;
 
       // Criar diretório se não existir
-      const path = require('node:path');
-      const fs = require('node:fs');
-      const dir = path.dirname(outputPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      const dir = dirname(outputPath);
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
       }
 
       // Comando pg_dump
@@ -81,10 +86,7 @@ export class LocalBackupStrategy implements BackupStrategy {
     }
   }
 
-  async restoreBackup(
-    backupPath: string,
-    tenantId?: string,
-  ): Promise<void> {
+  async restoreBackup(backupPath: string, _tenantId?: string): Promise<void> {
     try {
       if (!existsSync(backupPath)) {
         throw new Error(`Backup não encontrado: ${backupPath}`);
@@ -132,11 +134,10 @@ export class LocalBackupStrategy implements BackupStrategy {
 
       // Verificar se é um arquivo válido do pg_dump (formato custom)
       // Arquivos pg_dump custom começam com "PGDMP"
-      const fs = require('node:fs');
-      const fd = fs.openSync(backupPath, 'r');
+      const fd = openSync(backupPath, 'r');
       const buffer = Buffer.alloc(5);
-      fs.readSync(fd, buffer, 0, 5, 0);
-      fs.closeSync(fd);
+      readSync(fd, buffer, 0, 5, 0);
+      closeSync(fd);
 
       const header = buffer.toString('utf8');
       return header === 'PGDMP';
@@ -149,4 +150,3 @@ export class LocalBackupStrategy implements BackupStrategy {
     }
   }
 }
-

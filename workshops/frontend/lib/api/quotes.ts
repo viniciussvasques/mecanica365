@@ -395,10 +395,10 @@ export const quotesPublicApi = {
     // Garantir que não há /api duplicado
     const apiPath = baseUrl.endsWith('/api') ? '/public/quotes/view' : '/api/public/quotes/view';
     const url = `${baseUrl}${apiPath}?token=${encodeURIComponent(token)}`;
-    console.log('[quotesPublicApi] Buscando orçamento em:', url);
+    // Logger removido - não necessário em produção
     const response = await fetch(url);
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Token inválido ou expirado' }));
+      const errorData = await response.json().catch((): { message: string } => ({ message: 'Token inválido ou expirado' }));
       throw new Error(errorData.message || 'Token inválido ou expirado');
     }
     return response.json();
@@ -418,7 +418,7 @@ export const quotesPublicApi = {
       body: JSON.stringify({ token, customerSignature }),
     });
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Erro ao aprovar orçamento' }));
+      const error = await response.json().catch((): { message: string } => ({ message: 'Erro ao aprovar orçamento' }));
       throw new Error(error.message || 'Erro ao aprovar orçamento');
     }
     return response.json();
@@ -438,7 +438,7 @@ export const quotesPublicApi = {
       body: JSON.stringify({ token, reason }),
     });
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Erro ao rejeitar orçamento' }));
+      const error = await response.json().catch((): { message: string } => ({ message: 'Erro ao rejeitar orçamento' }));
       throw new Error(error.message || 'Erro ao rejeitar orçamento');
     }
     return response.json();

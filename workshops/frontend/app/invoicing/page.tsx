@@ -9,6 +9,7 @@ import { invoicingApi, Invoice, InvoiceFilters, InvoiceStatus, PaymentStatus, In
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -89,8 +90,8 @@ export default function InvoicingPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
@@ -104,7 +105,7 @@ export default function InvoicingPage() {
         return;
       }
       
-      console.log('[InvoicingPage] Carregando faturas com subdomain:', subdomain);
+      logger.log('[InvoicingPage] Carregando faturas com subdomain:', subdomain);
       const response = await invoicingApi.findAll(filters);
       setInvoices(response.data);
       setPagination({
@@ -114,7 +115,7 @@ export default function InvoicingPage() {
         totalPages: response.totalPages,
       });
     } catch (err: unknown) {
-      console.error('[InvoicingPage] Erro ao carregar faturas:', err);
+      logger.error('[InvoicingPage] Erro ao carregar faturas:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar faturas';
       setError(errorMessage);
     } finally {
@@ -149,7 +150,7 @@ export default function InvoicingPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao emitir fatura';
       alert(errorMessage);
-      console.error('Erro ao emitir fatura:', err);
+      logger.error('Erro ao emitir fatura:', err);
     }
   };
 
@@ -165,7 +166,7 @@ export default function InvoicingPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao cancelar fatura';
       alert(errorMessage);
-      console.error('Erro ao cancelar fatura:', err);
+      logger.error('Erro ao cancelar fatura:', err);
     }
   };
 
@@ -180,7 +181,7 @@ export default function InvoicingPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir fatura';
       alert(errorMessage);
-      console.error('Erro ao excluir fatura:', err);
+      logger.error('Erro ao excluir fatura:', err);
     }
   };
 

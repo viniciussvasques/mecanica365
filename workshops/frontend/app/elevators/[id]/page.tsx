@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { elevatorsApi, Elevator, ElevatorUsage, ElevatorStatus, ElevatorType } from '@/lib/api/elevators';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,7 @@ export default function ElevatorDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar elevador';
       setError(errorMessage);
-      console.error('Erro ao carregar elevador:', err);
+      logger.error('Erro ao carregar elevador:', err);
     } finally {
       setLoading(false);
     }
@@ -50,7 +51,7 @@ export default function ElevatorDetailPage() {
       const response = await elevatorsApi.getUsageHistory(id, { limit: 50 });
       setUsageHistory(response.data);
     } catch (err: unknown) {
-      console.error('Erro ao carregar histórico:', err);
+      logger.error('Erro ao carregar histórico:', err);
     } finally {
       setLoadingHistory(false);
     }

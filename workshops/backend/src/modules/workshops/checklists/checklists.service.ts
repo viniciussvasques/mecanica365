@@ -77,7 +77,7 @@ export class ChecklistsService {
       );
 
       return this.toResponseDto(checklist);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar checklist: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -171,7 +171,7 @@ export class ChecklistsService {
       }
 
       return this.toResponseDto(checklist);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar checklist: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -270,7 +270,7 @@ export class ChecklistsService {
       this.logger.log(`Checklist atualizado: ${id}`);
 
       return this.toResponseDto(updatedChecklist);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao atualizar checklist: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -362,7 +362,7 @@ export class ChecklistsService {
       this.logger.log(`Checklist ${id} atualizado para status: ${newStatus}`);
 
       return this.toResponseDto(finalChecklist);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao completar checklist: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -392,7 +392,7 @@ export class ChecklistsService {
         .every((item) => item.isCompleted);
 
       return allRequiredItemsCompleted;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao validar checklist: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -419,7 +419,7 @@ export class ChecklistsService {
       });
 
       this.logger.log(`Checklist removido: ${id}`);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao remover checklist: ${getErrorMessage(error)}`,
         getErrorStack(error),

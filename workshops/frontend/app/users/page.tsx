@@ -7,6 +7,7 @@ import { usersApi, User, UserRole } from '@/lib/api/users';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +38,7 @@ export default function UsersPage() {
   }>({});
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+      const token = authStorage.getToken();
     if (!token) {
       router.push('/login');
       return;
@@ -51,12 +52,12 @@ export default function UsersPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Token de autenticação não encontrado. Faça login novamente.');
-        router.push('/login');
-        return;
-      }
+    const token = authStorage.getToken();
+    if (!token) {
+      setError('Token de autenticação não encontrado. Faça login novamente.');
+      router.push('/login');
+      return;
+    }
       
       const response = await usersApi.findAll({
         role: filters.role,
@@ -64,7 +65,7 @@ export default function UsersPage() {
       });
       setUsers(response);
     } catch (err: unknown) {
-      console.error('[UsersPage] Erro ao carregar usuários:', err);
+      logger.error('[UsersPage] Erro ao carregar usuários:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar usuários';
       setError(errorMessage);
     } finally {
@@ -90,7 +91,7 @@ export default function UsersPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao remover usuário';
       alert(errorMessage);
-      console.error('Erro ao remover usuário:', err);
+      logger.error('Erro ao remover usuário:', err);
     }
   };
 
@@ -101,7 +102,7 @@ export default function UsersPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar usuário';
       alert(errorMessage);
-      console.error('Erro ao atualizar usuário:', err);
+      logger.error('Erro ao atualizar usuário:', err);
     }
   };
 

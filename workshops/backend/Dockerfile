@@ -4,11 +4,17 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 # Instalar dependências do sistema
+# Adicionar repositório oficial do PostgreSQL para instalar versão 16
 RUN apt-get update && apt-get install -y \
+    gnupg2 \
+    curl \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
-    postgresql-client \
+    postgresql-client-16 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar arquivos de dependências
@@ -33,10 +39,15 @@ FROM node:20-slim AS production
 WORKDIR /app
 
 # Instalar dependências do sistema para produção
+# Adicionar repositório oficial do PostgreSQL para instalar versão 16
 RUN apt-get update && apt-get install -y \
-    postgresql-client \
-    wget \
+    gnupg2 \
     curl \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update && apt-get install -y \
+    postgresql-client-16 \
+    wget \
     bash \
     && rm -rf /var/lib/apt/lists/*
 

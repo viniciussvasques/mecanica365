@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { DiagnosticPanel } from '@/components/DiagnosticPanel';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,8 +67,8 @@ export default function EditServiceOrderPage() {
       ]);
       setCustomers(customersResponse.data);
       setElevators(elevatorsResponse.data);
-    } catch (err) {
-      console.error('Erro ao carregar dados:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar dados:', err);
     }
   };
 
@@ -102,7 +103,7 @@ export default function EditServiceOrderPage() {
         await loadVehicles(data.customerId);
       }
     } catch (err: unknown) {
-      console.error('Erro ao carregar ordem de serviço:', err);
+      logger.error('Erro ao carregar ordem de serviço:', err);
       alert('Erro ao carregar ordem de serviço');
       router.push('/service-orders');
     } finally {
@@ -114,8 +115,8 @@ export default function EditServiceOrderPage() {
     try {
       const response = await vehiclesApi.findAll({ customerId, limit: 100 });
       setVehicles(response.data);
-    } catch (err) {
-      console.error('Erro ao carregar veículos:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar veículos:', err);
     }
   };
 
@@ -152,7 +153,7 @@ export default function EditServiceOrderPage() {
       await serviceOrdersApi.update(id, data);
       router.push(`/service-orders/${id}`);
     } catch (err: unknown) {
-      console.error('Erro ao atualizar ordem de serviço:', err);
+      logger.error('Erro ao atualizar ordem de serviço:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar ordem de serviço';
       alert(errorMessage);
     } finally {

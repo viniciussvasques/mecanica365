@@ -90,7 +90,7 @@ export class DiagnosticService {
       );
 
       return suggestions;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao sugerir problemas: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
       );
@@ -210,7 +210,7 @@ export class DiagnosticService {
         solutions: problem.solutions || [],
         matchScore: 100, // Score máximo pois foi filtrado por categoria
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar problemas por categoria: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
       );

@@ -113,7 +113,7 @@ export default function SupportPage() {
       showNotification('Mensagem enviada com sucesso! Responderemos em breve.', 'success');
       setContactForm({ subject: '', message: '', priority: 'normal' });
       setShowContactForm(false);
-    } catch (error) {
+    } catch (error: unknown) {
       showNotification('Erro ao enviar mensagem. Tente novamente.', 'error');
     } finally {
       setSending(false);

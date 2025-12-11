@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -53,8 +54,8 @@ export default function NewPaymentPage() {
       setLoadingData(true);
       const response = await invoicingApi.findAll({ limit: 100, status: InvoiceStatus.ISSUED });
       setInvoices(response.data);
-    } catch (err) {
-      console.error('Erro ao carregar faturas:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar faturas:', err);
       showNotification('Erro ao carregar faturas', 'error');
     } finally {
       setLoadingData(false);
@@ -100,7 +101,7 @@ export default function NewPaymentPage() {
       showNotification('Pagamento criado com sucesso!', 'success');
       router.push(`/payments/${payment.id}`);
     } catch (err: unknown) {
-      console.error('Erro ao criar pagamento:', err);
+      logger.error('Erro ao criar pagamento:', err);
       let errorMessage = 'Erro ao criar pagamento';
       
       if (err && typeof err === 'object' && 'response' in err) {

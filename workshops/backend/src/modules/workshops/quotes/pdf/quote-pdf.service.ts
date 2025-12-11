@@ -4,6 +4,7 @@ import { QuoteResponseDto } from '../dto';
 import { WorkshopSettings } from '@prisma/client';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { getErrorMessage } from '@common/utils/error.utils';
 
 @Injectable()
 export class QuotePdfService {
@@ -97,9 +98,10 @@ export class QuotePdfService {
         this.addFooter(doc, quote, workshopSettings);
 
         doc.end();
-      } catch (error) {
-        this.logger.error(`Erro ao gerar PDF: ${error}`);
-        reject(error instanceof Error ? error : new Error(String(error)));
+      } catch (error: unknown) {
+        const errorMessage = getErrorMessage(error);
+        this.logger.error(`Erro ao gerar PDF: ${errorMessage}`);
+        reject(error instanceof Error ? error : new Error(errorMessage));
       }
     });
   }
@@ -127,8 +129,8 @@ export class QuotePdfService {
             fit: [80, 80],
           });
         }
-      } catch (error) {
-        this.logger.warn(`Erro ao carregar logo: ${error}`);
+      } catch (error: unknown) {
+        this.logger.warn(`Erro ao carregar logo: ${getErrorMessage(error)}`);
       }
     }
 

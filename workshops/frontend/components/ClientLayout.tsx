@@ -15,6 +15,7 @@ import { notificationsApi } from '@/lib/api/notifications';
 import { elevatorsApi, ElevatorStatus, type Elevator } from '@/lib/api/elevators';
 import { serviceOrdersApi, ServiceOrderStatus } from '@/lib/api/service-orders';
 import { appointmentsApi, AppointmentStatus } from '@/lib/api/appointments';
+import { logger } from '@/lib/utils/logger';
 
 interface ClientLayoutProps {
   readonly children: React.ReactNode;
@@ -108,8 +109,8 @@ export function ClientLayout({ children }: ClientLayoutProps) {
           pending: appointmentsPending.total,
         },
       });
-    } catch (err) {
-      console.error('Erro ao carregar estatísticas do header:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar estatísticas do header:', err);
     }
   }, []);
 
@@ -124,9 +125,9 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     // Carregar informações do usuário
     const loadUserInfo = () => {
       if (globalThis.window !== undefined) {
-        const userName = localStorage.getItem('userName') || 'Usuário';
-        const userEmail = localStorage.getItem('userEmail') || 'usuario@oficina.com';
-        const userRole = localStorage.getItem('userRole') || 'admin';
+        const userName = authStorage.getUserName() || 'Usuário';
+        const userEmail = authStorage.getUserEmail() || 'usuario@oficina.com';
+        const userRole = authStorage.getUserRole() || 'admin';
         setUser({ name: userName, email: userEmail, role: userRole });
       }
     };
@@ -138,8 +139,8 @@ export function ClientLayout({ children }: ClientLayoutProps) {
       try {
         const count = await notificationsApi.getUnreadCount();
         setUnreadNotifications(count);
-      } catch (err) {
-        console.error('Erro ao carregar notificações:', err);
+      } catch (err: unknown) {
+        logger.error('Erro ao carregar notificações:', err);
       }
     };
 
@@ -186,17 +187,11 @@ export function ClientLayout({ children }: ClientLayoutProps) {
 
   const handleSidebarToggle = (collapsed: boolean) => {
     setSidebarCollapsed(collapsed);
-    localStorage.setItem('sidebarCollapsed', String(collapsed));
+    uiStorage.setSidebarCollapsed(collapsed);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('subdomain');
+    authStorage.clearAuthData();
     router.push('/login');
   };
 

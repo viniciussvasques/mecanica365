@@ -106,7 +106,7 @@ export class PredictiveService {
         predictions,
         summary,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao gerar previsões para veículo ${vehicleId}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -134,7 +134,7 @@ export class PredictiveService {
       }
 
       return alerts;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao gerar alertas de manutenção: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -259,7 +259,7 @@ export class PredictiveService {
           totalPredictions += predictions.summary.totalPredictions;
           urgentAlerts += predictions.summary.urgentPredictions;
           totalEstimatedCost += predictions.summary.totalEstimatedCost;
-        } catch (error) {
+        } catch (error: unknown) {
           this.logger.warn(
             `Erro ao gerar previsões para veículo ${vehicle.id}: ${getErrorMessage(error)}`,
           );
@@ -284,7 +284,7 @@ export class PredictiveService {
         },
         trends,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao gerar insights preditivos: ${getErrorMessage(error)}`,
         getErrorStack(error),

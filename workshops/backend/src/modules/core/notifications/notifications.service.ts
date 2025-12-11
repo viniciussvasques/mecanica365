@@ -47,7 +47,7 @@ export class NotificationsService {
       this.logger.log(
         `Notificação criada: ${dto.type} para ${dto.userId || 'todos'} no tenant ${dto.tenantId}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(`Erro ao criar notificação: ${getErrorMessage(error)}`);
       // Não lançar erro para não quebrar o fluxo principal
     }
@@ -93,7 +93,7 @@ export class NotificationsService {
           `Notificações criadas para ${mechanics.length} mecânicos: ${type}`,
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao notificar mecânicos: ${getErrorMessage(error)}`,
       );

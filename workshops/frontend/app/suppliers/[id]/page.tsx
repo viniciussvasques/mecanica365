@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { suppliersApi, Supplier } from '@/lib/api/suppliers';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +19,7 @@ export default function SupplierDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = authStorage.getToken();
     if (!token) {
       router.push('/login');
       return;
@@ -35,7 +37,7 @@ export default function SupplierDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar fornecedor';
       setError(errorMessage);
-      console.error('Erro ao carregar fornecedor:', err);
+      logger.error('Erro ao carregar fornecedor:', err);
     } finally {
       setLoading(false);
     }
@@ -52,7 +54,7 @@ export default function SupplierDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir fornecedor';
       alert(errorMessage);
-      console.error('Erro ao excluir fornecedor:', err);
+      logger.error('Erro ao excluir fornecedor:', err);
     }
   };
 

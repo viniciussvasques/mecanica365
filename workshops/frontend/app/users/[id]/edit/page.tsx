@@ -7,6 +7,7 @@ import { usersApi, User, UpdateUserDto, UserRole } from '@/lib/api/users';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,7 @@ export default function EditUserPage() {
         isActive: user.isActive,
       });
     } catch (err: unknown) {
-      console.error('[EditUserPage] Erro ao carregar usuário:', err);
+      logger.error('[EditUserPage] Erro ao carregar usuário:', err);
       alert('Erro ao carregar usuário');
       router.push('/users');
     } finally {
@@ -103,7 +104,7 @@ export default function EditUserPage() {
       await usersApi.update(id, data);
       router.push(`/users/${id}`);
     } catch (err: unknown) {
-      console.error('Erro ao atualizar usuário:', err);
+      logger.error('Erro ao atualizar usuário:', err);
       let errorMessage = 'Erro ao atualizar usuário';
       
       if (err && typeof err === 'object' && 'response' in err) {

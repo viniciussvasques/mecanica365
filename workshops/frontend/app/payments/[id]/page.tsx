@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { paymentsApi, Payment, PaymentStatus, PaymentMethod } from '@/lib/api/payments';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -82,7 +83,7 @@ export default function PaymentDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar pagamento';
       setError(errorMessage);
-      console.error('Erro ao carregar pagamento:', err);
+      logger.error('Erro ao carregar pagamento:', err);
       router.push('/payments');
     } finally {
       setLoading(false);

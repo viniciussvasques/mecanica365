@@ -1,4 +1,10 @@
-import { IsString, IsEnum, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+} from 'class-validator';
 
 export enum BackupType {
   FULL = 'full',
@@ -27,4 +33,3 @@ export class BackupConfigDto {
   @IsNumber()
   retentionDays?: number; // Dias de retenção (padrão: 30)
 }
-

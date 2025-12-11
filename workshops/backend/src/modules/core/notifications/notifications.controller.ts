@@ -7,6 +7,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,12 +21,15 @@ import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantId } from '../../../common/decorators/tenant.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { getErrorMessage } from '../../../common/utils/error.utils';
 
 @ApiTags('Notifications')
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class NotificationsController {
+  private readonly logger = new Logger(NotificationsController.name);
+
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
@@ -89,9 +93,12 @@ export class NotificationsController {
         true,
       );
       return { unreadCount: result?.unreadCount || 0 };
-    } catch (error) {
+    } catch (error: unknown) {
       // Se houver erro, retornar 0 para não quebrar o frontend
-      console.error('Erro ao buscar contador de notificações:', error);
+      this.logger.error(
+        'Erro ao buscar contador de notificações:',
+        getErrorMessage(error),
+      );
       return { unreadCount: 0 };
     }
   }

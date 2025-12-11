@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { quotesApi, Quote, QuoteStatus } from '@/lib/api/quotes';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +38,7 @@ export default function MechanicQuotesPage() {
     try {
       setLoading(true);
       
-      const userId = localStorage.getItem('userId');
+      const userId = authStorage.getUserId();
       if (!userId) {
         router.push('/login');
         return;
@@ -54,8 +55,8 @@ export default function MechanicQuotesPage() {
       );
       
       setQuotes(myQuotes);
-    } catch (err) {
-      console.error('Erro ao carregar orçamentos:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar orçamentos:', err);
     } finally {
       setLoading(false);
     }

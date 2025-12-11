@@ -7,6 +7,7 @@ import { usersApi, CreateUserDto, UserRole } from '@/lib/api/users';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,7 +83,7 @@ export default function NewUserPage() {
       await usersApi.create(data);
       router.push('/users');
     } catch (err: unknown) {
-      console.error('Erro ao criar usuário:', err);
+      logger.error('Erro ao criar usuário:', err);
       let errorMessage = 'Erro ao criar usuário';
       
       if (err && typeof err === 'object' && 'response' in err) {

@@ -60,7 +60,7 @@ export class BackupService {
 
     try {
       // Criar registro de backup no banco
-      const backup = await this.prisma.backup.create({
+      await this.prisma.backup.create({
         data: {
           id: backupId,
           tenantId: tenantId || null,
@@ -69,9 +69,7 @@ export class BackupService {
           encrypted: config.encrypted || false,
           startedAt: new Date(),
           expiresAt: config.retentionDays
-            ? new Date(
-                Date.now() + config.retentionDays * 24 * 60 * 60 * 1000,
-              )
+            ? new Date(Date.now() + config.retentionDays * 24 * 60 * 60 * 1000)
             : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 dias padrão
         },
       });
@@ -95,7 +93,11 @@ export class BackupService {
       let finalSize = result.size;
 
       if (config.encrypted) {
-        await EncryptionUtil.encryptFile(backupPath, encryptedPath, this.encryptionKey);
+        await EncryptionUtil.encryptFile(
+          backupPath,
+          encryptedPath,
+          this.encryptionKey,
+        );
         finalPath = encryptedPath;
         finalSize = statSync(encryptedPath).size;
 
@@ -257,7 +259,7 @@ export class BackupService {
       }
 
       // Criar registro de restauração
-      const restoreOperation = await this.prisma.restoreOperation.create({
+      await this.prisma.restoreOperation.create({
         data: {
           id: restoreId,
           backupId: request.backupId,
@@ -457,7 +459,7 @@ export class BackupService {
     startedAt: Date;
     completedAt: Date | null;
     expiresAt: Date | null;
-    metadata: Prisma.JsonValue | null;
+    metadata: Prisma.JsonValue;
     error: string | null;
   }): BackupResponseDto {
     return {
@@ -477,4 +479,3 @@ export class BackupService {
     };
   }
 }
-

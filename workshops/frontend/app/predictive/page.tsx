@@ -16,6 +16,7 @@ import {
   GaugeIcon,
   DollarSignIcon,
 } from '@/components/icons/MechanicIcons';
+import { logger } from '@/lib/utils/logger';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -148,7 +149,7 @@ export default function PredictivePage() {
       const data = await predictiveApi.getInsights();
       setInsights(data);
     } catch (err: unknown) {
-      console.error('[PredictivePage] Erro ao carregar insights:', err);
+      logger.error('[PredictivePage] Erro ao carregar insights:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados preditivos';
       showNotification(errorMessage, 'error');
     } finally {

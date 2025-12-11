@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from './ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 interface PdfViewerProps {
   quoteId: string;
@@ -23,8 +24,8 @@ export function PdfViewer({ quoteId, quoteNumber, onClose }: PdfViewerProps) {
       const blob = await quotesApi.generatePdf(quoteId);
       const url = window.URL.createObjectURL(blob);
       setPdfUrl(url);
-    } catch (err) {
-      console.error('Erro ao carregar PDF:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar PDF:', err);
       setError('Erro ao carregar PDF do orçamento');
     } finally {
       setLoading(false);
@@ -44,8 +45,8 @@ export function PdfViewer({ quoteId, quoteNumber, onClose }: PdfViewerProps) {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (err) {
-      console.error('Erro ao baixar PDF:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao baixar PDF:', err);
       alert('Erro ao baixar PDF do orçamento');
     } finally {
       setLoading(false);

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { VEHICLE_BRANDS, VEHICLE_MODELS, VEHICLE_COLORS } from '@/lib/constants/vehicles';
+import { logger } from '@/lib/utils/logger';
 
 export default function EditVehiclePage() {
   const router = useRouter();
@@ -94,7 +95,7 @@ export default function EditVehiclePage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar veículo';
       alert(errorMessage);
-      console.error('Erro ao carregar veículo:', err);
+      logger.error('Erro ao carregar veículo:', err);
       router.push('/vehicles');
     } finally {
       setLoadingVehicle(false);
@@ -170,11 +171,11 @@ export default function EditVehiclePage() {
         isDefault: formData.isDefault,
       };
 
-      console.log('[EditVehicle] Enviando dados:', data);
+      logger.log('[EditVehicle] Enviando dados:', data);
       await vehiclesApi.update(id, data);
       router.push(`/vehicles/${id}`);
     } catch (err: unknown) {
-      console.error('Erro ao atualizar veículo:', err);
+      logger.error('Erro ao atualizar veículo:', err);
       let errorMessage = 'Erro ao atualizar veículo';
 
       if (err && typeof err === 'object' && 'response' in err) {

@@ -90,7 +90,7 @@ export class BillingService {
 
       // Fallback para configuração estática
       return this.fallbackPlanLimits[planCode] ?? null;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Erro ao buscar plano do banco, usando fallback: ${getErrorMessage(error)}`,
       );
@@ -179,7 +179,7 @@ export class BillingService {
         `Subscription criada: ${subscription.id} para tenant ${createSubscriptionDto.tenantId}`,
       );
       return this.toResponseDto(subscription);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar subscription: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -199,7 +199,7 @@ export class BillingService {
       }
 
       return this.toResponseDto(subscription);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar subscription do tenant ${tenantId}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -280,7 +280,7 @@ export class BillingService {
 
       this.logger.log(`Subscription atualizada: ${tenantId}`);
       return this.toResponseDto(updatedSubscription);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao atualizar subscription ${tenantId}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -344,7 +344,7 @@ export class BillingService {
 
       this.logger.log(`Subscription upgrade: ${tenantId} -> ${newPlan}`);
       return this.toResponseDto(updatedSubscription);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao fazer upgrade da subscription ${tenantId}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -408,7 +408,7 @@ export class BillingService {
 
       this.logger.log(`Subscription downgrade: ${tenantId} -> ${newPlan}`);
       return this.toResponseDto(updatedSubscription);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao fazer downgrade da subscription ${tenantId}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -434,7 +434,7 @@ export class BillingService {
 
       this.logger.log(`Subscription cancelada: ${tenantId}`);
       return this.toResponseDto(updatedSubscription);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao cancelar subscription ${tenantId}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -460,7 +460,7 @@ export class BillingService {
 
       this.logger.log(`Subscription reativada: ${tenantId}`);
       return this.toResponseDto(updatedSubscription);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao reativar subscription ${tenantId}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -542,7 +542,7 @@ export class BillingService {
           isDefault: false,
         },
       ];
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Erro ao buscar planos do banco, usando fallback: ${getErrorMessage(error)}`,
       );
@@ -658,7 +658,7 @@ export class BillingService {
           enabledFeatures.push(featureName);
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Erro ao obter features do FeatureFlagsService: ${getErrorMessage(error)}`,
       );

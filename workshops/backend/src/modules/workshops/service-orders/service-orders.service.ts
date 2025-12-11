@@ -419,7 +419,7 @@ export class ServiceOrdersService {
           );
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof BadRequestException ||
         error instanceof NotFoundException
@@ -456,7 +456,7 @@ export class ServiceOrdersService {
         usageId: activeUsage.id,
         notes: `OS ${serviceOrderNumber} finalizada`,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Não foi possível finalizar uso do elevador: ${getErrorMessage(error)}`,
       );
@@ -583,7 +583,7 @@ export class ServiceOrdersService {
               notes: `Reservado para ${number}`,
             },
           );
-        } catch (error) {
+        } catch (error: unknown) {
           this.logger.warn(
             `Não foi possível reservar elevador: ${getErrorMessage(error)}`,
           );
@@ -685,7 +685,7 @@ export class ServiceOrdersService {
         this.logger.log(
           `✅ Checklist pós-serviço criado automaticamente para ${number}`,
         );
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.warn(
           `⚠️ Não foi possível criar checklists de serviço para ${number}: ${getErrorMessage(error)}`,
         );
@@ -693,7 +693,7 @@ export class ServiceOrdersService {
       }
 
       return this.toResponseDto(serviceOrder);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -880,7 +880,7 @@ export class ServiceOrdersService {
       responseDto.checklists = relations.checklists;
 
       return responseDto;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -994,7 +994,7 @@ export class ServiceOrdersService {
       this.logger.log(`Ordem de serviço atualizada: ${updatedOrder.number}`);
 
       return this.toResponseDto(updatedOrder);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -1076,7 +1076,7 @@ export class ServiceOrdersService {
             notes: `OS ${serviceOrder.number} iniciada`,
           },
         );
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.warn(
           `Não foi possível iniciar uso do elevador: ${getErrorMessage(error)}`,
         );
@@ -1298,7 +1298,7 @@ export class ServiceOrdersService {
       this.logger.log(
         `Notificações enviadas para ${receptionists.length} recepcionista(s) sobre OS ${updatedOrder.number}`,
       );
-    } catch (notificationError) {
+    } catch (notificationError: unknown) {
       this.logger.warn(
         `Erro ao criar notificações para recepcionistas: ${getErrorMessage(notificationError)}`,
       );
@@ -1376,7 +1376,7 @@ export class ServiceOrdersService {
           usageId: activeUsage.id,
           notes: `OS ${serviceOrder.number} cancelada`,
         });
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.warn(
           `Não foi possível finalizar uso do elevador: ${getErrorMessage(error)}`,
         );
@@ -1638,7 +1638,7 @@ export class ServiceOrdersService {
       );
 
       return invoice.id;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Falha ao gerar fatura automática para OS ${serviceOrder.number}: ${getErrorMessage(error)}`,
       );
@@ -1937,7 +1937,7 @@ export class ServiceOrdersService {
           status: checklist.status,
         })),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Erro ao buscar attachments/checklists: ${getErrorMessage(error)}`,
       );

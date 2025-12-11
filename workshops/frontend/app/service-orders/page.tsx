@@ -7,6 +7,7 @@ import { serviceOrdersApi, ServiceOrder, ServiceOrderFilters, ServiceOrderStatus
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,8 +42,8 @@ export default function ServiceOrdersPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token || !subdomain) {
         setError('Token ou subdomain não encontrado. Faça login novamente.');
@@ -59,7 +60,7 @@ export default function ServiceOrdersPage() {
         totalPages: response.totalPages,
       });
     } catch (err: unknown) {
-      console.error('[ServiceOrdersPage] Erro ao carregar ordens de serviço:', err);
+      logger.error('[ServiceOrdersPage] Erro ao carregar ordens de serviço:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar ordens de serviço';
       setError(errorMessage);
     } finally {

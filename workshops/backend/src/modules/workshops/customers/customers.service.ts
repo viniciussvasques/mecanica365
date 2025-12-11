@@ -52,7 +52,7 @@ export class CustomersService {
 
       this.logger.log(`Cliente criado: ${customer.id} (tenant: ${tenantId})`);
       return this.toResponseDto(customer);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof ConflictException ||
         error instanceof BadRequestException
@@ -151,7 +151,7 @@ export class CustomersService {
         limit,
         totalPages: Math.ceil(total / limit),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar clientes: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -177,7 +177,7 @@ export class CustomersService {
       }
 
       return this.toResponseDto(customer);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -226,7 +226,7 @@ export class CustomersService {
 
       this.logger.log(`Cliente atualizado: ${id} (tenant: ${tenantId})`);
       return this.toResponseDto(customer);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof ConflictException ||
@@ -296,7 +296,7 @@ export class CustomersService {
       });
 
       this.logger.log(`Cliente removido: ${id} (tenant: ${tenantId})`);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException

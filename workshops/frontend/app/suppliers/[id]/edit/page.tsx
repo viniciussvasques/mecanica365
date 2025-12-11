@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,7 +65,7 @@ export default function EditSupplierPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar fornecedor';
       alert(errorMessage);
-      console.error('Erro ao carregar fornecedor:', err);
+      logger.error('Erro ao carregar fornecedor:', err);
       router.push('/suppliers');
     } finally {
       setLoadingSupplier(false);
@@ -131,7 +132,7 @@ export default function EditSupplierPage() {
       await suppliersApi.update(id, data);
       router.push(`/suppliers/${id}`);
     } catch (err: unknown) {
-      console.error('Erro ao atualizar fornecedor:', err);
+      logger.error('Erro ao atualizar fornecedor:', err);
       let errorMessage = 'Erro ao atualizar fornecedor';
       
       if (err && typeof err === 'object' && 'response' in err) {

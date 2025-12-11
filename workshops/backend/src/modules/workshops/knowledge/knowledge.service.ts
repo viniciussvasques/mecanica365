@@ -68,7 +68,7 @@ export class KnowledgeService {
       });
 
       return this.toResponseDto(knowledge);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar entrada na base de conhecimento: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -109,7 +109,7 @@ export class KnowledgeService {
 
       const knowledge = this.applyJsonFilters(knowledgeResult, filters);
       return this.mapToSummaryDto(knowledge);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar entradas da base de conhecimento: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -347,7 +347,7 @@ export class KnowledgeService {
       });
 
       return this.toResponseDto(knowledge);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar entrada da base de conhecimento: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -419,7 +419,7 @@ export class KnowledgeService {
       });
 
       return this.toResponseDto(knowledge);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao atualizar entrada da base de conhecimento: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -469,7 +469,7 @@ export class KnowledgeService {
       });
 
       return this.toResponseDto(knowledge);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao avaliar entrada da base de conhecimento: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -497,7 +497,7 @@ export class KnowledgeService {
         where: { id },
         data: { isActive: false },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao remover entrada da base de conhecimento: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -566,7 +566,7 @@ export class KnowledgeService {
         createdByName: item.createdByName,
         createdAt: item.createdAt,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar soluções similares: ${getErrorMessage(error)}`,
         getErrorStack(error),

@@ -7,6 +7,7 @@ import { elevatorsApi, Elevator, ElevatorFilters, ElevatorStatus, ElevatorType }
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,8 +42,8 @@ export default function ElevatorsPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token || !subdomain) {
         setError('Token ou subdomain não encontrado. Faça login novamente.');
@@ -59,7 +60,7 @@ export default function ElevatorsPage() {
         totalPages: response.totalPages,
       });
     } catch (err: unknown) {
-      console.error('[ElevatorsPage] Erro ao carregar elevadores:', err);
+      logger.error('[ElevatorsPage] Erro ao carregar elevadores:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar elevadores';
       setError(errorMessage);
     } finally {

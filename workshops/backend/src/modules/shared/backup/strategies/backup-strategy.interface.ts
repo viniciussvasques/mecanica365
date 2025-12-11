@@ -27,4 +27,3 @@ export interface BackupStrategy {
    */
   validateBackup(backupPath: string): Promise<boolean>;
 }
-

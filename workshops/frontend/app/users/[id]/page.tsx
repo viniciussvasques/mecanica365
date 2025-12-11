@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { usersApi, User, UserRole } from '@/lib/api/users';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +50,7 @@ export default function UserDetailsPage() {
       const data = await usersApi.findOne(id);
       setUser(data);
     } catch (err: unknown) {
-      console.error('[UserDetailsPage] Erro ao carregar usuário:', err);
+      logger.error('[UserDetailsPage] Erro ao carregar usuário:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar usuário';
       setError(errorMessage);
     } finally {

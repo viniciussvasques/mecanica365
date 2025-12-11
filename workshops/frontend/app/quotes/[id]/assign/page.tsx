@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,8 +47,8 @@ export default function AssignMechanicPage() {
       if (mechanicsData.length > 0) {
         setSelectedMechanicId(mechanicsData[0].id);
       }
-    } catch (err) {
-      console.error('Erro ao carregar dados:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar dados:', err);
       showNotification('Erro ao carregar dados', 'error');
       router.push(`/quotes/${id}`);
     } finally {
@@ -69,7 +70,7 @@ export default function AssignMechanicPage() {
       showNotification('Mecânico atribuído com sucesso!', 'success');
       router.push(`/quotes/${id}`);
     } catch (err: unknown) {
-      console.error('Erro ao atribuir mecânico:', err);
+      logger.error('Erro ao atribuir mecânico:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao atribuir mecânico';
       showNotification(errorMessage, 'error');
     } finally {

@@ -7,6 +7,7 @@ import { appointmentsApi, Appointment, AppointmentStatus } from '@/lib/api/appoi
 import { Button } from '@/components/ui/Button';
 import { AppointmentCalendar } from '@/components/AppointmentCalendar';
 import { AppointmentModal } from '@/components/AppointmentModal';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,8 +35,8 @@ export default function AppointmentsPage() {
     try {
       setLoading(true);
       
-      const userId = localStorage.getItem('userId');
-      const userRole = localStorage.getItem('userRole');
+      const userId = authStorage.getUserId();
+      const userRole = authStorage.getUserRole();
       
       const filters: {
         assignedToId?: string;
@@ -67,21 +68,21 @@ export default function AppointmentsPage() {
       // filters.startDate = startDate.toISOString();
       // filters.endDate = endDate.toISOString();
 
-      console.log('[AppointmentsPage] Filtros:', filters);
-      console.log('[AppointmentsPage] userId:', userId);
-      console.log('[AppointmentsPage] userRole:', userRole);
+      logger.log('[AppointmentsPage] Filtros:', filters);
+      logger.log('[AppointmentsPage] userId:', userId);
+      logger.log('[AppointmentsPage] userRole:', userRole);
       
       const response = await appointmentsApi.findAll(filters);
       
-      console.log('[AppointmentsPage] Resposta da API:', response);
-      console.log('[AppointmentsPage] Total de agendamentos:', response.total);
-      console.log('[AppointmentsPage] Agendamentos encontrados:', response.data.length);
+      logger.log('[AppointmentsPage] Resposta da API:', response);
+      logger.log('[AppointmentsPage] Total de agendamentos:', response.total);
+      logger.log('[AppointmentsPage] Agendamentos encontrados:', response.data.length);
       
       // Para mecânicos: mostrar todos, mas destacar os disponíveis (sem assignedToId)
       // Para outros roles: mostrar todos
       setAppointments(response.data);
-    } catch (err) {
-      console.error('Erro ao carregar agendamentos:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar agendamentos:', err);
       // Mostrar erro para o usuário
       if (err instanceof Error) {
         alert(`Erro ao carregar agendamentos: ${err.message}`);
@@ -248,8 +249,8 @@ export default function AppointmentsPage() {
                 const appointmentDate = new Date(appointment.date);
                 const isToday = appointmentDate.toDateString() === new Date().toDateString();
                 const isPast = appointmentDate < new Date();
-                const userId = localStorage.getItem('userId');
-                const userRole = localStorage.getItem('userRole');
+                const userId = authStorage.getUserId();
+                const userRole = authStorage.getUserRole();
                 const isAvailable = !appointment.assignedToId;
                 const isMine = appointment.assignedToId === userId;
                 const canClaim = userRole === 'mechanic' && isAvailable && !isPast && appointment.status === AppointmentStatus.SCHEDULED;
@@ -324,8 +325,8 @@ export default function AppointmentsPage() {
                                 await appointmentsApi.claim(appointment.id);
                                 await loadAppointments();
                                 alert('Agendamento atribuído a você com sucesso!');
-                              } catch (err) {
-                                console.error('Erro ao pegar agendamento:', err);
+                              } catch (err: unknown) {
+                                logger.error('Erro ao pegar agendamento:', err);
                                 const errorMessage = err instanceof Error ? err.message : 'Erro ao pegar agendamento. Tente novamente.';
                                 alert(errorMessage);
                               }
@@ -348,8 +349,8 @@ export default function AppointmentsPage() {
                               try {
                                 await appointmentsApi.cancel(appointment.id);
                                 await loadAppointments();
-                              } catch (err) {
-                                console.error('Erro ao cancelar agendamento:', err);
+                              } catch (err: unknown) {
+                                logger.error('Erro ao cancelar agendamento:', err);
                                 alert('Erro ao cancelar agendamento');
                               }
                             }}

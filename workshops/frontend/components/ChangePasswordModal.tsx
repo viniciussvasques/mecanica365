@@ -81,11 +81,11 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       );
 
       setSuccess(true);
-      localStorage.removeItem('isFirstLogin');
-      localStorage.removeItem('showPasswordModal');
-      const userId = localStorage.getItem('userId');
+      authStorage.removeIsFirstLogin();
+      authStorage.removeShowPasswordModal();
+      const userId = authStorage.getUserId();
       if (userId) {
-        localStorage.setItem(`passwordChanged_${userId}`, 'true');
+        authStorage.setPasswordChanged(userId, true);
       }
       setTimeout(() => {
         setSuccess(false);
@@ -99,7 +99,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           onSuccess();
         }
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
         err.response?.data?.message ||
         err.message ||
@@ -118,7 +118,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         confirmPassword: '',
       });
       setError('');
-      localStorage.removeItem('isFirstLogin');
+      authStorage.removeIsFirstLogin();
       onClose();
     }
   };

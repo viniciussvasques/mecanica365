@@ -14,6 +14,7 @@ import {
   TrashIcon,
   CheckIcon,
 } from '@/components/icons/MechanicIcons';
+import { logger } from '@/lib/utils/logger';
 
 const categoryOptions = [
   { value: 'motor', label: 'Motor' },
@@ -228,7 +229,7 @@ export default function NewKnowledgePage() {
       showNotification('Solução compartilhada com sucesso!', 'success');
       router.push('/knowledge');
     } catch (err: unknown) {
-      console.error('[NewKnowledgePage] Erro ao criar solução:', err);
+      logger.error('[NewKnowledgePage] Erro ao criar solução:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao compartilhar solução';
       showNotification(errorMessage, 'error');
     } finally {

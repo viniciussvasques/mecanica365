@@ -371,7 +371,7 @@ export class InvoicingService {
 
       this.logger.log(`Fatura criada: ${invoice.id} (tenant: ${tenantId})`);
       return this.toResponseDto(invoice);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar fatura: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -629,7 +629,7 @@ export class InvoicingService {
         limit,
         totalPages,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar faturas: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -656,7 +656,7 @@ export class InvoicingService {
       }
 
       return this.toResponseDto(invoice);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar fatura: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -705,7 +705,7 @@ export class InvoicingService {
 
       this.logger.log(`Fatura atualizada: ${id} (tenant: ${tenantId})`);
       return this.toResponseDto(updatedInvoice);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao atualizar fatura: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -851,7 +851,7 @@ export class InvoicingService {
       });
 
       this.logger.log(`Fatura removida: ${id} (tenant: ${tenantId})`);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao remover fatura: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -907,7 +907,7 @@ export class InvoicingService {
       this.logger.log(`Fatura emitida: ${id} (tenant: ${tenantId})`);
 
       return this.toResponseDto(updatedInvoice);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao emitir fatura: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -963,7 +963,7 @@ export class InvoicingService {
       this.logger.log(`Fatura cancelada: ${id} (tenant: ${tenantId})`);
 
       return this.toResponseDto(updatedInvoice);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao cancelar fatura: ${getErrorMessage(error)}`,
         getErrorStack(error),

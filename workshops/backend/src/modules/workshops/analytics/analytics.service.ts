@@ -52,7 +52,7 @@ export class AnalyticsService {
         mechanicPerformance,
         alerts,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao gerar analytics do dashboard: ${getErrorMessage(error)}`,
         getErrorStack(error),

@@ -186,7 +186,7 @@ export class TenantResolverMiddleware implements NestMiddleware {
       req.tenantId = tenant.id;
 
       next();
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }

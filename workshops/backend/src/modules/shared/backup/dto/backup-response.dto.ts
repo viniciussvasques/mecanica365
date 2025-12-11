@@ -15,4 +15,3 @@ export class BackupResponseDto {
   metadata?: Record<string, unknown>;
   error?: string;
 }
-

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 const REPORT_TYPES_INFO: Record<ReportType, { title: string; description: string; requiresDates: boolean }> = {
   [ReportType.SALES]: {
@@ -101,8 +102,8 @@ export default function GenerateReportPage() {
       setLoadingData(true);
       const customersResponse = await customersApi.findAll({ limit: 100 });
       setCustomers(customersResponse.data);
-    } catch (err) {
-      console.error('Erro ao carregar dados:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar dados:', err);
     } finally {
       setLoadingData(false);
     }
@@ -225,8 +226,8 @@ export default function GenerateReportPage() {
         setTimeout(() => {
           router.push('/reports/history');
         }, 2000);
-      } catch (downloadError) {
-        console.error('Erro ao baixar relatório:', downloadError);
+      } catch (downloadError: unknown) {
+        logger.error('Erro ao baixar relatório:', downloadError);
         showNotification('Relatório gerado, mas houve erro ao baixar. Acesse o histórico para baixar.', 'warning');
         // Redirecionar para histórico mesmo assim
         setTimeout(() => {
@@ -234,7 +235,7 @@ export default function GenerateReportPage() {
         }, 2000);
       }
     } catch (err: unknown) {
-      console.error('Erro ao gerar relatório:', err);
+      logger.error('Erro ao gerar relatório:', err);
       let errorMessage = 'Erro ao gerar relatório';
       
       if (err && typeof err === 'object' && 'response' in err) {

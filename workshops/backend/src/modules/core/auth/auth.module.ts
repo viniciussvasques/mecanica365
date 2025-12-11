@@ -25,7 +25,7 @@ import { EmailModule } from '../../shared/email/email.module';
         if (!secret) {
           throw new Error('JWT_SECRET não configurado');
         }
-        const expiresIn = configService.get<string>('jwt.expiresIn') || '15m';
+        const expiresIn = configService.get<string>('jwt.expiresIn') || '7d';
         return {
           secret,
           signOptions: {

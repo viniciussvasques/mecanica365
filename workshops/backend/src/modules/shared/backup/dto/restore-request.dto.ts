@@ -12,4 +12,3 @@ export class RestoreRequestDto {
   @IsBoolean()
   testRestore?: boolean; // Se true, restaura em banco de teste
 }
-

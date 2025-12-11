@@ -10,6 +10,7 @@ import { ChecklistPanel } from '@/components/ChecklistPanel';
 import { Attachment } from '@/lib/api/attachments';
 import { Checklist } from '@/lib/api/checklists';
 import { Modal } from '@/components/ui/Modal';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +44,7 @@ export default function ServiceOrderDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar ordem de serviço';
       setError(errorMessage);
-      console.error('Erro ao carregar ordem de serviço:', err);
+      logger.error('Erro ao carregar ordem de serviço:', err);
     } finally {
       setLoading(false);
     }
@@ -55,7 +56,7 @@ export default function ServiceOrderDetailPage() {
       await serviceOrdersApi.start(id);
       await loadServiceOrder();
     } catch (err: unknown) {
-      console.error('Erro ao iniciar ordem de serviço:', err);
+      logger.error('Erro ao iniciar ordem de serviço:', err);
       alert('Erro ao iniciar ordem de serviço');
     } finally {
       setActionLoading(null);
@@ -70,7 +71,7 @@ export default function ServiceOrderDetailPage() {
       setFinalNotes('');
       await loadServiceOrder();
     } catch (err: unknown) {
-      console.error('Erro ao completar ordem de serviço:', err);
+      logger.error('Erro ao completar ordem de serviço:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao completar ordem de serviço';
       alert(errorMessage);
     } finally {
@@ -88,7 +89,7 @@ export default function ServiceOrderDetailPage() {
       await serviceOrdersApi.cancel(id);
       await loadServiceOrder();
     } catch (err: unknown) {
-      console.error('Erro ao cancelar ordem de serviço:', err);
+      logger.error('Erro ao cancelar ordem de serviço:', err);
       alert('Erro ao cancelar ordem de serviço');
     } finally {
       setActionLoading(null);

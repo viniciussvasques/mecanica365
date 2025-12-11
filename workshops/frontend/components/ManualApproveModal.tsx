@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from './ui/Button';
 import { Textarea } from './ui/Textarea';
 import { SignaturePad } from './SignaturePad';
+import { logger } from '@/lib/utils/logger';
 
 interface ManualApproveModalProps {
   isOpen: boolean;
@@ -28,8 +29,8 @@ export function ManualApproveModal({
     try {
       setConfirming(true);
       await onConfirm(signature || undefined, notes || undefined);
-    } catch (err) {
-      console.error('Erro ao aprovar manualmente:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao aprovar manualmente:', err);
     } finally {
       setConfirming(false);
     }

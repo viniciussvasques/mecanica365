@@ -8,6 +8,7 @@ import { notificationsApi } from '@/lib/api/notifications';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,8 +56,8 @@ export default function QuotesPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token || !subdomain) {
         setError('Token ou subdomain não encontrado. Faça login novamente.');
@@ -73,7 +74,7 @@ export default function QuotesPage() {
         totalPages: response.totalPages,
       });
     } catch (err: unknown) {
-      console.error('[QuotesPage] Erro ao carregar orçamentos:', err);
+      logger.error('[QuotesPage] Erro ao carregar orçamentos:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar orçamentos';
       setError(errorMessage);
     } finally {
@@ -85,8 +86,8 @@ export default function QuotesPage() {
     try {
       const result = await notificationsApi.getUnreadCount();
       setUnreadCount(result || 0);
-    } catch (err) {
-      console.error('Erro ao carregar contador de notificações:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar contador de notificações:', err);
     }
   };
 
@@ -97,8 +98,8 @@ export default function QuotesPage() {
         limit: 1,
       });
       setDiagnosedCount(response.total || 0);
-    } catch (err) {
-      console.error('Erro ao carregar contador de diagnosticados:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar contador de diagnosticados:', err);
     }
   };
 

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,7 +91,7 @@ export default function NewSupplierPage() {
       await suppliersApi.create(data);
       router.push('/suppliers');
     } catch (err: unknown) {
-      console.error('Erro ao criar fornecedor:', err);
+      logger.error('Erro ao criar fornecedor:', err);
       let errorMessage = 'Erro ao criar fornecedor';
       
       if (err && typeof err === 'object' && 'response' in err) {

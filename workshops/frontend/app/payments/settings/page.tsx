@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 const GATEWAY_TYPES = [
   { value: GatewayType.STRIPE, label: 'Stripe', description: 'Gateway internacional de pagamentos', docs: 'https://stripe.com/docs' },
@@ -110,7 +111,7 @@ export default function PaymentGatewaysSettingsPage() {
       const data = await paymentGatewaysApi.findAll();
       setGateways(data);
     } catch (err: unknown) {
-      console.error('[PaymentGatewaysSettingsPage] Erro ao carregar gateways:', err);
+      logger.error('[PaymentGatewaysSettingsPage] Erro ao carregar gateways:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar gateways';
       setError(errorMessage);
     } finally {
@@ -422,7 +423,7 @@ export default function PaymentGatewaysSettingsPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao salvar gateway';
       showNotification(errorMessage, 'error');
-      console.error('Erro ao salvar gateway:', err);
+      logger.error('Erro ao salvar gateway:', err);
     }
   };
 

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { VEHICLE_BRANDS, VEHICLE_COLORS } from '@/lib/constants/vehicles';
+import { logger } from '@/lib/utils/logger';
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -112,7 +113,7 @@ export default function NewCustomerPage() {
         notes: formData.notes?.trim() || undefined,
       };
 
-      console.log('[NewCustomer] Enviando dados:', data);
+      logger.log('[NewCustomer] Enviando dados:', data);
       const customer = await customersApi.create(data);
       
       // Se houver dados de veículo preenchidos, criar o veículo também
@@ -136,10 +137,10 @@ export default function NewCustomerPage() {
             isDefault: true, // Primeiro veículo é padrão
           };
           
-          console.log('[NewCustomer] Criando veículo:', vehiclePayload);
+          logger.log('[NewCustomer] Criando veículo:', vehiclePayload);
           await vehiclesApi.create(vehiclePayload);
-        } catch (vehicleError) {
-          console.error('Erro ao criar veículo:', vehicleError);
+        } catch (vehicleError: unknown) {
+          logger.error('Erro ao criar veículo:', vehicleError);
           // Não bloquear o fluxo se o veículo falhar - cliente já foi criado
           alert('Cliente criado com sucesso, mas houve um erro ao adicionar o veículo. Você pode adicioná-lo depois.');
         }
@@ -147,7 +148,7 @@ export default function NewCustomerPage() {
       
       router.push('/customers');
     } catch (err: unknown) {
-      console.error('Erro ao criar cliente:', err);
+      logger.error('Erro ao criar cliente:', err);
       let errorMessage = 'Erro ao criar cliente';
       
       if (err && typeof err === 'object' && 'response' in err) {

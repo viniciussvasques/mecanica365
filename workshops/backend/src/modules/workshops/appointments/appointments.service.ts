@@ -106,7 +106,7 @@ export class AppointmentsService {
       this.logger.log(`Agendamento criado: ${appointment.id}`);
 
       return this.toResponseDto(appointment);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException ||
@@ -213,7 +213,7 @@ export class AppointmentsService {
         limit,
         totalPages: Math.ceil(total / limit),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar agendamentos: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -263,7 +263,7 @@ export class AppointmentsService {
       }
 
       return this.toResponseDto(appointment);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -345,7 +345,7 @@ export class AppointmentsService {
 
       this.logger.log(`Agendamento atualizado: ${id}`);
       return this.toResponseDto(updatedAppointment);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException ||
@@ -393,7 +393,7 @@ export class AppointmentsService {
       });
 
       this.logger.log(`Agendamento removido: ${id}`);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -466,7 +466,7 @@ export class AppointmentsService {
       this.logger.log(`Agendamento cancelado: ${id}`);
 
       return this.toResponseDto(updatedAppointment);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -588,7 +588,7 @@ export class AppointmentsService {
 
       this.logger.log(`Agendamento ${id} atribuído ao mecânico ${mechanicId}`);
       return this.toResponseDto(updatedAppointment);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao atribuir agendamento ${id} ao mecânico ${mechanicId}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -696,7 +696,7 @@ export class AppointmentsService {
         available: conflicts.length === 0,
         conflicts,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao verificar disponibilidade: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -805,7 +805,7 @@ export class AppointmentsService {
       });
 
       return usage === null;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao verificar disponibilidade de elevador: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -907,7 +907,7 @@ export class AppointmentsService {
         availableSlots: slots,
         hasAvailability,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar horários disponíveis: ${getErrorMessage(error)}`,
         getErrorStack(error),

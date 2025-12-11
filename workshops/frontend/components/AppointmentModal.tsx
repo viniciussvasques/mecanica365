@@ -14,6 +14,8 @@ import { customersApi, Customer } from '@/lib/api/customers';
 import { serviceOrdersApi, ServiceOrder, ServiceOrderStatus } from '@/lib/api/service-orders';
 import { usersApi, User } from '@/lib/api/users';
 import { elevatorsApi, Elevator } from '@/lib/api/elevators';
+import { getAxiosErrorMessage } from '@/lib/utils/error.utils';
+import { logger } from '@/lib/utils/logger';
 
 interface AppointmentModalProps {
   isOpen: boolean;
@@ -102,8 +104,8 @@ export function AppointmentModal({
       setServiceOrders(Array.isArray(serviceOrdersRes) ? serviceOrdersRes : serviceOrdersRes.data || []);
       setMechanics(Array.isArray(usersRes) ? usersRes.filter((u) => u.isActive) : []);
       setElevators(Array.isArray(elevatorsRes) ? elevatorsRes.filter((e) => e.status === 'free' || e.status === 'scheduled') : (elevatorsRes.data || []).filter((e) => e.status === 'free' || e.status === 'scheduled'));
-    } catch (error) {
-      console.error('Erro ao carregar opções:', error);
+    } catch (error: unknown) {
+      logger.error('[AppointmentModal] Erro ao carregar opções:', error);
     }
   };
 
@@ -118,8 +120,8 @@ export function AppointmentModal({
         elevatorId: elevatorId || undefined,
       });
       setAvailableSlots(response.availableSlots);
-    } catch (error) {
-      console.error('Erro ao verificar disponibilidade:', error);
+    } catch (error: unknown) {
+      logger.error('[AppointmentModal] Erro ao verificar disponibilidade:', error);
     } finally {
       setCheckingAvailability(false);
     }
@@ -165,9 +167,10 @@ export function AppointmentModal({
 
       onSuccess?.();
       handleClose();
-    } catch (error) {
-      console.error('Erro ao salvar agendamento:', error);
-      alert(error instanceof Error ? error.message : 'Erro ao salvar agendamento');
+    } catch (error: unknown) {
+      logger.error('[AppointmentModal] Erro ao salvar agendamento:', error);
+      const errorMessage = getAxiosErrorMessage(error) || 'Erro ao salvar agendamento';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

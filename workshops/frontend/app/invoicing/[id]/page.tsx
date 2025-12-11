@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { invoicingApi, Invoice, InvoiceStatus, PaymentStatus } from '@/lib/api/invoicing';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -86,7 +87,7 @@ export default function InvoiceDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar fatura';
       setError(errorMessage);
-      console.error('Erro ao carregar fatura:', err);
+      logger.error('Erro ao carregar fatura:', err);
       router.push('/invoicing');
     } finally {
       setLoading(false);
@@ -106,7 +107,7 @@ export default function InvoiceDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao emitir fatura';
       alert(errorMessage);
-      console.error('Erro ao emitir fatura:', err);
+      logger.error('Erro ao emitir fatura:', err);
     } finally {
       setProcessing(false);
     }
@@ -125,7 +126,7 @@ export default function InvoiceDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao cancelar fatura';
       alert(errorMessage);
-      console.error('Erro ao cancelar fatura:', err);
+      logger.error('Erro ao cancelar fatura:', err);
     } finally {
       setProcessing(false);
     }
@@ -143,7 +144,7 @@ export default function InvoiceDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir fatura';
       alert(errorMessage);
-      console.error('Erro ao excluir fatura:', err);
+      logger.error('Erro ao excluir fatura:', err);
     } finally {
       setProcessing(false);
     }

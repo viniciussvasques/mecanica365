@@ -7,6 +7,7 @@ import { elevatorsApi, UpdateElevatorDto, ElevatorType, ElevatorStatus } from '@
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +54,7 @@ export default function EditElevatorPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar elevador';
       alert(errorMessage);
-      console.error('Erro ao carregar elevador:', err);
+      logger.error('Erro ao carregar elevador:', err);
       router.push('/elevators');
     } finally {
       setLoadingElevator(false);
@@ -102,7 +103,7 @@ export default function EditElevatorPage() {
       await elevatorsApi.update(id, data);
       router.push(`/elevators/${id}`);
     } catch (err: unknown) {
-      console.error('Erro ao atualizar elevador:', err);
+      logger.error('Erro ao atualizar elevador:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar elevador';
       alert(errorMessage);
     } finally {

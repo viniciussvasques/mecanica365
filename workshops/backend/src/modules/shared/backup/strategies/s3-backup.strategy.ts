@@ -85,4 +85,3 @@ export class S3BackupStrategy implements BackupStrategy {
     return this.localStrategy.validateBackup(backupPath);
   }
 }
-

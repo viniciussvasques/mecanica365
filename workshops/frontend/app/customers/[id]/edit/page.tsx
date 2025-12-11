@@ -9,6 +9,8 @@ import { customersApi, Customer, UpdateCustomerDto, DocumentType } from '@/lib/a
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { authStorage } from '@/lib/utils/localStorage';
+import { logger } from '@/lib/utils/logger';
 
 export default function EditCustomerPage() {
   const router = useRouter();
@@ -64,7 +66,7 @@ export default function EditCustomerPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar cliente';
       alert(errorMessage);
-      console.error('Erro ao carregar cliente:', err);
+      logger.error('Erro ao carregar cliente:', err);
       router.push('/customers');
     } finally {
       setLoadingCustomer(false);
@@ -129,11 +131,11 @@ export default function EditCustomerPage() {
         notes: formData.notes.trim() || undefined,
       };
 
-      console.log('[EditCustomer] Enviando dados:', data);
+      logger.log('[EditCustomer] Enviando dados:', data);
       await customersApi.update(id, data);
       router.push(`/customers/${id}`);
     } catch (err: unknown) {
-      console.error('Erro ao atualizar cliente:', err);
+      logger.error('Erro ao atualizar cliente:', err);
       let errorMessage = 'Erro ao atualizar cliente';
       
       if (err && typeof err === 'object' && 'response' in err) {

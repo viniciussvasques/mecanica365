@@ -9,6 +9,7 @@ import { paymentsApi, Payment, PaymentFilters, PaymentStatus, PaymentMethod } fr
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -88,8 +89,8 @@ export default function PaymentsPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
@@ -112,7 +113,7 @@ export default function PaymentsPage() {
         totalPages: response.totalPages,
       });
     } catch (err: unknown) {
-      console.error('[PaymentsPage] Erro ao carregar pagamentos:', err);
+      logger.error('[PaymentsPage] Erro ao carregar pagamentos:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar pagamentos';
       setError(errorMessage);
     } finally {
@@ -146,7 +147,7 @@ export default function PaymentsPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir pagamento';
       alert(errorMessage);
-      console.error('Erro ao excluir pagamento:', err);
+      logger.error('Erro ao excluir pagamento:', err);
     }
   };
 

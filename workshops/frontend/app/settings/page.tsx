@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -60,7 +61,7 @@ export default function SettingsPage() {
           // Construir URL completa baseada na API
           const getApiBaseUrl = () => {
             if (typeof globalThis.window === 'undefined') return 'http://localhost:3001';
-            const subdomain = localStorage.getItem('subdomain');
+            const subdomain = authStorage.getSubdomain();
             const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
             if (subdomain && baseUrl.includes('localhost')) {
               return `http://${subdomain}.localhost:3001`;
@@ -68,16 +69,16 @@ export default function SettingsPage() {
             return baseUrl;
           };
           const fullUrl = `${getApiBaseUrl()}${data.logoUrl}`;
-          console.log('[Settings] Definindo preview do logo:', fullUrl);
+          logger.log('[Settings] Definindo preview do logo:', fullUrl);
           setLogoPreview(fullUrl);
         } else if (data.logoUrl.startsWith('http://') || data.logoUrl.startsWith('https://')) {
-          console.log('[Settings] Definindo preview do logo (URL completa):', data.logoUrl);
+          logger.log('[Settings] Definindo preview do logo (URL completa):', data.logoUrl);
           setLogoPreview(data.logoUrl);
         } else {
           // URL relativa ou incompleta, tentar construir
           const getApiBaseUrl2 = () => {
             if (typeof globalThis.window === 'undefined') return 'http://localhost:3001';
-            const subdomain = localStorage.getItem('subdomain');
+            const subdomain = authStorage.getSubdomain();
             const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
             if (subdomain && baseUrl.includes('localhost')) {
               return `http://${subdomain}.localhost:3001`;
@@ -86,14 +87,14 @@ export default function SettingsPage() {
           };
           const prefix = data.logoUrl.startsWith('/') ? '' : '/';
           const fullUrl = `${getApiBaseUrl2()}${prefix}${data.logoUrl}`;
-          console.log('[Settings] Definindo preview do logo (construída):', fullUrl);
+          logger.log('[Settings] Definindo preview do logo (construída):', fullUrl);
           setLogoPreview(fullUrl);
         }
       } else {
         setLogoPreview(null);
       }
-    } catch (err) {
-      console.error('Erro ao carregar configurações:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar configurações:', err);
       showNotification('Erro ao carregar configurações', 'error');
     } finally {
       setLoading(false);
@@ -128,8 +129,8 @@ export default function SettingsPage() {
       await workshopSettingsApi.upsert(cleanedData);
       showNotification('Configurações salvas com sucesso!', 'success');
       await loadSettings();
-    } catch (err) {
-      console.error('Erro ao salvar configurações:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao salvar configurações:', err);
       showNotification(
         err instanceof Error ? err.message : 'Erro ao salvar configurações',
         'error',
@@ -241,8 +242,8 @@ export default function SettingsPage() {
       
       // Recarregar configurações para garantir sincronização
       await loadSettings();
-    } catch (err) {
-      console.error('Erro ao fazer upload do logo:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao fazer upload do logo:', err);
       showNotification(
         err instanceof Error ? err.message : 'Erro ao fazer upload do logo',
         'error',
@@ -323,7 +324,7 @@ export default function SettingsPage() {
                           alt="Preview do logo"
                           className="h-16 w-16 object-contain rounded border border-[#2A3038] bg-[#0F1115] p-1"
                           onError={(e) => {
-                            console.error('Erro ao carregar preview do logo:', logoPreview);
+                            logger.error('Erro ao carregar preview do logo:', logoPreview);
                             setLogoPreview(null);
                           }}
                         />

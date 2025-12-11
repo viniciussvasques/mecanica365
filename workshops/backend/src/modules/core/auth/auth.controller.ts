@@ -10,6 +10,7 @@ import {
   Headers,
   BadRequestException,
   Query,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -33,10 +34,13 @@ import { TenantId } from '../../../common/decorators/tenant.decorator';
 import { Public } from '../../../common/decorators/public.decorator';
 import { TenantsService } from '../../core/tenants/tenants.service';
 import { EmailService } from '../../shared/email/email.service';
+import { getErrorMessage } from '../../../common/utils/error.utils';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly authService: AuthService,
     private readonly tenantsService: TenantsService,
@@ -341,8 +345,11 @@ export class AuthController {
           expiresInMinutes: 30,
           workshopName: resetData.tenant.name,
         });
-      } catch (error) {
-        console.error('Erro ao enviar email de recuperação:', error);
+      } catch (error: unknown) {
+        this.logger.error(
+          'Erro ao enviar email de recuperação:',
+          getErrorMessage(error),
+        );
         // Não falhar - apenas logar
       }
     }

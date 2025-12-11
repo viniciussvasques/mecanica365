@@ -137,7 +137,7 @@ export class AttachmentsService {
       return this.toResponseDto(
         attachment as Parameters<typeof this.toResponseDto>[0],
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar anexo: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -231,7 +231,7 @@ export class AttachmentsService {
         limit,
         totalPages: Math.ceil(total / limit),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar anexos: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -287,7 +287,7 @@ export class AttachmentsService {
       return this.toResponseDto(
         attachment as Parameters<typeof this.toResponseDto>[0],
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar anexo: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -375,7 +375,7 @@ export class AttachmentsService {
           typeof this.toResponseDto
         >[0],
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao atualizar anexo: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -406,7 +406,7 @@ export class AttachmentsService {
         try {
           unlinkSync(filePath);
           this.logger.log(`Arquivo físico removido: ${filePath}`);
-        } catch (fileError) {
+        } catch (fileError: unknown) {
           this.logger.warn(
             `Erro ao remover arquivo físico: ${getErrorMessage(fileError)}`,
           );
@@ -420,7 +420,7 @@ export class AttachmentsService {
       });
 
       this.logger.log(`Anexo removido: ${id}`);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao remover anexo: ${getErrorMessage(error)}`,
         getErrorStack(error),

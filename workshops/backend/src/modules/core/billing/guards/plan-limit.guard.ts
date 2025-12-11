@@ -52,7 +52,7 @@ export class PlanLimitGuard implements CanActivate {
       // Isso seria verificado em endpoints específicos de criação de peças
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
       }

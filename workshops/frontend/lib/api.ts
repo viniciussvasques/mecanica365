@@ -1,55 +1,224 @@
 import axios from 'axios';
-
-// Função para obter a URL base da API com subdomain (apenas no cliente)
-const getApiUrl = (): string => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  
-  // Verificar se estamos no cliente (localStorage só existe no browser)
-  if (typeof window === 'undefined') {
-    return `${baseUrl}/api`;
-  }
-  
-  const subdomain = localStorage.getItem('subdomain');
-  
-  // Se houver subdomain, usar no host (ex: oficinartee.localhost:3001)
-  if (subdomain && baseUrl.includes('localhost')) {
-    return `http://${subdomain}.localhost:3001/api`;
-  }
-  
-  // Caso contrário, usar URL padrão
-  return `${baseUrl}/api`;
-};
+import { logger } from './utils/logger';
+import { clearAuthData, isAxiosError } from './utils/error.utils';
+import { getApiUrl, configureRequestHeaders, isClient, getSubdomain } from './utils/api.utils';
 
 const api = axios.create({
-  baseURL: typeof window !== 'undefined' ? getApiUrl() : 'http://localhost:3001/api',
+  baseURL: isClient() ? getApiUrl() : 'http://localhost:3001/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Interceptor para configurar URL dinamicamente
+// Flag para evitar múltiplos refresh simultâneos
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
+// Interceptor para configurar URL dinamicamente e adicionar token
 api.interceptors.request.use((config) => {
   // Atualizar baseURL dinamicamente (apenas no cliente)
-  if (typeof window !== 'undefined') {
+  if (isClient()) {
     config.baseURL = getApiUrl();
   }
   
-  // Token e subdomain só no cliente
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    // Adicionar subdomain no header também (fallback)
-    const subdomain = localStorage.getItem('subdomain');
-    if (subdomain) {
-      config.headers['X-Tenant-Subdomain'] = subdomain;
-    }
-  }
+  // Configurar headers de autenticação e subdomain
+  configureRequestHeaders(config);
   
   return config;
 });
+
+/**
+ * Verifica se o erro deve ser tratado pelo interceptor de auth
+ */
+function shouldHandleAuthError(error: unknown): error is { config?: unknown; response?: { status?: number } } {
+  return isAxiosError(error) && error.config !== undefined && error.response?.status === 401;
+}
+
+/**
+ * Verifica se deve tentar refresh ou redirecionar para login
+ */
+function shouldAttemptRefresh(requestConfig: { _retry?: boolean; url?: string }): boolean {
+  return !requestConfig._retry && !requestConfig.url?.includes('/auth/');
+}
+
+/**
+ * Redireciona para login e limpa dados de autenticação
+ */
+function redirectToLogin(): void {
+  clearAuthData();
+  if (isClient()) {
+    globalThis.window.location.href = '/login';
+  }
+}
+
+/**
+ * Adiciona token ao header da requisição
+ */
+function setRequestAuthHeader(
+  originalRequest: { headers?: Record<string, string> },
+  token: string,
+): void {
+  if (originalRequest.headers) {
+    originalRequest.headers.Authorization = `Bearer ${token}`;
+  }
+}
+
+/**
+ * Salva tokens no localStorage
+ */
+function saveTokens(accessToken: string, refreshToken?: string): void {
+  if (!isClient()) {
+    return;
+  }
+  setLocalStorageItem('token', accessToken);
+  if (refreshToken) {
+    setLocalStorageItem('refreshToken', refreshToken);
+  }
+}
+
+/**
+ * Obtém refresh token do localStorage
+ */
+function getRefreshToken(): string | null {
+  return getLocalStorageItem('refreshToken');
+}
+
+/**
+ * Processa requisições na fila quando refresh está em andamento
+ */
+function queueRequest(
+  axiosInstance: typeof api,
+  originalRequest: unknown,
+): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    failedQueue.push({ resolve, reject });
+  })
+    .then((token) => {
+      const request = originalRequest as { headers?: Record<string, string> };
+      if (request.headers && typeof token === 'string') {
+        setRequestAuthHeader(request, token);
+      }
+      return axiosInstance(originalRequest as Parameters<typeof axiosInstance>[0]);
+    })
+    .catch((err: unknown) => {
+      throw toError(err);
+    });
+}
+
+/**
+ * Executa refresh do token
+ */
+async function performTokenRefresh(
+  axiosInstance: typeof api,
+  originalRequest: unknown,
+): Promise<unknown> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    logger.warn('[Auth Interceptor] Refresh token não encontrado');
+    throw new Error('Refresh token não encontrado');
+  }
+
+  const response = await authApi.refresh(refreshToken);
+  if (!response.accessToken || !isClient()) {
+    throw new Error('Token não retornado no refresh');
+  }
+
+  saveTokens(response.accessToken, response.refreshToken);
+  setRequestAuthHeader(
+    originalRequest as { headers?: Record<string, string> },
+    response.accessToken,
+  );
+  processQueue(null, response.accessToken);
+  isRefreshing = false;
+  logger.log('[Auth Interceptor] Token renovado com sucesso');
+
+  return axiosInstance(originalRequest as Parameters<typeof axiosInstance>[0]);
+}
+
+/**
+ * Converte erro desconhecido para Error
+ */
+function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  if (typeof error === 'string') {
+    return new Error(error);
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return new Error(String(error.message));
+  }
+  return new Error('Erro desconhecido');
+}
+
+/**
+ * Trata erro de refresh do token
+ */
+function handleRefreshError(refreshError: unknown): never {
+  logger.error('[Auth Interceptor] Erro ao renovar token:', refreshError);
+  processQueue(refreshError, null);
+  isRefreshing = false;
+  redirectToLogin();
+  throw toError(refreshError);
+}
+
+/**
+ * Função helper para configurar interceptor de resposta (pode ser reutilizada em outros arquivos)
+ */
+export const setupAuthResponseInterceptor = (axiosInstance: typeof api) => {
+  axiosInstance.interceptors.response.use(
+    (response) => response,
+    async (error: unknown) => {
+      // Verificar se deve tratar o erro
+      if (!shouldHandleAuthError(error)) {
+        throw toError(error);
+      }
+
+      const originalRequest = error.config;
+      if (!originalRequest) {
+        throw toError(error);
+      }
+
+      const requestConfig = originalRequest as { _retry?: boolean; url?: string };
+
+      // Se não deve tentar refresh, redirecionar para login
+      if (!shouldAttemptRefresh(requestConfig)) {
+        redirectToLogin();
+        throw toError(error);
+      }
+
+      // Se já está fazendo refresh, adicionar à fila
+      if (isRefreshing) {
+        return queueRequest(axiosInstance, originalRequest);
+      }
+
+      // Marcar requisição como tentada e iniciar refresh
+      requestConfig._retry = true;
+      isRefreshing = true;
+
+      try {
+        return await performTokenRefresh(axiosInstance, originalRequest);
+      } catch (refreshError: unknown) {
+        handleRefreshError(refreshError);
+      }
+    },
+  );
+};
 
 export interface RegisterData {
   name: string;
@@ -106,17 +275,18 @@ export const authApi = {
       baseUrl = baseUrl.replace(/\/api\/?$/, '');
       // Construir URL completa
       const apiUrl = `${baseUrl}/api/auth/find-tenant`;
-      console.log('[authApi] Buscando tenant em:', apiUrl);
+      logger.log('[authApi] Buscando tenant em:', apiUrl);
       const response = await axios.post(apiUrl, { email });
       return response.data;
     } catch (error: unknown) {
-      const axiosError = error as { response?: { status?: number }; message?: string };
       // Se não encontrar tenant (404) ou erro de rede, retornar null
-      if (axiosError.response?.status === 404 || !axiosError.response) {
-        return null;
+      if (isAxiosError(error)) {
+        if (error.response?.status === 404 || !error.response) {
+          return null;
+        }
+        // Para outros erros, retornar null também para não bloquear o login
+        logger.warn('Erro ao buscar tenant:', error.message);
       }
-      // Para outros erros, retornar null também para não bloquear o login
-      console.warn('Erro ao buscar tenant:', axiosError.message);
       return null;
     }
   },
@@ -138,7 +308,7 @@ export const authApi = {
 
   forgotPassword: async (data: { email: string }) => {
     // Usar URL com subdomain se disponível
-    const subdomain = typeof window !== 'undefined' ? localStorage.getItem('subdomain') : null;
+      const subdomain = isClient() ? getSubdomain() : null;
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const apiUrl = subdomain && baseUrl.includes('localhost')
       ? `http://${subdomain}.localhost:3001/api`
@@ -187,5 +357,8 @@ export const authApi = {
     return response.data;
   },
 };
+
+// Aplicar interceptor na instância principal (depois de definir authApi)
+setupAuthResponseInterceptor(api);
 
 export default api;

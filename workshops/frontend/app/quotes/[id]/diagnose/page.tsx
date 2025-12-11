@@ -7,10 +7,12 @@ import { quotesApi, Quote, QuoteStatus, CompleteDiagnosisDto, ProblemCategory } 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { authStorage } from '@/lib/utils/localStorage';
 import { DiagnosticPanel } from '@/components/DiagnosticPanel';
 import { ChecklistPanel } from '@/components/ChecklistPanel';
 import { Checklist } from '@/lib/api/checklists';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,15 +72,15 @@ export default function DiagnoseQuotePage() {
       }
 
       // Se o orçamento não tem mecânico atribuído, atribuir automaticamente ao mecânico atual
-      const userId = localStorage.getItem('userId');
+      const userId = authStorage.getUserId();
       if (!data.assignedMechanicId && userId) {
         try {
           await quotesApi.assignMechanic(quoteId, undefined, 'Mecânico iniciou diagnóstico');
           // Recarregar o orçamento para ter os dados atualizados
           const updatedData = await quotesApi.findOne(quoteId);
           setQuote(updatedData);
-        } catch (err) {
-          console.error('Erro ao atribuir orçamento:', err);
+        } catch (err: unknown) {
+          logger.error('Erro ao atribuir orçamento:', err);
           // Continuar mesmo se falhar a atribuição
         }
       }
@@ -94,8 +96,8 @@ export default function DiagnoseQuotePage() {
           estimatedHours: data.estimatedHours,
         });
       }
-    } catch (err) {
-      console.error('Erro ao carregar orçamento:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar orçamento:', err);
       showNotification('Erro ao carregar orçamento', 'error');
       router.push('/quotes');
     } finally {
@@ -111,8 +113,8 @@ export default function DiagnoseQuotePage() {
       await quotesApi.completeDiagnosis(quoteId, diagnosis);
       showNotification('Diagnóstico concluído com sucesso!', 'success');
       router.push(`/quotes/${quoteId}`);
-    } catch (err) {
-      console.error('Erro ao completar diagnóstico:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao completar diagnóstico:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao completar diagnóstico';
       showNotification(errorMessage, 'error');
     } finally {

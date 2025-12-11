@@ -7,6 +7,7 @@ import { suppliersApi, Supplier, SupplierFilters } from '@/lib/api/suppliers';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,8 +43,8 @@ export default function SuppliersPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
@@ -66,7 +67,7 @@ export default function SuppliersPage() {
         totalPages: response.totalPages,
       });
     } catch (err: unknown) {
-      console.error('[SuppliersPage] Erro ao carregar fornecedores:', err);
+      logger.error('[SuppliersPage] Erro ao carregar fornecedores:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar fornecedores';
       setError(errorMessage);
     } finally {
@@ -100,7 +101,7 @@ export default function SuppliersPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir fornecedor';
       alert(errorMessage);
-      console.error('Erro ao excluir fornecedor:', err);
+      logger.error('Erro ao excluir fornecedor:', err);
     }
   };
 

@@ -7,6 +7,7 @@ import { quotesApi, Quote, QuoteStatus } from '@/lib/api/quotes';
 import { notificationsApi } from '@/lib/api/notifications';
 import { Button } from '@/components/ui/Button';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,8 +45,8 @@ export default function DiagnosedQuotesPage() {
         limit: 100,
       });
       setQuotes(response.data);
-    } catch (err) {
-      console.error('Erro ao carregar orçamentos:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar orçamentos:', err);
       showNotification('Erro ao carregar orçamentos', 'error');
     } finally {
       setLoading(false);
@@ -56,8 +57,8 @@ export default function DiagnosedQuotesPage() {
     try {
       const result = await notificationsApi.getUnreadCount();
       setUnreadCount(result || 0);
-    } catch (err) {
-      console.error('Erro ao carregar contador de notificações:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar contador de notificações:', err);
     }
   };
 

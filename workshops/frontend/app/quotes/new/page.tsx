@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,8 +75,8 @@ export default function NewQuotePage() {
 
       const elevatorsResponse = await elevatorsApi.findAll({ limit: 100 });
       setElevators(elevatorsResponse.data);
-    } catch (err) {
-      console.error('Erro ao carregar dados:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar dados:', err);
       showNotification('Erro ao carregar dados', 'error');
     } finally {
       setLoadingData(false);
@@ -86,8 +87,8 @@ export default function NewQuotePage() {
     try {
       const response = await vehiclesApi.findAll({ customerId, limit: 100 });
       setVehicles(response.data);
-    } catch (err) {
-      console.error('Erro ao carregar veículos:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar veículos:', err);
     }
   };
 
@@ -157,7 +158,7 @@ export default function NewQuotePage() {
       setCreatedQuoteId(quote.id);
       showNotification('Orçamento criado com sucesso! Agora envie para diagnóstico.', 'success');
     } catch (err: unknown) {
-      console.error('Erro ao criar orçamento:', err);
+      logger.error('Erro ao criar orçamento:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao criar orçamento';
       showNotification(errorMessage, 'error');
     } finally {
@@ -177,7 +178,7 @@ export default function NewQuotePage() {
       showNotification('Orçamento enviado para diagnóstico do mecânico!', 'success');
       router.push('/quotes');
     } catch (err: unknown) {
-      console.error('Erro ao enviar para diagnóstico:', err);
+      logger.error('Erro ao enviar para diagnóstico:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao enviar para diagnóstico';
       showNotification(errorMessage, 'error');
     } finally {

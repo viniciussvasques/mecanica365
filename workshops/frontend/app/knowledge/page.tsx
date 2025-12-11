@@ -16,6 +16,7 @@ import {
   ClockIcon,
   UsersIcon,
 } from '@/components/icons/MechanicIcons';
+import { logger } from '@/lib/utils/logger';
 
 const categoryLabels: Record<string, string> = {
   motor: 'Motor',
@@ -126,7 +127,7 @@ export default function KnowledgePage() {
       const data = await knowledgeApi.getAll(filters);
       setKnowledge(data);
     } catch (err: unknown) {
-      console.error('[KnowledgePage] Erro ao carregar base de conhecimento:', err);
+      logger.error('[KnowledgePage] Erro ao carregar base de conhecimento:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados';
       showNotification(errorMessage, 'error');
     } finally {

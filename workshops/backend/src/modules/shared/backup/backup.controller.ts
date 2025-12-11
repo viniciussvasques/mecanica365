@@ -10,7 +10,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@core/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@core/auth/guards/roles.guard';
 import { Roles } from '@core/auth/decorators/roles.decorator';
@@ -55,7 +60,7 @@ export class BackupController {
   @Get('status')
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Status dos backups' })
-  async getStatus(@CurrentUser() user: { id: string; tenantId?: string }) {
+  async getStatus(@CurrentUser() _user: { id: string; tenantId?: string }) {
     return this.backupService.getBackupStatus();
   }
 
@@ -96,4 +101,3 @@ export class BackupController {
     return this.backupService.deleteBackup(id, user.tenantId);
   }
 }
-

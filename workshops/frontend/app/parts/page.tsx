@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ImportPartsModal } from '@/components/ImportPartsModal';
+import { logger } from '@/lib/utils/logger';
 
 export default function PartsPage() {
   const router = useRouter();
@@ -44,8 +45,8 @@ export default function PartsPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
@@ -59,7 +60,7 @@ export default function PartsPage() {
         return;
       }
       
-      console.log('[PartsPage] Carregando peças com subdomain:', subdomain);
+      logger.log('[PartsPage] Carregando peças com subdomain:', subdomain);
       const response = await partsApi.findAll(filters);
       setParts(response.data);
       setPagination({
@@ -69,7 +70,7 @@ export default function PartsPage() {
         totalPages: response.totalPages,
       });
     } catch (err: unknown) {
-      console.error('[PartsPage] Erro ao carregar peças:', err);
+      logger.error('[PartsPage] Erro ao carregar peças:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar peças';
       setError(errorMessage);
     } finally {
@@ -103,7 +104,7 @@ export default function PartsPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir peça';
       alert(errorMessage);
-      console.error('Erro ao excluir peça:', err);
+      logger.error('Erro ao excluir peça:', err);
     }
   };
 

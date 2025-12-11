@@ -26,6 +26,8 @@ import {
   GearIcon,
   GaugeIcon,
 } from './icons/MechanicIcons';
+import { logger } from '@/lib/utils/logger';
+import { authStorage, uiStorage } from '@/lib/utils/localStorage';
 
 interface MenuItem {
   label: string;
@@ -104,46 +106,46 @@ export function Sidebar({ onToggle }: SidebarProps) {
     const loadUserRole = () => {
       if (globalThis.window !== undefined) {
         // Primeiro, tentar do localStorage
-        let role = globalThis.localStorage.getItem('userRole');
-        console.log('[Sidebar] Role carregado do localStorage:', role);
-        
+        let role = authStorage.getUserRole();
+        logger.log('[Sidebar] Role carregado do localStorage:', role);
+
         // Se não encontrar, tentar decodificar do token JWT
         if (!role) {
-          const token = globalThis.localStorage.getItem('token');
+          const token = authStorage.getToken();
           if (token) {
             const payload = decodeJWT(token);
             if (payload?.role) {
               role = payload.role;
               // Salvar no localStorage para próxima vez
-              globalThis.localStorage.setItem('userRole', role);
-              console.log('[Sidebar] Role extraído do token JWT:', role);
+              authStorage.setUserRole(role);
+              logger.log('[Sidebar] Role extraído do token JWT:', role);
             }
           }
         }
-        
+
         if (role) {
           setUserRole(role);
         } else {
           // Tentar novamente após um pequeno delay (pode estar sendo salvo ainda)
           setTimeout(() => {
-            const retryRole = globalThis.localStorage.getItem('userRole');
-            console.log('[Sidebar] Retry - Role carregado:', retryRole);
+            const retryRole = authStorage.getUserRole();
+            logger.log('[Sidebar] Retry - Role carregado:', retryRole);
             if (retryRole) {
               setUserRole(retryRole);
             } else {
               // Tentar decodificar do token novamente
-              const token = globalThis.localStorage.getItem('token');
+              const token = authStorage.getToken();
               if (token) {
                 const payload = decodeJWT(token);
                 if (payload?.role) {
                   const extractedRole = payload.role;
-                  globalThis.localStorage.setItem('userRole', extractedRole);
+                  authStorage.setUserRole(extractedRole);
                   setUserRole(extractedRole);
-                  console.log('[Sidebar] Role extraído do token JWT no retry:', extractedRole);
+                  logger.log('[Sidebar] Role extraído do token JWT no retry:', extractedRole);
                   return;
                 }
               }
-              console.warn('[Sidebar] Role não encontrado no localStorage após retry');
+              logger.warn('[Sidebar] Role não encontrado no localStorage após retry');
             }
           }, 500);
         }
@@ -156,8 +158,8 @@ export function Sidebar({ onToggle }: SidebarProps) {
     // Listener para mudanças no localStorage (caso o role seja atualizado em outra aba)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'userRole') {
-        console.log('[Sidebar] Role mudou no localStorage:', e.newValue);
-        setUserRole(e.newValue);
+        logger.log('[Sidebar] Role mudou no localStorage:', e.newValue);
+        setUserRole(e.newValue || null);
       }
     };
     
@@ -167,12 +169,9 @@ export function Sidebar({ onToggle }: SidebarProps) {
     
     // Carregar estado do sidebar do localStorage
     if (globalThis.window !== undefined) {
-      const savedState = globalThis.localStorage.getItem('sidebarCollapsed');
-      if (savedState !== null) {
-        const isCollapsed = savedState === 'true';
-        setCollapsed(isCollapsed);
-        onToggle?.(isCollapsed);
-      }
+      const isCollapsed = uiStorage.getSidebarCollapsed();
+      setCollapsed(isCollapsed);
+      onToggle?.(isCollapsed);
     }
     
     return () => {
@@ -186,13 +185,13 @@ export function Sidebar({ onToggle }: SidebarProps) {
   useEffect(() => {
     if (!userRole && globalThis.window !== undefined) {
       const interval = setInterval(() => {
-        const currentRole = globalThis.localStorage.getItem('userRole');
+        const currentRole = authStorage.getUserRole();
         if (currentRole && currentRole !== userRole) {
-          console.log('[Sidebar] Role atualizado via polling:', currentRole);
+          logger.log('[Sidebar] Role atualizado via polling:', currentRole);
           setUserRole(currentRole);
         }
       }, 500);
-      
+
       return () => clearInterval(interval);
     }
   }, [userRole]);

@@ -1,52 +1,17 @@
 import axios from 'axios';
-
-// Função para obter a URL base da API com subdomain (apenas no cliente)
-const getApiUrl = (): string => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  
-  // Verificar se estamos no cliente (localStorage só existe no browser)
-  if (typeof window === 'undefined') {
-    return `${baseUrl}/api`;
-  }
-  
-  const subdomain = localStorage.getItem('subdomain');
-  
-  // Se houver subdomain, usar no host (ex: oficinartee.localhost:3001)
-  if (subdomain && baseUrl.includes('localhost')) {
-    return `http://${subdomain}.localhost:3001/api`;
-  }
-  
-  // Caso contrário, usar URL padrão
-  return `${baseUrl}/api`;
-};
+import { getApiUrl, isClient } from '../utils/api.utils';
+import { setupRequestInterceptor, setupSimpleResponseInterceptor } from '../utils/api-interceptors';
 
 const api = axios.create({
-  baseURL: typeof window !== 'undefined' ? getApiUrl() : 'http://localhost:3001/api',
+  baseURL: isClient() ? getApiUrl() : 'http://localhost:3001/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Interceptor para adicionar token de autenticação e configurar URL
-api.interceptors.request.use((config) => {
-  // Configurar baseURL dinamicamente com subdomain (apenas no cliente)
-  if (typeof window !== 'undefined') {
-    config.baseURL = getApiUrl();
-    
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    // Adicionar subdomain no header também (fallback)
-    const subdomain = localStorage.getItem('subdomain');
-    if (subdomain) {
-      config.headers['X-Tenant-Subdomain'] = subdomain;
-    }
-  }
-  
-  return config;
-});
+// Configurar interceptors compartilhados
+setupRequestInterceptor(api);
+setupSimpleResponseInterceptor(api);
 
 // Interfaces
 export interface Vehicle {

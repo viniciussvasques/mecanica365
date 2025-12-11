@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -67,8 +68,8 @@ export default function NewInvoicePage() {
       ]);
       setCustomers(customersResponse.data);
       setGateways(gatewaysResponse);
-    } catch (err) {
-      console.error('Erro ao carregar dados:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar dados:', err);
       showNotification('Erro ao carregar dados', 'error');
     } finally {
       setLoadingData(false);
@@ -79,8 +80,8 @@ export default function NewInvoicePage() {
     try {
       const response = await serviceOrdersApi.findAll({ customerId, limit: 100 });
       setServiceOrders(response.data);
-    } catch (err) {
-      console.error('Erro ao carregar ordens de serviço:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar ordens de serviço:', err);
     }
   };
 
@@ -189,7 +190,7 @@ export default function NewInvoicePage() {
       showNotification('Fatura criada com sucesso!', 'success');
       router.push(`/invoicing/${invoice.id}`);
     } catch (err: unknown) {
-      console.error('Erro ao criar fatura:', err);
+      logger.error('Erro ao criar fatura:', err);
       let errorMessage = 'Erro ao criar fatura';
       
       if (err && typeof err === 'object' && 'response' in err) {

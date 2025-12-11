@@ -15,6 +15,7 @@ import { AttachmentsPanel } from '@/components/AttachmentsPanel';
 import { Attachment } from '@/lib/api/attachments';
 import { ChecklistPanel } from '@/components/ChecklistPanel';
 import { Checklist } from '@/lib/api/checklists';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,7 +73,7 @@ export default function QuoteDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar orçamento';
       setError(errorMessage);
-      console.error('Erro ao carregar orçamento:', err);
+      logger.error('Erro ao carregar orçamento:', err);
     } finally {
       setLoading(false);
     }
@@ -102,8 +103,8 @@ export default function QuoteDetailPage() {
         category: quoteData.identifiedProblemCategory as any,
       });
       setSuggestions(diagnosticSuggestions);
-    } catch (err) {
-      console.error('Erro ao carregar sugestões:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar sugestões:', err);
     } finally {
       setLoadingSuggestions(false);
     }
@@ -120,7 +121,7 @@ export default function QuoteDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao enviar para diagnóstico';
       showNotification(errorMessage, 'error');
-      console.error('Erro ao enviar para diagnóstico:', err);
+      logger.error('Erro ao enviar para diagnóstico:', err);
     } finally {
       setLoading(false);
     }
@@ -200,7 +201,7 @@ export default function QuoteDetailPage() {
 
       await loadQuote(); // Recarregar para atualizar o status
     } catch (err: unknown) {
-      console.error('Erro ao enviar orçamento:', err);
+      logger.error('Erro ao enviar orçamento:', err);
       throw err; // Re-throw para o modal tratar
     }
   };
@@ -366,9 +367,9 @@ export default function QuoteDetailPage() {
       showNotification('Orçamento preenchido com sucesso!', 'success');
       setIsEditing(false);
       await loadQuote();
-    } catch (err: any) {
-      console.error('Erro ao salvar orçamento:', err);
-      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao salvar orçamento';
+    } catch (err: unknown) {
+      logger.error('Erro ao salvar orçamento:', err);
+      const errorMessage = err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data ? String(err.response.data.message) : err instanceof Error ? err.message : 'Erro ao salvar orçamento';
       showNotification(errorMessage, 'error');
     } finally {
       setSaving(false);
@@ -390,7 +391,7 @@ export default function QuoteDetailPage() {
         router.push(`/service-orders/${result.serviceOrder.id}`);
       }, 1500);
     } catch (err: unknown) {
-      console.error('Erro ao aprovar orçamento manualmente:', err);
+      logger.error('Erro ao aprovar orçamento manualmente:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao aprovar orçamento';
       showNotification(errorMessage, 'error');
     } finally {
@@ -411,7 +412,7 @@ export default function QuoteDetailPage() {
         router.push(`/service-orders/${result.serviceOrder.id}`);
       }, 1500);
     } catch (err: unknown) {
-      console.error('Erro ao aprovar orçamento:', err);
+      logger.error('Erro ao aprovar orçamento:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao aprovar orçamento';
       showNotification(errorMessage, 'error');
     } finally {
@@ -432,7 +433,7 @@ export default function QuoteDetailPage() {
       globalThis.URL.revokeObjectURL(url);
       a.remove();
     } catch (err: unknown) {
-      console.error('Erro ao gerar PDF:', err);
+      logger.error('Erro ao gerar PDF:', err);
       alert('Erro ao gerar PDF do orçamento');
     } finally {
       setGeneratingPdf(false);

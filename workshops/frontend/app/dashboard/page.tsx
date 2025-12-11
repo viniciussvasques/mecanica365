@@ -13,6 +13,8 @@ import { appointmentsApi } from '@/lib/api/appointments';
 import { elevatorsApi } from '@/lib/api/elevators';
 import { inventoryApi } from '@/lib/api/inventory';
 import { useNotification } from '@/components/NotificationProvider';
+import { authStorage } from '@/lib/utils/localStorage';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 import {
@@ -117,8 +119,8 @@ export default function DashboardPage() {
     
     if (isFirstLogin && !alreadyChanged) {
       setShowChangePasswordModal(true);
-      localStorage.removeItem('isFirstLogin');
-      localStorage.removeItem('showPasswordModal');
+      authStorage.removeIsFirstLogin();
+      authStorage.removeShowPasswordModal();
     }
 
     setTimeout(() => {
@@ -360,8 +362,8 @@ export default function DashboardPage() {
           warnings: diagnosticsWarnings,
         },
       });
-    } catch (error) {
-      console.error('Erro ao carregar dados do dashboard:', error);
+    } catch (error: unknown) {
+      logger.error('[DashboardPage] Erro ao carregar dados do dashboard:', error);
       showNotification('Erro ao carregar dados do dashboard', 'error');
     } finally {
       setLoadingData(false);
@@ -369,11 +371,8 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('subdomain');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('isFirstLogin');
+    authStorage.clearAuthData();
+    authStorage.removeIsFirstLogin();
     router.push('/login');
   };
 
@@ -692,7 +691,7 @@ export default function DashboardPage() {
         isOpen={showChangePasswordModal}
         onClose={() => {
           setShowChangePasswordModal(false);
-          localStorage.removeItem('isFirstLogin');
+          authStorage.removeIsFirstLogin();
         }}
         onSuccess={() => {
           setShowChangePasswordModal(false);

@@ -17,6 +17,7 @@ import {
   EyeOpenIcon,
   Pencil1Icon,
 } from '@/components/icons/MechanicIcons';
+import { logger } from '@/lib/utils/logger';
 
 const categoryLabels: Record<string, string> = {
   motor: 'Motor',
@@ -200,7 +201,7 @@ export default function KnowledgeDetailPage() {
       // Simular se usuário já avaliou (em produção, viria do backend)
       setHasRated(Math.random() > 0.7); // 30% chance de já ter avaliado
     } catch (err: unknown) {
-      console.error('[KnowledgeDetailPage] Erro ao carregar solução:', err);
+      logger.error('[KnowledgeDetailPage] Erro ao carregar solução:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar solução';
       showNotification(errorMessage, 'error');
       router.push('/knowledge');
@@ -219,7 +220,7 @@ export default function KnowledgeDetailPage() {
       setHasRated(true);
       showNotification('Avaliação registrada com sucesso!', 'success');
     } catch (err: unknown) {
-      console.error('[KnowledgeDetailPage] Erro ao avaliar:', err);
+      logger.error('[KnowledgeDetailPage] Erro ao avaliar:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao registrar avaliação';
       showNotification(errorMessage, 'error');
     }

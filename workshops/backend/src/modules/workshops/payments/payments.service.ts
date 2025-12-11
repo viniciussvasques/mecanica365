@@ -104,7 +104,7 @@ export class PaymentsService {
       this.logger.log(`Pagamento criado: ${payment.id} (tenant: ${tenantId})`);
 
       return this.toResponseDto(payment);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar pagamento: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -247,7 +247,7 @@ export class PaymentsService {
         limit,
         totalPages,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar pagamentos: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -283,7 +283,7 @@ export class PaymentsService {
       }
 
       return this.toResponseDto(payment);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar pagamento: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -341,7 +341,7 @@ export class PaymentsService {
       this.logger.log(`Pagamento atualizado: ${id} (tenant: ${tenantId})`);
 
       return this.toResponseDto(updatedPayment);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao atualizar pagamento: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -492,7 +492,7 @@ export class PaymentsService {
       }
 
       this.logger.log(`Pagamento removido: ${id} (tenant: ${tenantId})`);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao remover pagamento: ${getErrorMessage(error)}`,
         getErrorStack(error),

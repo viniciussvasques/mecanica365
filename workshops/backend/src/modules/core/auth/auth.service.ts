@@ -123,7 +123,7 @@ export class AuthService {
         },
         isFirstLogin,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof UnauthorizedException ||
         error instanceof BadRequestException
@@ -148,7 +148,7 @@ export class AuthService {
       await this.revokeRefreshToken(refreshToken);
 
       this.logger.log(`Logout realizado com sucesso: ${userId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -218,7 +218,7 @@ export class AuthService {
         accessToken,
         refreshToken: newRefreshToken,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof UnauthorizedException ||
         error instanceof BadRequestException
@@ -257,7 +257,7 @@ export class AuthService {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -351,7 +351,7 @@ export class AuthService {
       });
 
       this.logger.log(`Senha alterada com sucesso: ${userId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof BadRequestException ||
         error instanceof UnauthorizedException ||
@@ -385,7 +385,7 @@ export class AuthService {
       tenantId: user.tenantId,
     };
 
-    const expiresIn = this.configService.get<string>('jwt.expiresIn') || '15m';
+    const expiresIn = this.configService.get<string>('jwt.expiresIn') || '7d';
     // @ts-expect-error - expiresIn type compatibility issue with @nestjs/jwt
     return this.jwtService.sign(payload, {
       expiresIn,
@@ -409,7 +409,7 @@ export class AuthService {
           expiresAt,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao salvar refresh token: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -460,7 +460,7 @@ export class AuthService {
       }
 
       return refreshToken;
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof UnauthorizedException ||
         error instanceof BadRequestException
@@ -512,7 +512,7 @@ export class AuthService {
         subdomain: user.tenant.subdomain,
         tenantId: user.tenant.id,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar tenant por email ${findTenantDto.email}: ${getErrorMessage(error)}`,
         getErrorStack(error),

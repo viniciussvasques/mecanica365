@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { quotesApi, Quote, QuoteStatus } from '@/lib/api/quotes';
 import { Button } from '@/components/ui/Button';
 import { useNotification } from '@/components/NotificationProvider';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,8 +28,8 @@ export default function PendingDiagnosisPage() {
         limit: 100 
       });
       setQuotes(response.data);
-    } catch (err) {
-      console.error('Erro ao carregar orçamentos pendentes:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar orçamentos pendentes:', err);
       showNotification('Erro ao carregar orçamentos pendentes', 'error');
     } finally {
       setLoading(false);

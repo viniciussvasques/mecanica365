@@ -62,7 +62,7 @@ export class UsersService {
         `Usuário criado: ${user.id} (${user.email}) no tenant ${tenantId}`,
       );
       return this.toResponseDto(user);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar usuário: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -89,7 +89,7 @@ export class UsersService {
       });
 
       return users.map((user) => this.toResponseDto(user));
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar usuários: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -112,7 +112,7 @@ export class UsersService {
       }
 
       return this.toResponseDto(user);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar usuário ${id}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -188,7 +188,7 @@ export class UsersService {
 
       this.logger.log(`Usuário atualizado: ${id}`);
       return this.toResponseDto(updatedUser);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao atualizar usuário ${id}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -217,7 +217,7 @@ export class UsersService {
       });
 
       this.logger.log(`Usuário removido (soft delete): ${id}`);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao remover usuário ${id}: ${getErrorMessage(error)}`,
         getErrorStack(error),

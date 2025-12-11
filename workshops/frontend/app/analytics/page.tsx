@@ -21,6 +21,7 @@ import {
 } from '@/components/icons/MechanicIcons';
 import { analyticsApi, DashboardAnalytics } from '@/lib/api/analytics';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -144,7 +145,7 @@ export default function AnalyticsPage() {
       const response = await analyticsApi.getDashboard();
       setData(response);
     } catch (err: unknown) {
-      console.error('[AnalyticsPage] Erro ao carregar analytics:', err);
+      logger.error('[AnalyticsPage] Erro ao carregar analytics:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados';
       setError(errorMessage);
     } finally {

@@ -77,7 +77,7 @@ export class TenantsService {
       }
 
       return this.toResponseDto(tenantWithSubscription);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao criar tenant: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -94,7 +94,7 @@ export class TenantsService {
       });
 
       return tenants.map((tenant) => this.toResponseDto(tenant));
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao listar tenants: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -115,7 +115,7 @@ export class TenantsService {
       }
 
       return this.toResponseDto(tenant);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar tenant ${id}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -139,7 +139,7 @@ export class TenantsService {
       }
 
       return this.toResponseDto(tenant);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar tenant por subdomain ${subdomain}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -290,7 +290,7 @@ export class TenantsService {
 
       this.logger.log(`Tenant atualizado: ${id}`);
       return this.toResponseDto(updatedTenant);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao atualizar tenant ${id}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -317,7 +317,7 @@ export class TenantsService {
 
       this.logger.log(`Tenant ativado: ${id}`);
       return this.toResponseDto(updatedTenant);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao ativar tenant ${id}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -344,7 +344,7 @@ export class TenantsService {
 
       this.logger.log(`Tenant suspenso: ${id}`);
       return this.toResponseDto(updatedTenant);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao suspender tenant ${id}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -371,7 +371,7 @@ export class TenantsService {
 
       this.logger.log(`Tenant cancelado: ${id}`);
       return this.toResponseDto(updatedTenant);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao cancelar tenant ${id}: ${getErrorMessage(error)}`,
         getErrorStack(error),

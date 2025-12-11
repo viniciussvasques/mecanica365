@@ -10,6 +10,7 @@ import { elevatorsApi, Elevator } from '@/lib/api/elevators';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,8 +70,8 @@ export default function EditQuotePage() {
       ]);
       setCustomers(customersResponse.data);
       setElevators(elevatorsResponse.data);
-    } catch (err) {
-      console.error('Erro ao carregar dados:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar dados:', err);
     }
   };
 
@@ -103,7 +104,7 @@ export default function EditQuotePage() {
         await loadVehicles(data.customerId);
       }
     } catch (err: unknown) {
-      console.error('Erro ao carregar orçamento:', err);
+      logger.error('Erro ao carregar orçamento:', err);
       alert('Erro ao carregar orçamento');
       router.push('/quotes');
     } finally {
@@ -115,8 +116,8 @@ export default function EditQuotePage() {
     try {
       const response = await vehiclesApi.findAll({ customerId, limit: 100 });
       setVehicles(response.data);
-    } catch (err) {
-      console.error('Erro ao carregar veículos:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao carregar veículos:', err);
     }
   };
 
@@ -249,11 +250,11 @@ export default function EditQuotePage() {
 
       await quotesApi.update(id, data);
       router.push(`/quotes/${id}`);
-    } catch (err: any) {
-      console.error('Erro ao atualizar orçamento:', err);
+    } catch (err: unknown) {
+      logger.error('Erro ao atualizar orçamento:', err);
       let errorMessage = 'Erro ao atualizar orçamento';
       
-      if (err?.response?.data?.message) {
+      if (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data) {
         errorMessage = err.response.data.message;
       } else if (err?.message) {
         errorMessage = err.message;

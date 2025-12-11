@@ -66,7 +66,7 @@ export class ElevatorsService {
       this.logger.log(`Elevador criado: ${elevator.id}`);
 
       return this.toResponseDto(elevator);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof ConflictException ||
         error instanceof BadRequestException
@@ -135,7 +135,7 @@ export class ElevatorsService {
         page,
         limit,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(`Erro ao listar elevadores: ${getErrorMessage(error)}`);
       throw new BadRequestException('Erro ao listar elevadores');
     }
@@ -158,7 +158,7 @@ export class ElevatorsService {
       }
 
       return this.toResponseDto(elevator);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -248,7 +248,7 @@ export class ElevatorsService {
       this.logger.log(`Elevador atualizado: ${id}`);
 
       return this.toResponseDto(updatedElevator);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof ConflictException ||
         error instanceof BadRequestException ||
@@ -300,7 +300,7 @@ export class ElevatorsService {
       });
 
       this.logger.log(`Elevador removido: ${id}`);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -431,7 +431,7 @@ export class ElevatorsService {
       this.logger.log(`Uso do elevador iniciado: ${elevatorId}`);
 
       return this.toUsageResponseDto(usage);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException ||
@@ -557,7 +557,7 @@ export class ElevatorsService {
       this.logger.log(`Uso do elevador finalizado: ${elevatorId}`);
 
       return this.toUsageResponseDto(updatedUsage);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -684,7 +684,7 @@ export class ElevatorsService {
       this.logger.log(`Elevador reservado: ${elevatorId}`);
 
       return this.toUsageResponseDto(usage);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException ||

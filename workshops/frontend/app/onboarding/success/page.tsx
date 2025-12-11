@@ -17,7 +17,7 @@ function SuccessContent() {
     localStorage.removeItem('onboarding_tenant_id');
     
     // Tentar recuperar subdomain do localStorage ou da URL
-    const savedSubdomain = localStorage.getItem('subdomain');
+    const savedSubdomain = authStorage.getSubdomain();
     if (savedSubdomain) {
       setSubdomain(savedSubdomain);
     }

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { inventoryApi, InventoryItem } from '@/lib/api/inventory';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { logger } from '@/lib/utils/logger';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -48,8 +49,8 @@ export default function InventoryMovementsPage() {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const subdomain = localStorage.getItem('subdomain');
+      const token = authStorage.getToken();
+      const subdomain = authStorage.getSubdomain();
       
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
@@ -63,11 +64,11 @@ export default function InventoryMovementsPage() {
         return;
       }
       
-      console.log('[InventoryMovementsPage] Carregando itens com subdomain:', subdomain);
+      logger.log('[InventoryMovementsPage] Carregando itens com subdomain:', subdomain);
       const response = await inventoryApi.findAll({ isActive: true, limit: 1000 });
       setItems(response.data);
     } catch (err: unknown) {
-      console.error('[InventoryMovementsPage] Erro ao carregar itens:', err);
+      logger.error('[InventoryMovementsPage] Erro ao carregar itens:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar itens';
       setError(errorMessage);
     } finally {

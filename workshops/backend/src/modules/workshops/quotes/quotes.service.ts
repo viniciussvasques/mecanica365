@@ -199,7 +199,7 @@ export class QuotesService {
         this.logger.log(
           `Checklist pré-diagnóstico criado automaticamente para orçamento ${number}`,
         );
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.warn(
           `Não foi possível criar checklist pré-diagnóstico: ${getErrorMessage(error)}`,
         );
@@ -207,7 +207,7 @@ export class QuotesService {
       }
 
       return this.toResponseDto(quote);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -324,7 +324,7 @@ export class QuotesService {
         data: quotes.map((quote) => {
           try {
             return this.toResponseDto.bind(this)(quote);
-          } catch (error) {
+          } catch (error: unknown) {
             this.logger.error(
               `Erro ao converter orçamento ${quote.id} para DTO: ${getErrorMessage(error)}`,
               getErrorStack(error),
@@ -337,7 +337,7 @@ export class QuotesService {
         limit,
         totalPages,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao buscar/processar orçamentos: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -427,7 +427,7 @@ export class QuotesService {
       const updatedQuote = await this.updateQuoteWithData(id, updateData);
       this.logger.log(`Orçamento atualizado: ${updatedQuote.number}`);
       return this.toResponseDto(updatedQuote);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -492,7 +492,7 @@ export class QuotesService {
         quote: this.toResponseDto(updatedQuote),
         serviceOrder,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Erro ao aprovar orçamento ${id}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -1287,7 +1287,7 @@ export class QuotesService {
       );
 
       return serviceOrder;
-    } catch (serviceOrderError) {
+    } catch (serviceOrderError: unknown) {
       this.logger.error(
         `Erro ao criar Service Order para orçamento ${quote.number}: ${getErrorMessage(serviceOrderError)}`,
       );
@@ -1463,7 +1463,7 @@ export class QuotesService {
         vehicleId: vehicleId || undefined,
         notes: `Reservado para ${quoteNumber} (aprovado)`,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Não foi possível reservar elevador: ${getErrorMessage(error)}`,
       );
@@ -1504,7 +1504,7 @@ export class QuotesService {
       this.logger.log(
         `✅ Agendamento criado automaticamente para OS ${serviceOrder.number}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `❌ Não foi possível criar agendamento automaticamente para OS ${serviceOrder.number}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -1552,7 +1552,7 @@ export class QuotesService {
       this.logger.log(
         `✅ Notificação de aprovação enviada para ${staffToNotify.length} usuários (admins, managers, recepcionistas)`,
       );
-    } catch (notificationError) {
+    } catch (notificationError: unknown) {
       this.logger.warn(
         `Erro ao criar notificação de aprovação: ${getErrorMessage(notificationError)}`,
       );
@@ -1616,7 +1616,7 @@ export class QuotesService {
       this.logger.log(
         `Notificação enviada ao mecânico ${quote.assignedMechanicId} sobre a OS ${serviceOrder.number}`,
       );
-    } catch (notificationError) {
+    } catch (notificationError: unknown) {
       this.logger.warn(
         `Erro ao notificar mecânico sobre OS: ${getErrorMessage(notificationError)}`,
       );
@@ -1647,7 +1647,7 @@ export class QuotesService {
       this.logger.log(
         `Notificação enviada a todos os mecânicos sobre a OS ${serviceOrder.number}`,
       );
-    } catch (notificationError) {
+    } catch (notificationError: unknown) {
       this.logger.warn(
         `Erro ao notificar mecânicos sobre OS: ${getErrorMessage(notificationError)}`,
       );
@@ -1756,7 +1756,7 @@ export class QuotesService {
           },
         });
       }
-    } catch (notificationError) {
+    } catch (notificationError: unknown) {
       this.logger.warn(
         `Erro ao criar notificação de rejeição: ${getErrorMessage(notificationError)}`,
       );
@@ -3215,7 +3215,7 @@ export class QuotesService {
       this.logger.log(
         `✅ Agendamento criado automaticamente para OS ${serviceOrder.number}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `❌ Não foi possível criar agendamento automaticamente para OS ${serviceOrder.number}: ${getErrorMessage(error)}`,
         getErrorStack(error),
@@ -3447,7 +3447,7 @@ export class QuotesService {
           status: checklist.status,
         })),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Erro ao buscar attachments/checklists: ${getErrorMessage(error)}`,
       );
@@ -3596,7 +3596,7 @@ export class QuotesService {
           quoteNumber: quote.number,
         },
       });
-    } catch (notificationError) {
+    } catch (notificationError: unknown) {
       // Log mas não falha a operação se a notificação falhar
       this.logger.warn(
         `Erro ao criar notificação para mecânico ${mechanicId}: ${getErrorMessage(notificationError)}`,

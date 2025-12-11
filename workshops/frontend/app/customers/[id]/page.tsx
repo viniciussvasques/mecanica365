@@ -9,6 +9,7 @@ import { customersApi, Customer } from '@/lib/api/customers';
 import { vehiclesApi, Vehicle } from '@/lib/api/vehicles';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { logger } from '@/lib/utils/logger';
 
 export default function CustomerDetailPage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function CustomerDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar cliente';
       setError(errorMessage);
-      console.error('Erro ao carregar cliente:', err);
+      logger.error('Erro ao carregar cliente:', err);
     } finally {
       setLoading(false);
     }
@@ -56,7 +57,7 @@ export default function CustomerDetailPage() {
       const response = await vehiclesApi.findAll({ customerId: id, limit: 100 });
       setVehicles(response.data);
     } catch (err: unknown) {
-      console.error('Erro ao carregar veículos:', err);
+      logger.error('Erro ao carregar veículos:', err);
     } finally {
       setLoadingVehicles(false);
     }
@@ -78,7 +79,7 @@ export default function CustomerDetailPage() {
       // Filtrar o cliente atual
       setAvailableCustomers(allCustomers.filter(c => c.id !== id));
     } catch (err: unknown) {
-      console.error('Erro ao carregar clientes:', err);
+      logger.error('Erro ao carregar clientes:', err);
     }
   };
 
@@ -101,7 +102,7 @@ export default function CustomerDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao transferir veículo';
       alert(errorMessage);
-      console.error('Erro ao transferir veículo:', err);
+      logger.error('Erro ao transferir veículo:', err);
     }
   };
 
@@ -116,7 +117,7 @@ export default function CustomerDetailPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir cliente';
       alert(errorMessage);
-      console.error('Erro ao excluir cliente:', err);
+      logger.error('Erro ao excluir cliente:', err);
     }
   };
 

@@ -1,47 +1,17 @@
 import axios from 'axios';
-
-// Função para obter a URL base da API com subdomain (apenas no cliente)
-const getApiUrl = (): string => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  
-  if (typeof window === 'undefined') {
-    return `${baseUrl}/api`;
-  }
-  
-  const subdomain = localStorage.getItem('subdomain');
-  
-  if (subdomain && baseUrl.includes('localhost')) {
-    return `http://${subdomain}.localhost:3001/api`;
-  }
-  
-  return `${baseUrl}/api`;
-};
+import { getApiUrl, isClient } from '../utils/api.utils';
+import { setupRequestInterceptor, setupSimpleResponseInterceptor } from '../utils/api-interceptors';
 
 const api = axios.create({
-  baseURL: typeof window !== 'undefined' ? getApiUrl() : 'http://localhost:3001/api',
+  baseURL: isClient() ? getApiUrl() : 'http://localhost:3001/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Interceptor para configurar URL dinamicamente
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    config.baseURL = getApiUrl();
-    
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    const subdomain = localStorage.getItem('subdomain');
-    if (subdomain) {
-      config.headers['X-Tenant-Subdomain'] = subdomain;
-    }
-  }
-  
-  return config;
-});
+// Configurar interceptors compartilhados
+setupRequestInterceptor(api);
+setupSimpleResponseInterceptor(api);
 
 export type PlanCode = 'workshops_starter' | 'workshops_professional' | 'workshops_enterprise';
 export type SubscriptionStatus = 'active' | 'cancelled' | 'past_due' | 'trialing' | 'incomplete';
