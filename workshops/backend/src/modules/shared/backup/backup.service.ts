@@ -285,7 +285,7 @@ export class BackupService {
 
       // Restaurar backup
       const strategy = backup.s3Key ? this.s3Strategy : this.localStrategy;
-      await strategy.restoreBackup(restorePath || '', tenantId);
+      await strategy.restoreBackup(restorePath || '');
 
       // Limpar arquivo descriptografado temporário
       if (backup.encrypted && restorePath && existsSync(restorePath)) {

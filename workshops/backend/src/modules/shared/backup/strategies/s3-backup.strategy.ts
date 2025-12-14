@@ -76,12 +76,12 @@ export class S3BackupStrategy implements BackupStrategy {
     }
   }
 
-  async restoreBackup(backupPath: string, tenantId?: string): Promise<void> {
+  async restoreBackup(backupPath: string): Promise<void> {
     // Por enquanto, usa a estratégia local
-    return this.localStrategy.restoreBackup(backupPath, tenantId);
+    return this.localStrategy.restoreBackup(backupPath);
   }
 
-  async validateBackup(backupPath: string): Promise<boolean> {
+  validateBackup(backupPath: string): boolean {
     return this.localStrategy.validateBackup(backupPath);
   }
 }

@@ -60,7 +60,7 @@ export class BackupController {
   @Get('status')
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Status dos backups' })
-  async getStatus(@CurrentUser() _user: { id: string; tenantId?: string }) {
+  async getStatus() {
     return this.backupService.getBackupStatus();
   }
 

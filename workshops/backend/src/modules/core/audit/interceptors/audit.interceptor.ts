@@ -130,9 +130,8 @@ export class AuditInterceptor implements NestInterceptor {
   private async logAudit(auditContext: AuditContext): Promise<void> {
     try {
       const response = auditContext.context.switchToHttp().getResponse();
-      const responseWithStatusCode = response as { statusCode?: number };
 
-      const statusCode = responseWithStatusCode.statusCode || 200;
+      const statusCode = response.statusCode || 200;
 
       const dto: CreateAuditLogDto = {
         action: auditContext.action,

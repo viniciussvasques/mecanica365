@@ -20,10 +20,10 @@ export interface BackupStrategy {
   /**
    * Restaura um backup do banco de dados
    */
-  restoreBackup(backupPath: string, tenantId?: string): Promise<void>;
+  restoreBackup(backupPath: string): Promise<void>;
 
   /**
    * Verifica se o backup existe e é válido
    */
-  validateBackup(backupPath: string): Promise<boolean>;
+  validateBackup(backupPath: string): boolean;
 }

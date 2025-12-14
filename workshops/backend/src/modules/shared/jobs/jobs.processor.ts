@@ -20,7 +20,7 @@ export class JobsProcessor {
 
   @Process({ name: 'email', concurrency: 5 })
   async handleEmailJob(job: BullJob<JobData>): Promise<void> {
-    await this.processJob(job, async (jobData) => {
+    await this.processJob(job, (jobData) => {
       this.logger.log(`Processando job de email: ${jobData.id}`);
       // Implementar lógica de envio de email aqui
       // Por enquanto, apenas log
@@ -30,7 +30,7 @@ export class JobsProcessor {
 
   @Process({ name: 'report', concurrency: 2 })
   async handleReportJob(job: BullJob<JobData>): Promise<void> {
-    await this.processJob(job, async (jobData) => {
+    await this.processJob(job, (jobData) => {
       this.logger.log(`Processando job de relatório: ${jobData.id}`);
       // Implementar lógica de geração de relatório aqui
       return { success: true, message: 'Relatório processado' };
@@ -39,7 +39,7 @@ export class JobsProcessor {
 
   @Process({ name: 'webhook', concurrency: 10 })
   async handleWebhookJob(job: BullJob<JobData>): Promise<void> {
-    await this.processJob(job, async (jobData) => {
+    await this.processJob(job, (jobData) => {
       this.logger.log(`Processando job de webhook: ${jobData.id}`);
       // Implementar lógica de webhook aqui
       return { success: true, message: 'Webhook processado' };
@@ -48,7 +48,7 @@ export class JobsProcessor {
 
   @Process({ name: 'cleanup', concurrency: 1 })
   async handleCleanupJob(job: BullJob<JobData>): Promise<void> {
-    await this.processJob(job, async (jobData) => {
+    await this.processJob(job, (jobData) => {
       this.logger.log(`Processando job de limpeza: ${jobData.id}`);
       // Implementar lógica de limpeza aqui
       return { success: true, message: 'Limpeza processada' };
@@ -57,7 +57,7 @@ export class JobsProcessor {
 
   @Process({ name: 'export', concurrency: 2 })
   async handleExportJob(job: BullJob<JobData>): Promise<void> {
-    await this.processJob(job, async (jobData) => {
+    await this.processJob(job, (jobData) => {
       this.logger.log(`Processando job de exportação: ${jobData.id}`);
       // Implementar lógica de exportação aqui
       return { success: true, message: 'Exportação processada' };
@@ -69,7 +69,7 @@ export class JobsProcessor {
    */
   private async processJob(
     job: BullJob<JobData>,
-    processor: (jobData: JobData) => Promise<Record<string, unknown>>,
+    processor: (jobData: JobData) => Record<string, unknown>,
   ): Promise<void> {
     const jobData = job.data;
 
@@ -85,7 +85,7 @@ export class JobsProcessor {
       });
 
       // Processar job
-      const result = await processor(jobData);
+      const result = processor(jobData);
 
       // Atualizar status para completed
       await this.prisma.job.update({

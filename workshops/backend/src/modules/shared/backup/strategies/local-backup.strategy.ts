@@ -86,7 +86,7 @@ export class LocalBackupStrategy implements BackupStrategy {
     }
   }
 
-  async restoreBackup(backupPath: string, _tenantId?: string): Promise<void> {
+  async restoreBackup(backupPath: string): Promise<void> {
     try {
       if (!existsSync(backupPath)) {
         throw new Error(`Backup não encontrado: ${backupPath}`);
@@ -121,7 +121,7 @@ export class LocalBackupStrategy implements BackupStrategy {
     }
   }
 
-  async validateBackup(backupPath: string): Promise<boolean> {
+  validateBackup(backupPath: string): boolean {
     try {
       if (!existsSync(backupPath)) {
         return false;

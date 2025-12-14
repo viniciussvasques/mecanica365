@@ -1,10 +1,16 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
+import { Queue, Job as BullJob } from 'bull';
 import { PrismaService } from '@database/prisma.service';
 import { CreateJobDto, JobResponseDto, JobFiltersDto, JobStatus } from './dto';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
 import { Prisma } from '@prisma/client';
+
+interface JobData {
+  id: string;
+  type: string;
+  payload?: Record<string, unknown>;
+}
 
 /**
  * JobsService - Serviço para gerenciamento de jobs
@@ -268,7 +274,7 @@ export class JobsService {
         'active',
         'delayed',
       ]);
-      const bullJob = jobs.find((j) => j.data.id === jobId);
+      const bullJob = jobs.find((j: BullJob<JobData>) => j.data.id === jobId);
 
       if (bullJob) {
         await bullJob.remove();
