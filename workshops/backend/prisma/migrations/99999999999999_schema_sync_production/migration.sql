@@ -33,9 +33,16 @@ ALTER TABLE "parts" DROP COLUMN IF EXISTS "part_number";
 ALTER TABLE "parts" DROP COLUMN IF EXISTS "sell_price";
 ALTER TABLE "parts" DROP COLUMN IF EXISTS "supplier_id";
 
--- Renomear created_at/updated_at para camelCase
-ALTER TABLE "parts" RENAME COLUMN "created_at" TO "createdAt";
-ALTER TABLE "parts" RENAME COLUMN "updated_at" TO "updatedAt";
+-- Renomear created_at/updated_at para camelCase (somente se existir)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'parts' AND column_name = 'created_at') THEN
+    ALTER TABLE "parts" RENAME COLUMN "created_at" TO "createdAt";
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'parts' AND column_name = 'updated_at') THEN
+    ALTER TABLE "parts" RENAME COLUMN "updated_at" TO "updatedAt";
+  END IF;
+END $$;
 
 -- Adicionar novas colunas em parts
 ALTER TABLE "parts" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true;
@@ -50,11 +57,22 @@ ALTER TABLE "part_movements" DROP COLUMN IF EXISTS "movement_type";
 ALTER TABLE "part_movements" DROP COLUMN IF EXISTS "reference_type";
 ALTER TABLE "part_movements" DROP COLUMN IF EXISTS "unit_cost";
 
--- Renomear colunas
-ALTER TABLE "part_movements" RENAME COLUMN "created_at" TO "createdAt";
-ALTER TABLE "part_movements" RENAME COLUMN "part_id" TO "partId";
-ALTER TABLE "part_movements" RENAME COLUMN "reference_id" TO "referenceId";
-ALTER TABLE "part_movements" RENAME COLUMN "tenant_id" TO "tenantId";
+-- Renomear colunas (somente se existirem)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'part_movements' AND column_name = 'created_at') THEN
+    ALTER TABLE "part_movements" RENAME COLUMN "created_at" TO "createdAt";
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'part_movements' AND column_name = 'part_id') THEN
+    ALTER TABLE "part_movements" RENAME COLUMN "part_id" TO "partId";
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'part_movements' AND column_name = 'reference_id') THEN
+    ALTER TABLE "part_movements" RENAME COLUMN "reference_id" TO "referenceId";
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'part_movements' AND column_name = 'tenant_id') THEN
+    ALTER TABLE "part_movements" RENAME COLUMN "tenant_id" TO "tenantId";
+  END IF;
+END $$;
 
 -- Adicionar nova coluna type
 ALTER TABLE "part_movements" ADD COLUMN IF NOT EXISTS "type" TEXT NOT NULL DEFAULT 'purchase';
