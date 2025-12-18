@@ -112,15 +112,8 @@ export class OnboardingController {
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,
   ) {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-      apiVersion: '2025-11-17.clover',
-    });
-
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      throw new Error('STRIPE_WEBHOOK_SECRET não configurado');
-    }
+    // Buscar credenciais do Stripe do banco de dados
+    const { stripe, webhookSecret } = await this.onboardingService.getStripeForWebhook();
 
     let event: Stripe.Event;
 

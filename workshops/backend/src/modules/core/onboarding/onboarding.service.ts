@@ -11,6 +11,8 @@ import { TenantsService } from '../tenants/tenants.service';
 import { BillingService } from '../billing/billing.service';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../../shared/email/email.service';
+import { CloudflareService } from '../../shared/cloudflare/cloudflare.service';
+import { EncryptionService } from '../../shared/encryption/encryption.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreateOnboardingDto } from './dto/create-onboarding.dto';
 import { generateRandomPassword } from './utils/password-generator.util';
@@ -59,7 +61,7 @@ type DbSubscription = {
 @Injectable()
 export class OnboardingService {
   private readonly logger = new Logger(OnboardingService.name);
-  private readonly stripe: Stripe;
+  private stripe: Stripe | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -68,17 +70,98 @@ export class OnboardingService {
     private readonly usersService: UsersService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly cloudflareService: CloudflareService,
+    private readonly encryptionService: EncryptionService,
   ) {
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    if (stripeSecretKey == null) {
-      this.logger.warn(
-        'STRIPE_SECRET_KEY não configurado. Stripe desabilitado.',
-      );
-    } else {
-      this.stripe = new Stripe(stripeSecretKey, {
-        apiVersion: '2025-11-17.clover',
-      });
+    // Stripe será inicializado dinamicamente ao buscar as credenciais do banco
+  }
+
+  /**
+   * Busca e inicializa o Stripe com as credenciais do banco de dados
+   */
+  private async getStripeInstance(): Promise<Stripe> {
+    if (this.stripe) {
+      return this.stripe;
     }
+
+    // Buscar gateway de pagamento global ativo do tipo Stripe
+    const gateway = await this.prisma.systemPaymentGateway.findFirst({
+      where: {
+        type: 'stripe',
+        isActive: true,
+      },
+      orderBy: [
+        { isDefault: 'desc' }, // Padrão primeiro
+        { createdAt: 'desc' }, // Mais recente depois
+      ],
+    });
+
+    if (!gateway) {
+      throw new BadRequestException(
+        'Gateway de pagamento Stripe não configurado. Configure em Payment Gateways no painel admin.',
+      );
+    }
+
+    const secretKey = gateway.secretKey;
+
+    if (!secretKey) {
+      throw new BadRequestException(
+        'Secret Key do Stripe não encontrada no gateway configurado.',
+      );
+    }
+
+    // Descriptografar a secret key
+    const decryptedSecretKey = this.encryptionService.decrypt(secretKey);
+
+    this.stripe = new Stripe(decryptedSecretKey, {
+      apiVersion: '2025-11-17.clover',
+    });
+
+    this.logger.log(`Stripe inicializado com gateway: ${gateway.name}`);
+    return this.stripe;
+  }
+
+  /**
+   * Busca o Webhook Secret do Stripe do banco de dados
+   */
+  private async getStripeWebhookSecret(): Promise<string> {
+    const gateway = await this.prisma.systemPaymentGateway.findFirst({
+      where: {
+        type: 'stripe',
+        isActive: true,
+      },
+      orderBy: [
+        { isDefault: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+
+    if (!gateway) {
+      throw new BadRequestException(
+        'Gateway de pagamento Stripe não configurado.',
+      );
+    }
+
+    const webhookSecret = gateway.webhookSecret;
+
+    if (!webhookSecret) {
+      throw new BadRequestException(
+        'Webhook Secret do Stripe não encontrado no gateway configurado.',
+      );
+    }
+
+    // Descriptografar o webhook secret
+    return this.encryptionService.decrypt(webhookSecret);
+  }
+
+  /**
+   * Método público para uso no webhook controller
+   * Retorna instância do Stripe e webhook secret
+   */
+  async getStripeForWebhook(): Promise<{ stripe: Stripe; webhookSecret: string }> {
+    const stripe = await this.getStripeInstance();
+    const webhookSecret = await this.getStripeWebhookSecret();
+    return { stripe, webhookSecret };
   }
 
   /**
@@ -163,9 +246,8 @@ export class OnboardingService {
   async createCheckoutSession(
     createCheckoutDto: CreateCheckoutDto,
   ): Promise<{ sessionId: string; url: string }> {
-    if (!this.stripe) {
-      throw new BadRequestException('Stripe não configurado');
-    }
+    // Inicializar Stripe com credenciais do banco
+    const stripe = await this.getStripeInstance();
 
     // Buscar tenant existente
     const tenant = await this.prisma.tenant.findUnique({
@@ -207,7 +289,7 @@ export class OnboardingService {
     );
 
     // Criar sessão de checkout
-    const session = await this.stripe.checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
       line_items: [
@@ -322,6 +404,68 @@ export class OnboardingService {
 
       this.logger.log(`Tenant ativado: ${tenant.id}`);
 
+      // 1.5. Copiar configuração de email do tenant admin para o novo tenant
+      try {
+        const adminTenant = await this.prisma.tenant.findFirst({
+          where: { subdomain: 'admin' },
+        });
+
+        if (adminTenant) {
+          const adminEmailConfig = await this.prisma.emailSettings.findFirst({
+            where: {
+              tenantId: adminTenant.id,
+              isActive: true,
+              isDefault: true,
+            },
+          });
+
+          if (adminEmailConfig) {
+            await this.prisma.emailSettings.create({
+              data: {
+                tenantId: tenant.id,
+                name: adminEmailConfig.name,
+                host: adminEmailConfig.host,
+                port: adminEmailConfig.port,
+                secure: adminEmailConfig.secure,
+                user: adminEmailConfig.user,
+                password: adminEmailConfig.password, // Já está criptografada
+                fromEmail: adminEmailConfig.fromEmail,
+                fromName: adminEmailConfig.fromName,
+                isActive: true,
+                isDefault: true,
+              },
+            });
+            this.logger.log(`Configuração de email copiada para tenant ${tenant.id}`);
+          }
+        }
+      } catch (emailError: unknown) {
+        this.logger.error(
+          `Erro ao copiar configuração de email: ${(emailError as Error).message}`,
+        );
+        // Não bloqueia o processo se copiar email falhar
+      }
+
+      // 1.6. Criar subdomínio no Cloudflare
+      try {
+        const dnsCreated = await this.cloudflareService.createTenantSubdomain(
+          tenant.subdomain,
+        );
+        if (dnsCreated) {
+          this.logger.log(
+            `DNS criado no Cloudflare para: ${tenant.subdomain}.mecanica365.com`,
+          );
+        } else {
+          this.logger.warn(
+            `Falha ao criar DNS no Cloudflare para: ${tenant.subdomain}`,
+          );
+        }
+      } catch (dnsError: unknown) {
+        this.logger.error(
+          `Erro ao criar DNS no Cloudflare: ${(dnsError as Error).message}`,
+        );
+        // Não bloqueia o processo se DNS falhar
+      }
+
       // 2. Criar/Atualizar Subscription
       try {
         // Tentar buscar subscription existente
@@ -389,7 +533,7 @@ export class OnboardingService {
         this.logger.log(`Usuário admin criado: ${createdAdminUser.id}`);
 
         // 4. Enviar email de boas-vindas (apenas se usuário foi criado agora)
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendUrl = this.configService.get<string>('TENANT_APP_URL') || 'https://app.mecanica365.com';
         const loginUrl = `${frontendUrl}/login?subdomain=${tenant.subdomain}`;
 
         await this.emailService.sendWelcomeEmail({
@@ -399,7 +543,7 @@ export class OnboardingService {
           email: createdAdminUser.email,
           password: userPassword,
           loginUrl,
-        });
+        }, tenant.id);
 
         this.logger.log(
           `Email de boas-vindas enviado para: ${createdAdminUser.email}`,

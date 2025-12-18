@@ -9,7 +9,14 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Mecânica365 - ERP para Oficinas',
   description: 'Sistema completo de gestão para oficinas mecânicas',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
+
+// Força renderização dinâmica para evitar pré-render estático de páginas que usam search params
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default function RootLayout({
   children,

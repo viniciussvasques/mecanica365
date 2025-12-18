@@ -1,3 +1,5 @@
+import { getLocalStorageItem } from './localStorage';
+
 /**
  * Utilitários compartilhados para configuração de API
  */

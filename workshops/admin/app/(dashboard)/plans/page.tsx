@@ -4,6 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { plansApi, Plan, CreatePlanDto } from '@/lib/api';
 import { PlusIcon, Pencil1Icon, TrashIcon, CheckCircledIcon, CrossCircledIcon, StarFilledIcon } from '@radix-ui/react-icons';
 
+// Helper para converter preço (string do Prisma Decimal ou número)
+const toPrice = (value: string | number | undefined | null): number => {
+  if (value === null || value === undefined) return 0;
+  return typeof value === 'string' ? parseFloat(value) : value;
+};
+
 // Lista de features disponíveis
 const AVAILABLE_FEATURES = [
   { code: 'basic_service_orders', label: 'Ordens de Serviço Básicas' },
@@ -237,7 +243,7 @@ export default function PlansPage() {
             <p className="text-2xl font-bold text-[#4ADE80] mt-1">
               R$ {plans.reduce((acc, plan) => {
                 const count = getSubscriptionCount(plan.id);
-                const price = plan.monthlyPrice ?? plan.price?.monthly ?? 0;
+                const price = toPrice(plan.monthlyPrice ?? plan.price?.monthly);
                 return acc + (count * price);
               }, 0).toFixed(2)}
             </p>
@@ -318,12 +324,12 @@ export default function PlansPage() {
             <div className="text-center mb-4">
               <div className="flex items-baseline justify-center gap-1">
                 <span className="text-3xl font-bold text-white">
-                  R$ {(plan.monthlyPrice ?? plan.price?.monthly ?? 0).toFixed(2)}
+                  R$ {toPrice(plan.monthlyPrice ?? plan.price?.monthly).toFixed(2)}
                 </span>
                 <span className="text-[#6B6B7E]">/mês</span>
               </div>
               <p className="text-[#6B6B7E] text-sm mt-1">
-                ou R$ {(plan.annualPrice ?? plan.price?.annual ?? 0).toFixed(2)}/ano
+                ou R$ {toPrice(plan.annualPrice ?? plan.price?.annual).toFixed(2)}/ano
               </p>
             </div>
 

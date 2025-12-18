@@ -46,6 +46,13 @@ export class TenantResolverMiddleware implements NestMiddleware {
       return next();
     }
 
+    if (this.isAdminRoute(pathWithoutQuery)) {
+      this.logger.debug(
+        `🛡️ Rota administrativa detectada, ignorando resolução de tenant: ${pathWithoutQuery}`,
+      );
+      return next();
+    }
+
     const subdomain = this.extractSubdomain(req);
 
     if (!this.isValidSubdomain(subdomain)) {
@@ -59,6 +66,9 @@ export class TenantResolverMiddleware implements NestMiddleware {
 
   private isHealthCheckRoute(fullPath: string, path: string): boolean {
     return (
+      fullPath === '/api/health' ||
+      fullPath === '/health' ||
+      path === '/health' ||
       fullPath === '/api/health/status' ||
       fullPath === '/health/status' ||
       path === '/health/status'
@@ -117,6 +127,10 @@ export class TenantResolverMiddleware implements NestMiddleware {
       (pathWithoutQuery === '/api/auth/validate-reset-token' &&
         method === 'GET')
     );
+  }
+
+  private isAdminRoute(pathWithoutQuery: string): boolean {
+    return pathWithoutQuery.startsWith('/api/admin');
   }
 
   private extractSubdomain(req: RequestWithTenant): string | undefined {

@@ -73,7 +73,7 @@ export const supportApi = {
       }
     });
 
-    const response = await api.get(`/support/tickets?${params}`);
+    const response = await api.get(`/admin/support/tickets?${params}`);
     return response.data;
   },
 
@@ -102,7 +102,7 @@ export const supportApi = {
 
   // Estatísticas
   getStats: async (): Promise<SupportStats> => {
-    const response = await api.get('/support/stats');
+    const response = await api.get('/admin/support/stats');
     return response.data;
   },
 };

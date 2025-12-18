@@ -467,7 +467,7 @@ export class BackupService {
       tenantId: backup.tenantId || undefined,
       type: backup.type as BackupType,
       status: backup.status as BackupStatus,
-      size: backup.size || undefined,
+      size: backup.size ? Number(backup.size) : undefined,
       path: backup.path || undefined,
       s3Key: backup.s3Key || undefined,
       encrypted: backup.encrypted,

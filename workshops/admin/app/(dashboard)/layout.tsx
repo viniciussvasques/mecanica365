@@ -10,13 +10,13 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar autenticação
     const token = localStorage.getItem('adminToken');
+    
     if (!token) {
       router.push('/login');
-      return;
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [router]);
 
   if (isLoading) {

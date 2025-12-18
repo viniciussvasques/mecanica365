@@ -40,7 +40,8 @@ export class LocalBackupStrategy implements BackupStrategy {
       const dbUser = url.username;
       const dbHost = url.hostname;
       const dbPort = url.port || '5432';
-      const dbPassword = url.password;
+      // Decode URL-encoded password
+      const dbPassword = decodeURIComponent(url.password || '');
 
       // Criar diretório se não existir
       const dir = dirname(outputPath);

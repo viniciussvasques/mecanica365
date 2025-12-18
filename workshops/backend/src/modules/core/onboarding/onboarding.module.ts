@@ -6,6 +6,8 @@ import { TenantsModule } from '../tenants/tenants.module';
 import { BillingModule } from '../billing/billing.module';
 import { UsersModule } from '../users/users.module';
 import { EmailModule } from '../../shared/email/email.module';
+import { CloudflareModule } from '../../shared/cloudflare/cloudflare.module';
+import { EncryptionModule } from '../../shared/encryption/encryption.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { EmailModule } from '../../shared/email/email.module';
     BillingModule,
     UsersModule,
     EmailModule,
+    CloudflareModule,
+    EncryptionModule,
   ],
   controllers: [OnboardingController],
   providers: [OnboardingService],

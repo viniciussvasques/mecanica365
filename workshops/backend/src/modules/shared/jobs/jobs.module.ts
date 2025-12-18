@@ -14,13 +14,21 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     PrismaModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        redis: {
-          host: configService.get<string>('REDIS_HOST', 'localhost'),
-          port: configService.get<number>('REDIS_PORT', 6379),
-          password: configService.get<string>('REDIS_PASSWORD'),
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const host = configService.get<string>('redis.host') || configService.get<string>('REDIS_HOST') || 'localhost';
+        const port = configService.get<number>('redis.port') || configService.get<number>('REDIS_PORT') || 6379;
+        const password = configService.get<string>('redis.password') || configService.get<string>('REDIS_PASSWORD');
+        
+        console.log('Redis Config:', { host, port, hasPassword: !!password });
+        
+        return {
+          redis: {
+            host,
+            port,
+            password,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     BullModule.registerQueue({

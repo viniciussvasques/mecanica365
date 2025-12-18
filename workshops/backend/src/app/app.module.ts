@@ -4,6 +4,7 @@ import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from '../database/prisma.module';
+import { EncryptionModule } from '../modules/shared/encryption/encryption.module';
 import { HealthModule } from '../health/health.module';
 import { TenantsModule } from '../modules/core/tenants/tenants.module';
 import { AuthModule } from '../modules/core/auth/auth.module';
@@ -12,6 +13,7 @@ import { BillingModule } from '../modules/core/billing/billing.module';
 import { OnboardingModule } from '../modules/core/onboarding/onboarding.module';
 import { FeatureFlagsModule } from '../modules/core/feature-flags/feature-flags.module';
 import { EmailModule } from '../modules/shared/email/email.module';
+import { CloudflareModule } from '../modules/shared/cloudflare/cloudflare.module';
 import { CustomersModule } from '../modules/workshops/customers/customers.module';
 import { VehiclesModule } from '../modules/workshops/vehicles/vehicles.module';
 import { ElevatorsModule } from '../modules/workshops/elevators/elevators.module';
@@ -38,6 +40,8 @@ import { NotificationsModule } from '../modules/core/notifications/notifications
 import { PlansModule } from '../modules/core/plans/plans.module';
 import { SupportModule } from '../modules/core/support/support.module';
 import { PaymentGatewaysModule } from '../modules/workshops/payment-gateways/payment-gateways.module';
+import { EmailSettingsModule } from '../modules/admin/email-settings/email-settings.module';
+import { AdminModule } from '../modules/admin/admin.module';
 import { MaintenanceModule } from '../modules/workshops/maintenance/maintenance.module';
 import { AnalyticsModule } from '../modules/workshops/analytics/analytics.module';
 import { KnowledgeModule } from '../modules/workshops/knowledge/knowledge.module';
@@ -54,6 +58,7 @@ import appConfig from '../config/app.config';
       load: [appConfig],
     }),
     PrismaModule,
+    EncryptionModule,
     HealthModule,
     TenantsModule,
     AuthModule,
@@ -62,6 +67,7 @@ import appConfig from '../config/app.config';
     OnboardingModule,
     FeatureFlagsModule,
     EmailModule,
+    CloudflareModule,
     CustomersModule,
     VehiclesModule,
     ElevatorsModule,
@@ -88,6 +94,8 @@ import appConfig from '../config/app.config';
     PlansModule,
     SupportModule,
     PaymentGatewaysModule,
+    EmailSettingsModule,
+    AdminModule,
     MaintenanceModule,
     AnalyticsModule,
     KnowledgeModule,

@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { RocketIcon, CheckCircledIcon, StarIcon, Pencil1Icon, Cross2Icon, CheckIcon } from '@radix-ui/react-icons';
 import { billingApi, Plan, tenantsApi, Tenant } from '@/lib/api';
 
+// Helper para converter preço (string do Prisma Decimal ou número)
+const toPrice = (value: string | number | undefined | null): number => {
+  if (value === null || value === undefined) return 0;
+  return typeof value === 'string' ? parseFloat(value) : value;
+};
+
 function PlanCard({ 
   plan, 
   count, 
@@ -15,8 +21,8 @@ function PlanCard({
   isPopular?: boolean;
   onManageTenants: () => void;
 }>) {
-  const monthlyPrice = plan.price?.monthly ?? 0;
-  const yearlyPrice = plan.price?.yearly ?? plan.price?.annual ?? monthlyPrice * 10;
+  const monthlyPrice = toPrice(plan.price?.monthly);
+  const yearlyPrice = toPrice(plan.price?.yearly ?? plan.price?.annual) || monthlyPrice * 10;
   const features = plan.features ?? plan.limits?.features ?? [];
   const description = plan.description ?? `Plano ${plan.name}`;
 
@@ -121,7 +127,7 @@ function TenantPlanModal({
             >
               {plans.map((plan) => (
                 <option key={plan.id} value={plan.id}>
-                  {plan.name} - R$ {(plan.price?.monthly ?? 0).toFixed(2)}/mês
+                  {plan.name} - R$ {toPrice(plan.price?.monthly).toFixed(2)}/mês
                 </option>
               ))}
             </select>
@@ -388,7 +394,7 @@ export default function BillingPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-white">
-                      R$ {(tenantPlan?.price?.monthly ?? 0).toFixed(2)}/mês
+                      R$ {toPrice(tenantPlan?.price?.monthly).toFixed(2)}/mês
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button

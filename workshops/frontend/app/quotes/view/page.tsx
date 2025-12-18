@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { quotesPublicApi } from '@/lib/api/quotes';
@@ -8,8 +10,6 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SignaturePad } from '@/components/SignaturePad';
 import { logger } from '@/lib/utils/logger';
-
-export const dynamic = 'force-dynamic';
 
 export default function QuoteViewPage() {
   const searchParams = useSearchParams();

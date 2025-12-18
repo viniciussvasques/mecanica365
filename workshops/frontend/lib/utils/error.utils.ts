@@ -1,3 +1,5 @@
+import { removeLocalStorageItem } from './localStorage';
+
 /**
  * Utilitários para tratamento de erros no frontend
  */

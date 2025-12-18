@@ -52,6 +52,11 @@ const removeItem = (key: string): void => {
   }
 };
 
+// Helpers exportados para uso genérico
+export const getLocalStorageItem = (key: string): string | null => getItem(key);
+export const setLocalStorageItem = (key: string, value: string): void => setItem(key, value);
+export const removeLocalStorageItem = (key: string): void => removeItem(key);
+
 export const authStorage = {
   get: (key: AuthKey): string | null => {
     return getItem(key);

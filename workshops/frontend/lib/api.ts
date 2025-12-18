@@ -2,6 +2,7 @@ import axios from 'axios';
 import { logger } from './utils/logger';
 import { clearAuthData, isAxiosError } from './utils/error.utils';
 import { getApiUrl, configureRequestHeaders, isClient, getSubdomain } from './utils/api.utils';
+import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
 
 const api = axios.create({
   baseURL: isClient() ? getApiUrl() : 'http://localhost:3001/api',

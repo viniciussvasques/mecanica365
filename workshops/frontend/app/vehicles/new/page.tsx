@@ -1,9 +1,9 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-
-export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { vehiclesApi, CreateVehicleDto } from '@/lib/api/vehicles';
 import { customersApi, Customer } from '@/lib/api/customers';

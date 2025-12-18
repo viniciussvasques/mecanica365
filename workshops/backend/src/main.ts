@@ -25,6 +25,10 @@ async function bootstrap(): Promise<void> {
     'http://localhost:3002', // Painel Admin (porta antiga)
     'http://localhost:3003', // Painel Admin (porta atual)
     /^http:\/\/.*\.localhost:3000$/, // Aceitar qualquer subdomain.localhost:3000
+    // Produção
+    'https://mecanica365.com',
+    'https://www.mecanica365.com',
+    /^https:\/\/.*\.mecanica365\.com$/, // Aceitar qualquer subdomain.mecanica365.com
   ];
 
   app.enableCors({

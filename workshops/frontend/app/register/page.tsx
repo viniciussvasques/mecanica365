@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { onboardingApi } from '@/lib/api';
+import { getLocalStorageItem, setLocalStorageItem } from '@/lib/utils/localStorage';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -96,6 +97,9 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      // Salvar subdomain no localStorage para usar na página de sucesso
+      localStorage.setItem('onboarding_subdomain', formData.subdomain);
+      
       const response = await onboardingApi.checkout({
         tenantId,
         plan: formData.plan,
@@ -126,12 +130,29 @@ export default function RegisterPage() {
     }
   };
 
-  // Preços dos planos (mensal e anual)
-  const planPrices = {
-    workshops_starter: { monthly: 49.9, annual: 499.0 },
-    workshops_professional: { monthly: 149.9, annual: 1499.0 },
-    workshops_enterprise: { monthly: 499.9, annual: 4999.0 },
-  };
+  // Estado para planos da API
+  const [apiPlans, setApiPlans] = useState<any[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+
+  // Buscar planos da API
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.mecanica365.com';
+        const response = await fetch(`${apiUrl}/api/plans`);
+        if (response.ok) {
+          const data = await response.json();
+          setApiPlans(data);
+        }
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, []);
 
   // Função para formatar preço
   const formatPrice = (value: number) => {
@@ -143,29 +164,53 @@ export default function RegisterPage() {
   };
 
   // Função para obter preço do plano baseado no ciclo
-  const getPlanPrice = (plan: string, cycle: 'monthly' | 'annual') => {
-    const prices = planPrices[plan as keyof typeof planPrices];
-    return prices ? prices[cycle] : 0;
+  const getPlanPrice = (planCode: string, cycle: 'monthly' | 'annual') => {
+    const plan = apiPlans.find(p => p.code === planCode);
+    if (!plan) return 0;
+    return cycle === 'monthly' ? plan.monthlyPrice : plan.annualPrice;
   };
 
-  const plans = [
-    {
-      value: 'workshops_starter',
-      label: 'Starter',
-      features: ['50 ROs por mês', '100 peças no estoque', '3 usuários', 'Suporte básico'],
-    },
-    {
-      value: 'workshops_professional',
-      label: 'Professional',
-      features: ['ROs ilimitadas', 'Estoque ilimitado', '10 usuários', 'Relatórios avançados', 'API access'],
-      popular: true,
-    },
-    {
-      value: 'workshops_enterprise',
-      label: 'Enterprise',
-      features: ['Tudo ilimitado', 'Usuários ilimitados', 'White label', 'Suporte prioritário', 'Integrações customizadas'],
-    },
-  ];
+  // Transformar planos da API para formato da UI
+  const plans = apiPlans.map(plan => {
+    const features = [];
+    if (plan.serviceOrdersLimit) {
+      features.push(`${plan.serviceOrdersLimit} ROs por mês`);
+    } else {
+      features.push('ROs ilimitadas');
+    }
+    if (plan.partsLimit) {
+      features.push(`${plan.partsLimit} peças no estoque`);
+    } else {
+      features.push('Estoque ilimitado');
+    }
+    if (plan.usersLimit) {
+      features.push(`${plan.usersLimit} usuários`);
+    } else {
+      features.push('Usuários ilimitados');
+    }
+    if (plan.features.includes('advanced_reports')) {
+      features.push('Relatórios avançados');
+    }
+    if (plan.features.includes('api_access')) {
+      features.push('API access');
+    }
+    if (plan.features.includes('white_label')) {
+      features.push('White label');
+    }
+    if (plan.features.includes('priority_support')) {
+      features.push('Suporte prioritário');
+    }
+    if (plan.features.includes('custom_integrations')) {
+      features.push('Integrações customizadas');
+    }
+
+    return {
+      value: plan.code,
+      label: plan.name,
+      features,
+      popular: plan.code.includes('professional') || plan.highlightText?.toLowerCase().includes('popular'),
+    };
+  });
 
   return (
     <div className="min-h-screen bg-[#0F1115]">
@@ -201,7 +246,7 @@ export default function RegisterPage() {
         {/* Form Card */}
         <div className="bg-[#1A1E23] border border-[#2A3038] rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 lg:p-10">
           {step === 1 ? (
-            <form onSubmit={handleRegister} className="space-y-4 sm:space-y-6">
+            <form onSubmit={handleRegister} className="space-y-4 sm:space-y-6" autoComplete="off">
               {/* Dados da Oficina */}
               <div className="space-y-3 sm:space-y-4">
                 <Input
@@ -212,6 +257,7 @@ export default function RegisterPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Ex: Oficina do João"
+                  autoComplete="organization"
                 />
 
                 <Input
@@ -222,6 +268,7 @@ export default function RegisterPage() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="seu@email.com"
+                  autoComplete="email"
                 />
 
                 <Select
@@ -250,6 +297,7 @@ export default function RegisterPage() {
                   onChange={(e) => setFormData({ ...formData, document: e.target.value.replace(/\D/g, '') })}
                   placeholder={formData.documentType === 'cpf' ? '00000000000' : '00000000000000'}
                   helperText="Apenas números"
+                  autoComplete="off"
                 />
 
                 <Input
@@ -264,6 +312,7 @@ export default function RegisterPage() {
                   })}
                   placeholder="minha-oficina"
                   helperText={`Seu acesso será: ${formData.subdomain || 'seu-subdomain'}.mecanica365.app`}
+                  autoComplete="off"
                 />
 
                 <Input
@@ -274,6 +323,7 @@ export default function RegisterPage() {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Deixe em branco para gerar automaticamente"
                   helperText="Opcional - será gerada automaticamente se não informada"
+                  autoComplete="new-password"
                 />
               </div>
 

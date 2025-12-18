@@ -16,8 +16,8 @@ function SuccessContent() {
     // Limpar dados de onboarding do localStorage após pagamento bem-sucedido
     localStorage.removeItem('onboarding_tenant_id');
     
-    // Tentar recuperar subdomain do localStorage ou da URL
-    const savedSubdomain = authStorage.getSubdomain();
+    // Tentar recuperar subdomain do localStorage
+    const savedSubdomain = localStorage.getItem('onboarding_subdomain');
     if (savedSubdomain) {
       setSubdomain(savedSubdomain);
     }

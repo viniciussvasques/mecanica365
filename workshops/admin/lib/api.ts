@@ -14,7 +14,6 @@ const api = axios.create({
   baseURL: baseUrl,
   headers: {
     'Content-Type': 'application/json',
-    'X-Tenant-Subdomain': 'system', // Tenant especial para o painel admin
   },
 });
 
@@ -26,8 +25,6 @@ api.interceptors.request.use((config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
   }
-  // Garantir que o header X-Tenant-Subdomain está sempre presente
-  config.headers['X-Tenant-Subdomain'] = 'system';
   return config;
 });
 
@@ -35,8 +32,15 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      if (typeof globalThis.window !== 'undefined') {
+    // Só desloga em caso de token inválido/expirado (mensagens específicas do backend)
+    if (error.response?.status === 401 && typeof globalThis.window !== 'undefined') {
+      const message = error.response?.data?.message || '';
+      const isTokenError = message.includes('Token') || 
+                          message.includes('token') ||
+                          message.includes('expirado') ||
+                          message.includes('inválido');
+      
+      if (isTokenError) {
         globalThis.window.localStorage.removeItem('adminToken');
         globalThis.window.localStorage.removeItem('adminUser');
         globalThis.window.location.href = '/login';
@@ -47,6 +51,63 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// ========================
+// DASHBOARD API
+// ========================
+
+export interface DashboardSummary {
+  tenants: {
+    total: number;
+    active: number;
+    suspended: number;
+    canceled: number;
+    newLast30Days: number;
+  };
+  users: {
+    total: number;
+    active: number;
+  };
+  subscriptions: {
+    active: number;
+    byPlan: Array<{ plan: string; count: number }>;
+  };
+  revenue: {
+    total: number;
+    last30Days: number;
+  };
+  operations: {
+    serviceOrdersLast30Days: number;
+  };
+  support: {
+    total: number;
+    open: number;
+  };
+  jobs: {
+    total: number;
+    failed: number;
+  };
+  recentActivity: Array<{
+    id: string;
+    userId: string;
+    action: string;
+    tenantId?: string;
+    createdAt: string;
+    user?: {
+      email: string;
+    };
+    tenant?: {
+      name: string;
+    };
+  }>;
+}
+
+export const dashboardApi = {
+  getSummary: async (): Promise<DashboardSummary> => {
+    const response = await api.get<DashboardSummary>('/admin/dashboard/summary');
+    return response.data;
+  },
+};
 
 // ========================
 // TENANTS API
@@ -85,37 +146,37 @@ export interface CreateTenantDto {
 
 export const tenantsApi = {
   findAll: async (): Promise<Tenant[]> => {
-    const response = await api.get<Tenant[]>('/tenants');
+    const response = await api.get<Tenant[]>('/admin/tenants');
     return response.data;
   },
 
   findOne: async (id: string): Promise<Tenant> => {
-    const response = await api.get<Tenant>(`/tenants/${id}`);
+    const response = await api.get<Tenant>(`/admin/tenants/${id}`);
     return response.data;
   },
 
   create: async (data: CreateTenantDto): Promise<Tenant> => {
-    const response = await api.post<Tenant>('/tenants', data);
+    const response = await api.post<Tenant>('/admin/tenants', data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<CreateTenantDto>): Promise<Tenant> => {
-    const response = await api.patch<Tenant>(`/tenants/${id}`, data);
+    const response = await api.patch<Tenant>(`/admin/tenants/${id}`, data);
     return response.data;
   },
 
   activate: async (id: string): Promise<Tenant> => {
-    const response = await api.post<Tenant>(`/tenants/${id}/activate`);
+    const response = await api.post<Tenant>(`/admin/tenants/${id}/activate`);
     return response.data;
   },
 
   suspend: async (id: string): Promise<Tenant> => {
-    const response = await api.post<Tenant>(`/tenants/${id}/suspend`);
+    const response = await api.post<Tenant>(`/admin/tenants/${id}/suspend`);
     return response.data;
   },
 
   cancel: async (id: string): Promise<Tenant> => {
-    const response = await api.post<Tenant>(`/tenants/${id}/cancel`);
+    const response = await api.post<Tenant>(`/admin/tenants/${id}/cancel`);
     return response.data;
   },
 
@@ -127,12 +188,12 @@ export const tenantsApi = {
     isActive: boolean;
     createdAt: string;
   }>> => {
-    const response = await api.get(`/tenants/${tenantId}/users`);
+    const response = await api.get(`/admin/tenants/${tenantId}/users`);
     return response.data;
   },
 
   resetUserPassword: async (tenantId: string, userId: string): Promise<{ message: string; tempPassword: string }> => {
-    const response = await api.post(`/tenants/${tenantId}/users/${userId}/reset-password`);
+    const response = await api.post(`/admin/tenants/${tenantId}/users/${userId}/reset-password`);
     return response.data;
   },
 };
@@ -194,7 +255,7 @@ export interface CreatePlanDto {
 
 export const billingApi = {
   getPlans: async (): Promise<Plan[]> => {
-    const response = await api.get<Plan[]>('/billing/plans');
+    const response = await api.get<Plan[]>('/admin/plans');
     return response.data;
   },
 };
@@ -205,32 +266,32 @@ export const billingApi = {
 
 export const plansApi = {
   findAll: async (includeInactive = false): Promise<Plan[]> => {
-    const response = await api.get<Plan[]>('/plans', { params: { includeInactive } });
+    const response = await api.get<Plan[]>('/admin/plans', { params: { includeInactive } });
     return response.data;
   },
 
   findOne: async (id: string): Promise<Plan> => {
-    const response = await api.get<Plan>(`/plans/${id}`);
+    const response = await api.get<Plan>(`/admin/plans/${id}`);
     return response.data;
   },
 
   findByCode: async (code: string): Promise<Plan> => {
-    const response = await api.get<Plan>(`/plans/code/${code}`);
+    const response = await api.get<Plan>(`/admin/plans/code/${code}`);
     return response.data;
   },
 
   create: async (data: CreatePlanDto): Promise<Plan> => {
-    const response = await api.post<Plan>('/plans', data);
+    const response = await api.post<Plan>('/admin/plans', data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<CreatePlanDto>): Promise<Plan> => {
-    const response = await api.patch<Plan>(`/plans/${id}`, data);
+    const response = await api.patch<Plan>(`/admin/plans/${id}`, data);
     return response.data;
   },
 
   remove: async (id: string): Promise<void> => {
-    await api.delete(`/plans/${id}`);
+    await api.delete(`/admin/plans/${id}`);
   },
 
   getStats: async (): Promise<{
@@ -239,7 +300,7 @@ export const plansApi = {
     totalSubscriptions: number;
     subscriptionsByPlan: Array<{ planId: string; planName: string; count: number }>;
   }> => {
-    const response = await api.get('/plans/stats');
+    const response = await api.get('/admin/plans/stats');
     return response.data;
   },
 };
@@ -280,7 +341,7 @@ export const auditApi = {
       params.resourceType = params.resource;
       delete params.resource;
     }
-    const response = await api.get<{ data: AuditLog[]; total: number; totalPages: number }>('/audit', { params });
+    const response = await api.get<{ data: AuditLog[]; total: number; totalPages: number }>('/admin/audit', { params });
     return response.data;
   },
 };
@@ -306,7 +367,7 @@ export interface Job {
 
 export const jobsApi = {
   findAll: async (filters?: { type?: string; status?: string; page?: number; limit?: number }) => {
-    const response = await api.get<{ data: Job[]; total: number; totalPages: number }>('/jobs', { params: filters });
+    const response = await api.get<{ data: Job[]; total: number; totalPages: number }>('/admin/jobs', { params: filters });
     return response.data;
   },
 };

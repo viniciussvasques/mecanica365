@@ -1,0 +1,461 @@
+import { Injectable, Logger } from '@nestjs/common';
+import * as nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '@database/prisma.service';
+import { EmailTemplatesService } from './email-templates.service';
+import * as crypto from 'crypto';
+import {
+  WelcomeEmailData,
+  PaymentFailedEmailData,
+  SubscriptionCancelledEmailData,
+  SubscriptionUpdatedEmailData,
+  InvoicePaymentSucceededEmailData,
+  InvoiceUpcomingEmailData,
+  TrialEndingEmailData,
+  AccountSuspendedEmailData,
+} from './interfaces/email-data.interfaces';
+
+interface SmtpConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth?: {
+    user?: string;
+    pass?: string;
+  };
+  tls?: {
+    rejectUnauthorized: boolean;
+  };
+}
+
+@Injectable()
+export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
+  private transporter: Transporter | null = null;
+  private readonly templatesService: EmailTemplatesService;
+  private readonly ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-encryption-key-change-in-production';
+  private readonly ALGORITHM = 'aes-256-cbc';
+
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
+    this.templatesService = new EmailTemplatesService();
+    this.transporter = this.createTransporter();
+    this.initializeConnection();
+  }
+
+  private decrypt(text: string): string {
+    try {
+      const parts = text.split(':');
+      const iv = Buffer.from(parts[0], 'hex');
+      const encrypted = parts[1];
+      const key = crypto.scryptSync(this.ENCRYPTION_KEY, 'salt', 32);
+      const decipher = crypto.createDecipheriv(this.ALGORITHM, key, iv);
+      let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      return decrypted;
+    } catch (error) {
+      this.logger.error('Failed to decrypt password', error);
+      throw error;
+    }
+  }
+
+  private createTransporter(): Transporter {
+    // Fallback para configuração via .env se não houver config no banco
+    const smtpConfig: SmtpConfig = {
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: Number.parseInt(process.env.SMTP_PORT || '587', 10),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    };
+
+    if (process.env.SMTP_HOST?.includes('mail.')) {
+      smtpConfig.tls = {
+        rejectUnauthorized: false,
+      };
+    }
+
+    return nodemailer.createTransport(
+      smtpConfig as nodemailer.TransportOptions,
+    );
+  }
+
+  private async getTransporterFromDatabase(tenantId: string): Promise<Transporter | null> {
+    try {
+      const emailSettings = await this.prisma.emailSettings.findFirst({
+        where: {
+          tenantId,
+          isActive: true,
+          isDefault: true,
+        },
+      });
+
+      if (!emailSettings) {
+        return null;
+      }
+
+      const decryptedPassword = this.decrypt(emailSettings.password);
+
+      const smtpConfig: SmtpConfig = {
+        host: emailSettings.host,
+        port: emailSettings.port,
+        secure: emailSettings.secure,
+        auth: {
+          user: emailSettings.user,
+          pass: decryptedPassword,
+        },
+      };
+
+      if (emailSettings.host.includes('mail.')) {
+        smtpConfig.tls = {
+          rejectUnauthorized: false,
+        };
+      }
+
+      return nodemailer.createTransport(smtpConfig as nodemailer.TransportOptions);
+    } catch (error) {
+      this.logger.error('Failed to get email settings from database', error);
+      return null;
+    }
+    tenantId?: string,
+  ): Promise<void> {
+    try {
+      let transporterToUse = this.transporter;
+      let fromEmail = process.env.SMTP_USER || 'noreply@mecanica365.com';
+      let fromName = 'Mecânica365';
+
+      // Tentar buscar configuração do banco se tenantId fornecido
+      if (tenantId) {
+        const dbTransporter = await this.getTransporterFromDatabase(tenantId);
+        if (dbTransporter) {
+          transporterToUse = dbTransporter;
+          
+          // Buscar informações do remetente
+          const emailSettings = await this.prisma.emailSettings.findFirst({
+            where: {
+              tenantId,
+              isActive: true,
+              isDefault: true,
+            },
+          });
+          
+          if (emailSettings) {
+            fromEmail = emailSettings.fromEmail;
+            fromName = emailSettings.fromName;
+          }
+          
+          this.logger.log(`Using database email config for tenant ${tenantId}`);
+        }
+      }
+
+      const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to,
+        subject,
+        html,
+        text,
+        replyTo: process.env.SMTP_REPLY_TO || fromEmail,
+      };
+
+      // Em desenvolvimento, apenas logar (se SMTP não configurado)
+      if (!transporterToUse
+      await this.transporter.verify();
+      this.logger.log('✅ SMTP connection verified successfully');
+    } catch (error: unknown) {
+      const err = error as { message?: string; code?: string };
+      this.logger.warn('❌ SMTP connection failed. Emails will not be sent.');
+      this.logger.warn(`Error: ${err.message || String(error)}`);
+      if (err.code) {
+        this.logger.warn(`Error code: ${err.code}`);
+      }
+      this.logger.warn(
+        `Host: ${process.env.SMTP_HOST}, Port: ${process.env.SMTP_PORT}`,
+      );
+      this.logger.warn(
+        'Configure SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS in .env',
+      );
+    }
+  }
+
+  /**
+   * Método genérico para enviar emails
+   * Público para permitir uso pelo BulkEmailService
+   */
+  async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+    text?: string,
+  ): Promise<void> {
+    try {
+      const mailOptions = {
+        from: `"Mecânica365" <${process.env.SMTP_USER || 'noreply@mecanica365.com'}>`,
+        to,
+        subject,
+        html,
+        text,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_USER,
+      };
+
+      // Em desenvolvimento, apenas logar (se SMTP não configurado)
+      if (!process.env.SMTP_USER) {
+        this.logger.log(`=== EMAIL (SMTP não configurado) ===`);
+        this.logger.log(`Para: ${to}`);
+        this.logger.log(`Assunto: ${subject}`);
+        this.logger.log('==================================================');
+        return;
+      }
+
+      const info: unknown = await this.transporter.sendMail(mailOptions);
+      // Verificação segura do messageId
+      let messageId = 'unknown';
+      if (info && typeof info === 'object') {
+        const infoObj = info as Record<string, unknown>;
+        if ('messageId' in infoObj && typeof infoObj.messageId === 'string') {
+          messageId = infoObj.messageId;
+        }
+      }
+      this.logger.log(`Email sent to ${to}: ${messageId}`);
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send email to ${to}: ${err.message || String(error)}`,
+        err.stack,
+      );
+      throw error;
+    }
+  }
+
+  async sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
+    try {
+      const html = this.templatesService.getWelcomeEmailTemplate(data);
+      const text = this.templatesService.getWelcomeEmailTextVersion(data);
+      await this.sendEmail(
+        data.to,
+        'Bem-vindo ao Mecânica365! Suas credenciais de acesso',
+        html,
+        text,
+      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send welcome email: ${err.message || String(error)}`,
+        err.stack,
+      );
+      // Não lançar erro para não quebrar o fluxo de onboarding
+    }
+  }
+
+  async sendPaymentFailedEmail(data: PaymentFailedEmailData): Promise<void> {
+    try {
+      const html = this.templatesService.getPaymentFailedEmailTemplate(data);
+      const text = this.templatesService.getPaymentFailedEmailTextVersion(data);
+      await this.sendEmail(
+        data.to,
+        'Pagamento Não Processado - Ação Necessária',
+        html,
+        text,
+      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send payment failed email: ${err.message || String(error)}`,
+        err.stack,
+      );
+    }
+  }
+
+  async sendSubscriptionCancelledEmail(
+    data: SubscriptionCancelledEmailData,
+  ): Promise<void> {
+    try {
+      const html =
+        this.templatesService.getSubscriptionCancelledEmailTemplate(data);
+      await this.sendEmail(data.to, 'Assinatura Cancelada', html);
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send subscription cancelled email: ${err.message || String(error)}`,
+        err.stack,
+      );
+    }
+  }
+
+  async sendSubscriptionUpdatedEmail(
+    data: SubscriptionUpdatedEmailData,
+  ): Promise<void> {
+    try {
+      const html =
+        this.templatesService.getSubscriptionUpdatedEmailTemplate(data);
+      await this.sendEmail(data.to, 'Assinatura Atualizada', html);
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send subscription updated email: ${err.message || String(error)}`,
+        err.stack,
+      );
+    }
+  }
+
+  async sendInvoicePaymentSucceededEmail(
+    data: InvoicePaymentSucceededEmailData,
+  ): Promise<void> {
+    try {
+      const html =
+        this.templatesService.getInvoicePaymentSucceededEmailTemplate(data);
+      await this.sendEmail(data.to, 'Pagamento Confirmado', html);
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send invoice payment succeeded email: ${err.message || String(error)}`,
+        err.stack,
+      );
+    }
+  }
+
+  async sendInvoiceUpcomingEmail(
+    data: InvoiceUpcomingEmailData,
+  ): Promise<void> {
+    try {
+      const html = this.templatesService.getInvoiceUpcomingEmailTemplate(data);
+      await this.sendEmail(data.to, 'Próxima Cobrança Programada', html);
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send invoice upcoming email: ${err.message || String(error)}`,
+        err.stack,
+      );
+    }
+  }
+
+  async sendTrialEndingEmail(data: TrialEndingEmailData): Promise<void> {
+    try {
+      const html = this.templatesService.getTrialEndingEmailTemplate(data);
+      await this.sendEmail(
+        data.to,
+        'Seu Período de Teste Está Terminando',
+        html,
+      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send trial ending email: ${err.message || String(error)}`,
+        err.stack,
+      );
+    }
+  }
+
+  async sendAccountSuspendedEmail(
+    data: AccountSuspendedEmailData,
+  ): Promise<void> {
+    try {
+      const html = this.templatesService.getAccountSuspendedEmailTemplate(data);
+      await this.sendEmail(data.to, 'Conta Suspensa - Ação Necessária', html);
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send account suspended email: ${err.message || String(error)}`,
+        err.stack,
+      );
+    }
+  }
+
+  /**
+   * Envia email de recuperação de senha
+   */
+  async sendPasswordResetEmail(data: {
+    name: string;
+    email: string;
+    resetUrl: string;
+    expiresInMinutes: number;
+    workshopName?: string;
+  }): Promise<void> {
+    try {
+      const html = this.templatesService.getPasswordResetEmailTemplate({
+        name: data.name,
+        resetUrl: data.resetUrl,
+        expiresInMinutes: data.expiresInMinutes,
+        workshopName: data.workshopName,
+      });
+      await this.sendEmail(
+        data.email,
+        '🔐 Recuperação de Senha - Mecânica365',
+        html,
+      );
+      this.logger.log(
+        `Email de recuperação de senha enviado para ${data.email}`,
+      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send password reset email: ${err.message || String(error)}`,
+        err.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Envia email de confirmação de senha alterada
+   */
+  async sendPasswordChangedEmail(data: {
+    name: string;
+    email: string;
+    changedAt: Date;
+    workshopName?: string;
+  }): Promise<void> {
+    try {
+      const html = this.templatesService.getPasswordChangedEmailTemplate({
+        name: data.name,
+        changedAt: data.changedAt,
+        workshopName: data.workshopName,
+      });
+      await this.sendEmail(data.email, '🔐 Senha Alterada - Mecânica365', html);
+      this.logger.log(
+        `Email de confirmação de alteração de senha enviado para ${data.email}`,
+      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send password changed email: ${err.message || String(error)}`,
+        err.stack,
+      );
+    }
+  }
+
+  /**
+   * Envia email de reset de senha pelo admin
+   */
+  async sendAdminPasswordResetEmail(data: {
+    userName: string;
+    userEmail: string;
+    workshopName: string;
+    tempPassword: string;
+    loginUrl: string;
+  }): Promise<void> {
+    try {
+      const html =
+        this.templatesService.getAdminPasswordResetEmailTemplate(data);
+      await this.sendEmail(
+        data.userEmail,
+        '🔐 Sua Senha Foi Redefinida - Mecânica365',
+        html,
+      );
+      this.logger.log(
+        `Email de reset de senha (admin) enviado para ${data.userEmail}`,
+      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; stack?: string };
+      this.logger.error(
+        `Failed to send admin password reset email: ${err.message || String(error)}`,
+        err.stack,
+      );
+      throw error;
+    }
+  }
+}

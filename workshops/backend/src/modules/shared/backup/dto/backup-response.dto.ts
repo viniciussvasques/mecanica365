@@ -5,7 +5,7 @@ export class BackupResponseDto {
   tenantId?: string;
   type: BackupType;
   status: BackupStatus;
-  size?: bigint;
+  size?: number;
   path?: string;
   s3Key?: string;
   encrypted: boolean;

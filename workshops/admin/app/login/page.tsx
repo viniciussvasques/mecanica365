@@ -17,18 +17,17 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Chamar API de login do backend diretamente
-      // Para o painel admin, usamos o tenant "system"
+      // Chamar API de login de admin do backend
+      // Usa endpoint /api/admin/auth/login (SEM tenant)
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      // Garantir que a URL não tenha /api duplicado
       const loginUrl = apiUrl.endsWith('/api') 
-        ? `${apiUrl}/auth/login` 
-        : `${apiUrl}/api/auth/login`;
+        ? `${apiUrl}/admin/auth/login` 
+        : `${apiUrl}/api/admin/auth/login`;
+      
       const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant-Subdomain': 'system', // Tenant especial para super admin
         },
         body: JSON.stringify({ email, password }),
       });
@@ -39,21 +38,11 @@ export default function LoginPage() {
         throw new Error(data.message || 'Credenciais inválidas');
       }
 
-      // Verificar se é super admin
-      // Por enquanto, verificamos pelo email ou pela flag no token
-      const isSuperAdmin = 
-        email.endsWith('@mecanica365.com') ||
-        data.user?.isSuperAdmin === true ||
-        data.user?.role === 'superadmin';
-
-      if (!isSuperAdmin) {
-        throw new Error('Acesso negado. Esta área é restrita aos administradores do sistema.');
-      }
-
-      // Salvar token específico do admin
-      localStorage.setItem('adminToken', data.accessToken);
-      localStorage.setItem('adminUser', JSON.stringify(data.user));
-
+      // Salvar token e dados do admin
+      localStorage.setItem('adminToken', data.access_token);
+      localStorage.setItem('adminUser', JSON.stringify(data.admin));
+      
+      // Navegar para o dashboard
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login');

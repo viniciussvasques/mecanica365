@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -7,8 +9,6 @@ import axios from 'axios';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { GearIcon } from '@/components/icons/MechanicIcons';
-
-export const dynamic = 'force-dynamic';
 
 export default function ResetPasswordPage() {
   const router = useRouter();

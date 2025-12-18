@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -15,8 +17,6 @@ import { inventoryApi } from '@/lib/api/inventory';
 import { useNotification } from '@/components/NotificationProvider';
 import { authStorage } from '@/lib/utils/localStorage';
 import { logger } from '@/lib/utils/logger';
-
-export const dynamic = 'force-dynamic';
 import {
   CarIcon,
   PistonIcon,

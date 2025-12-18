@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Mecânica365 - Painel Admin',
   description: 'Painel Administrativo do Sistema Mecânica365',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

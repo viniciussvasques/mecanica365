@@ -16,6 +16,7 @@ import { elevatorsApi, ElevatorStatus, type Elevator } from '@/lib/api/elevators
 import { serviceOrdersApi, ServiceOrderStatus } from '@/lib/api/service-orders';
 import { appointmentsApi, AppointmentStatus } from '@/lib/api/appointments';
 import { logger } from '@/lib/utils/logger';
+import { authStorage, uiStorage } from '@/lib/utils/localStorage';
 
 interface ClientLayoutProps {
   readonly children: React.ReactNode;
@@ -65,6 +66,8 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     if (!pathname) return false;
     if (pathname === route) return true;
     if (route === '/quotes/view' && pathname.startsWith('/quotes/view')) return true;
+    // Permitir todas as subrotas de /onboarding (incluindo /onboarding/success)
+    if (route === '/onboarding' && pathname.startsWith('/onboarding')) return true;
     return false;
   });
 

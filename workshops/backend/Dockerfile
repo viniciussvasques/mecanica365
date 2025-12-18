@@ -19,13 +19,15 @@ RUN apt-get update && apt-get install -y \
 
 # Copiar arquivos de dependências
 COPY package*.json ./
+
+# Instalar dependências (incluindo dev para build)
+RUN npm ci && npm cache clean --force
+
+# Copiar arquivos necessários para build
 COPY prisma ./prisma/
-
-# Instalar dependências
-RUN npm ci --only=production && npm cache clean --force
-
-# Copiar código fonte
-COPY . .
+COPY src ./src/
+COPY tsconfig*.json ./
+COPY nest-cli.json ./
 
 # Gerar Prisma Client
 RUN npx prisma generate --schema=./prisma/schema.prisma
@@ -59,15 +61,13 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Criar usuário não-root
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001
+RUN groupadd -g 1001 nodejs && \
+    useradd -s /bin/bash -u 1001 -g nodejs nestjs
 
-# Criar pasta de uploads
+# Criar pasta de uploads com ownership correto
 RUN mkdir -p /app/uploads/logos && \
-    chown -R nestjs:nodejs /app/uploads
+    chown -R nestjs:nodejs /app/uploads /app/dist /app/prisma
 
-# Mudar ownership
-RUN chown -R nestjs:nodejs /app
 USER nestjs
 
 # Expor porta

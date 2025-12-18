@@ -19,6 +19,8 @@ import {
   StackIcon,
   QuestionMarkCircledIcon,
   FileTextIcon,
+  CardStackIcon,
+  EnvelopeClosedIcon,
 } from '@radix-ui/react-icons';
 
 interface MenuItem {
@@ -32,6 +34,8 @@ const menuItems: MenuItem[] = [
   { label: 'Tenants', href: '/tenants', icon: LayersIcon },
   { label: 'Planos', href: '/plans', icon: StackIcon },
   { label: 'Billing', href: '/billing', icon: RocketIcon },
+  { label: 'Payment Gateways', href: '/payment-gateways', icon: CardStackIcon },
+  { label: 'Email Settings', href: '/email-settings', icon: EnvelopeClosedIcon },
   { label: 'Auditoria', href: '/audit', icon: ActivityLogIcon },
   { label: 'Suporte', href: '/support', icon: QuestionMarkCircledIcon },
   { label: 'Jobs', href: '/jobs', icon: LightningBoltIcon },

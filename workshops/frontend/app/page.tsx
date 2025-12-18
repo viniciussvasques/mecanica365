@@ -22,19 +22,20 @@ export default function Home() {
   useEffect(() => {
     setMounted(true);
     
-    // Verificar se há subdomínio na URL
+    // Redirecionar para /login APENAS quando houver subdomínio do cliente
+    // Exemplos que devem redirecionar: cliente.mecanica365.com, foo.bar.com, cliente.localhost
+    // Exemplos que NÃO devem redirecionar: mecanica365.com, www.mecanica365.com, localhost
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-      
-      // Se houver subdomínio (ex: oficinartee.localhost:3000), redirecionar para login
-      // Ignorar se for localhost puro, www, ou se já estiver na rota de login/register
       const parts = hostname.split('.');
-      
-      // Verificar se há subdomínio válido (não é localhost puro, não é www)
-      // Exemplos válidos: oficinartee.localhost, empresa.mecanica365.app
-      // Exemplos inválidos: localhost, www.mecanica365.app
-      if (parts.length > 2 || (parts.length === 2 && parts[0] !== 'localhost' && parts[0] !== 'www')) {
-        // Há um subdomínio, redirecionar para login
+
+      const hasSubdomain =
+        // multi-level (foo.bar.com)
+        parts.length >= 3 ||
+        // tenant.localhost
+        (parts.length === 2 && parts[1] === 'localhost' && parts[0] !== 'www');
+
+      if (hasSubdomain) {
         const currentPath = window.location.pathname;
         if (currentPath === '/' || currentPath === '') {
           window.location.href = '/login';
@@ -79,32 +80,79 @@ export default function Home() {
     { icon: EngineIcon, text: 'Controle total da sua oficina' },
   ];
 
-  const plans = [
-    {
-      name: 'Starter',
-      price: 'R$ 49,90',
-      period: '/mês',
-      features: ['50 ROs por mês', '100 peças no estoque', '3 usuários', 'Suporte básico'],
-      popular: false,
-      icon: OilIcon,
-    },
-    {
-      name: 'Professional',
-      price: 'R$ 149,90',
-      period: '/mês',
-      features: ['ROs ilimitadas', 'Estoque ilimitado', '10 usuários', 'Relatórios avançados', 'API access'],
-      popular: true,
-      icon: GearIcon,
-    },
-    {
-      name: 'Enterprise',
-      price: 'R$ 499,90',
-      period: '/mês',
-      features: ['Tudo ilimitado', 'Usuários ilimitados', 'White label', 'Suporte prioritário', 'Integrações customizadas'],
-      popular: false,
-      icon: EngineIcon,
-    },
-  ];
+  // State for fetched plans
+  const [plans, setPlans] = useState<any[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+
+  // Fetch plans from API
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.mecanica365.com';
+        const response = await fetch(`${apiUrl}/api/plans`);
+        if (response.ok) {
+          const data = await response.json();
+          // Transform API data to match component structure
+          const transformedPlans = data.map((plan: any, idx: number) => {
+            // Determine icon based on plan code
+            let icon = GearIcon;
+            if (plan.code.includes('starter')) icon = OilIcon;
+            else if (plan.code.includes('enterprise')) icon = EngineIcon;
+            
+            // Build features list
+            const features = [];
+            if (plan.serviceOrdersLimit) {
+              features.push(`${plan.serviceOrdersLimit} ROs por mês`);
+            } else {
+              features.push('ROs ilimitadas');
+            }
+            if (plan.partsLimit) {
+              features.push(`${plan.partsLimit} peças no estoque`);
+            } else {
+              features.push('Estoque ilimitado');
+            }
+            if (plan.usersLimit) {
+              features.push(`${plan.usersLimit} usuários`);
+            } else {
+              features.push('Usuários ilimitados');
+            }
+            if (plan.features.includes('advanced_reports')) {
+              features.push('Relatórios avançados');
+            }
+            if (plan.features.includes('api_access')) {
+              features.push('API access');
+            }
+            if (plan.features.includes('white_label')) {
+              features.push('White label');
+            }
+            if (plan.features.includes('priority_support')) {
+              features.push('Suporte prioritário');
+            }
+            if (plan.features.includes('custom_integrations')) {
+              features.push('Integrações customizadas');
+            }
+            
+            return {
+              name: plan.name,
+              price: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(plan.monthlyPrice),
+              period: '/mês',
+              features,
+              popular: plan.code.includes('professional') || plan.highlightText?.toLowerCase().includes('popular'),
+              icon,
+              code: plan.code,
+            };
+          });
+          setPlans(transformedPlans);
+        }
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0F1115] carbon-texture">
@@ -357,60 +405,71 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {plans.map((plan, idx) => {
-              const Icon = plan.icon;
-              return (
-                <div
-                  key={idx}
-                  className={`bg-[#1A1E23] border rounded-2xl p-8 relative overflow-hidden transition-all transform hover:scale-105 ${
-                    plan.popular
-                      ? 'border-[#00E0B8] shadow-xl shadow-[#00E0B8]/20 scale-105'
-                      : 'border-[#2A3038] hover:border-[#00E0B8]/50'
-                  }`}
-                >
-                  {plan.popular && (
-                    <>
-                      <div className="hud-line"></div>
-                      <div className="absolute top-4 right-4 bg-gradient-to-r from-[#00E0B8] to-[#3ABFF8] text-white text-xs font-bold px-3 py-1 rounded-full">
-                        ⭐ MAIS POPULAR
-                      </div>
-                    </>
-                  )}
-                  <div className="mb-6">
-                    <Icon className={`${plan.popular ? 'text-[#00E0B8]' : 'text-[#7E8691]'} mb-4`} size={40} />
-                    <h3 className="text-2xl font-bold text-[#D0D6DE] mb-2">{plan.name}</h3>
-                    <div className="flex items-baseline">
-                      <span className={`text-4xl font-extrabold ${plan.popular ? 'text-[#00E0B8]' : 'text-[#D0D6DE]'}`}>
-                        {plan.price}
-                      </span>
-                      <span className="ml-2 text-[#7E8691]">{plan.period}</span>
-                    </div>
-                  </div>
-
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, fIdx) => (
-                      <li key={fIdx} className="flex items-start text-[#7E8691]">
-                        <svg className="w-5 h-5 text-[#00E0B8] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Link
-                    href="/register"
-                    className={`block w-full text-center py-3 rounded-lg font-semibold transition-all ${
+            {plansLoading ? (
+              <div className="col-span-3 text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E0B8]"></div>
+                <p className="mt-4 text-[#7E8691]">Carregando planos...</p>
+              </div>
+            ) : plans.length === 0 ? (
+              <div className="col-span-3 text-center py-12">
+                <p className="text-[#7E8691]">Nenhum plano disponível no momento.</p>
+              </div>
+            ) : (
+              plans.map((plan, idx) => {
+                const Icon = plan.icon;
+                return (
+                  <div
+                    key={idx}
+                    className={`bg-[#1A1E23] border rounded-2xl p-8 relative overflow-hidden transition-all transform hover:scale-105 ${
                       plan.popular
-                        ? 'bg-gradient-to-r from-[#00E0B8] to-[#3ABFF8] text-white hover:shadow-lg hover:shadow-[#00E0B8]/20'
-                        : 'bg-[#2A3038] text-[#D0D6DE] hover:bg-[#00E0B8]/10 hover:text-[#00E0B8] border border-[#2A3038] hover:border-[#00E0B8]'
+                        ? 'border-[#00E0B8] shadow-xl shadow-[#00E0B8]/20 scale-105'
+                        : 'border-[#2A3038] hover:border-[#00E0B8]/50'
                     }`}
                   >
-                    Começar Agora
-                  </Link>
-                </div>
-              );
-            })}
+                    {plan.popular && (
+                      <>
+                        <div className="hud-line"></div>
+                        <div className="absolute top-4 right-4 bg-gradient-to-r from-[#00E0B8] to-[#3ABFF8] text-white text-xs font-bold px-3 py-1 rounded-full">
+                          ⭐ MAIS POPULAR
+                        </div>
+                      </>
+                    )}
+                    <div className="mb-6">
+                      <Icon className={`${plan.popular ? 'text-[#00E0B8]' : 'text-[#7E8691]'} mb-4`} size={40} />
+                      <h3 className="text-2xl font-bold text-[#D0D6DE] mb-2">{plan.name}</h3>
+                      <div className="flex items-baseline">
+                        <span className={`text-4xl font-extrabold ${plan.popular ? 'text-[#00E0B8]' : 'text-[#D0D6DE]'}`}>
+                          {plan.price}
+                        </span>
+                        <span className="ml-2 text-[#7E8691]">{plan.period}</span>
+                      </div>
+                    </div>
+
+                    <ul className="space-y-3 mb-8">
+                      {plan.features.map((feature, fIdx) => (
+                        <li key={fIdx} className="flex items-start text-[#7E8691]">
+                          <svg className="w-5 h-5 text-[#00E0B8] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Link
+                      href={`/register?plan=${plan.code}`}
+                      className={`block w-full text-center py-3 rounded-lg font-semibold transition-all ${
+                        plan.popular
+                          ? 'bg-gradient-to-r from-[#00E0B8] to-[#3ABFF8] text-white hover:shadow-lg hover:shadow-[#00E0B8]/20'
+                          : 'bg-[#2A3038] text-[#D0D6DE] hover:bg-[#00E0B8]/10 hover:text-[#00E0B8] border border-[#2A3038] hover:border-[#00E0B8]'
+                      }`}
+                    >
+                      Começar Agora
+                    </Link>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </section>

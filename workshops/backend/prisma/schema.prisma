@@ -42,6 +42,7 @@ model Tenant {
   reports                     Report[]
   supportTickets              SupportTicket[]
   paymentGateways             PaymentGateway[]
+  emailSettings               EmailSettings[]
   maintenanceTemplates        MaintenanceTemplate[]
   vehicleMaintenanceSchedules VehicleMaintenanceSchedule[]
   maintenanceHistory          MaintenanceHistory[]
@@ -487,6 +488,91 @@ model PaymentGateway {
   @@index([tenantId, isActive])
   @@index([tenantId, isDefault])
   @@map("payment_gateways")
+}
+
+// Email Settings - Configurações de SMTP (deprecated - manter para compatibilidade)
+model EmailSettings {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String   // Nome identificador (ex: "SMTP Principal")
+  host        String   @db.VarChar(255)
+  port        Int
+  secure      Boolean  @default(false) // true para porta 465, false para porta 587
+  user        String   @db.VarChar(255)
+  password    String   @db.VarChar(255) // Será criptografada
+  fromEmail   String   @map("from_email") @db.VarChar(255)
+  fromName    String   @map("from_name") @db.VarChar(255)
+  isActive    Boolean  @default(true) @map("is_active")
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, isActive])
+  @@index([tenantId, isDefault])
+  @@map("email_settings")
+}
+
+// System Email Settings - Configurações globais de email (sem tenant)
+model SystemEmailSettings {
+  id          String   @id @default(uuid())
+  name        String   // Nome identificador (ex: "SMTP Principal")
+  host        String   @db.VarChar(255)
+  port        Int
+  secure      Boolean  @default(false) // true para porta 465, false para porta 587
+  user        String   @db.VarChar(255)
+  password    String   @db.VarChar(255) // Será criptografada
+  fromEmail   String   @map("from_email") @db.VarChar(255)
+  fromName    String   @map("from_name") @db.VarChar(255)
+  isActive    Boolean  @default(true) @map("is_active")
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_email_settings")
+}
+
+// System Payment Gateway - Configurações globais de pagamento (sem tenant)
+model SystemPaymentGateway {
+  id            String   @id @default(uuid())
+  name          String
+  type          String   @db.VarChar(50) // stripe, mercadopago, etc
+  publicKey     String   @map("public_key")
+  secretKey     String   @map("secret_key") // Encrypted
+  webhookSecret String?  @map("webhook_secret") // Encrypted
+  isActive      Boolean  @default(true) @map("is_active")
+  isDefault     Boolean  @default(false) @map("is_default")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("system_payment_gateways")
+}
+
+// Admin Users - Usuários do painel administrativo
+model AdminUser {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  name         String
+  role         String    @default("admin") // admin, superadmin
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("admin_users")
+}
+
+// System Settings - Configurações gerais do sistema
+model SystemSettings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String   // JSON stringified
+  category  String   // email, payment, general, appearance
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
 }
 
 // Suppliers - Fornecedores
@@ -1394,4 +1480,17 @@ model RestoreOperation {
   @@index([status])
   @@index([backupId])
   @@map("restore_operations")
+}
+
+// Admin Webhooks - Webhooks globais do sistema (sem tenant)
+model AdminWebhook {
+  id        String   @id @default(uuid())
+  url       String   @db.Text
+  events    String[]
+  secret    String?  @db.VarChar(255)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_webhooks")
 }
