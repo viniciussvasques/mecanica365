@@ -137,6 +137,13 @@ CREATE INDEX IF NOT EXISTS "quotes_identifiedProblemCategory_idx" ON "quotes"("i
 CREATE INDEX IF NOT EXISTS "quotes_identifiedProblemId_idx" ON "quotes"("identifiedProblemId");
 CREATE INDEX IF NOT EXISTS "quotes_reportedProblemCategory_idx" ON "quotes"("reportedProblemCategory");
 
--- 12. Tornar document e document_type nullable em tenants
-ALTER TABLE "tenants" ALTER COLUMN "document_type" DROP NOT NULL;
-ALTER TABLE "tenants" ALTER COLUMN "document" DROP NOT NULL;
+-- 12. Tornar document e document_type nullable em tenants (somente se existirem)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tenants' AND column_name = 'document_type') THEN
+    ALTER TABLE "tenants" ALTER COLUMN "document_type" DROP NOT NULL;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tenants' AND column_name = 'document') THEN
+    ALTER TABLE "tenants" ALTER COLUMN "document" DROP NOT NULL;
+  END IF;
+END $$;
