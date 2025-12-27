@@ -153,7 +153,8 @@ export default function DiagnoseQuotePage() {
         ? (updatedDiagnosis.identifiedProblemCategory as ProblemCategory)
         : prev.identifiedProblemCategory,
     }));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteId]);
 
   if (loading) {
     return (

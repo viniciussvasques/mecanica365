@@ -121,8 +121,8 @@ export function ImportPartsModal({
           // Aspas duplas dentro de aspas (escape)
           current += '"';
           // Pular próximo caractere (necessário para pular aspas duplas)
-          // eslint-disable-next-line sonarjs/no-increment-decrement, @typescript-eslint/no-unused-expressions
-          idx += 1; // NOSONAR
+          // eslint-disable-next-line
+          idx += 1;
         } else {
           // Toggle aspas
           inQuotes = !inQuotes;

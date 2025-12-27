@@ -17,6 +17,7 @@ export default function EditIntegrationPage({ params }: { params: { id: string }
 
     useEffect(() => {
         loadIntegration();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.id]);
 
     const loadIntegration = async () => {

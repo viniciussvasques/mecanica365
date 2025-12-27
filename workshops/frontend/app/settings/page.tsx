@@ -16,7 +16,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line
   const [settings, setSettings] = useState<WorkshopSettings | null>(null);
   const [formData, setFormData] = useState<CreateWorkshopSettingsDto>({});
   const [logoPreview, setLogoPreview] = useState<string | null>(null);

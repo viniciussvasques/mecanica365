@@ -17,6 +17,7 @@ export default function EditAutomationPage({ params }: { params: { id: string } 
 
     useEffect(() => {
         loadAutomation();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.id]);
 
     const loadAutomation = async () => {

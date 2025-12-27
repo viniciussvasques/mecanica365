@@ -989,7 +989,7 @@ export default function QuoteDetailPage() {
                   {editingItems.length === 0 && (
                     <div className="text-center py-12 border-2 border-dashed border-[#2A3038] rounded-xl">
                       <p className="text-[#7E8691]">Nenhum item adicionado.</p>
-                      <p className="text-sm text-[#7E8691]/70 mt-1">Clique em "+ Adicionar Item" para começar.</p>
+                      <p className="text-sm text-[#7E8691]/70 mt-1">Clique em &quot;+ Adicionar Item&quot; para começar.</p>
                     </div>
                   )}
 

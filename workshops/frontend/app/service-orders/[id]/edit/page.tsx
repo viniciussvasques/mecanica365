@@ -40,7 +40,7 @@ export default function EditServiceOrderPage() {
   const id = params.id as string;
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -98,7 +98,7 @@ export default function EditServiceOrderPage() {
         recommendations: data.recommendations,
         notes: data.notes,
       });
-      
+
       if (data.customerId) {
         await loadVehicles(data.customerId);
       }
@@ -140,7 +140,7 @@ export default function EditServiceOrderPage() {
 
     try {
       setLoading(true);
-      
+
       const data: UpdateServiceOrderDto = {
         ...formData,
         reportedProblemDescription: formData.reportedProblemDescription?.trim() || undefined,
@@ -205,9 +205,9 @@ export default function EditServiceOrderPage() {
                 onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value || undefined })}
                 options={[
                   { value: '', label: 'Selecione um veículo' },
-                  ...vehicles.map(v => ({ 
-                    value: v.id, 
-                    label: `${v.placa || 'Sem placa'} - ${v.make || ''} ${v.model || ''}`.trim() || 'Veículo' 
+                  ...vehicles.map(v => ({
+                    value: v.id,
+                    label: `${v.placa || 'Sem placa'} - ${v.make || ''} ${v.model || ''}`.trim() || 'Veículo'
                   })),
                 ]}
                 disabled={!formData.customerId}

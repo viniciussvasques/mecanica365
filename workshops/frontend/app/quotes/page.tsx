@@ -176,7 +176,7 @@ export default function QuotesPage() {
                   ⚡ {diagnosedCount === 1 ? '1 orçamento diagnosticado aguardando preenchimento!' : `${diagnosedCount} orçamentos diagnosticados aguardando preenchimento!`}
                 </p>
                 <p className="text-sm text-[#7E8691]">
-                  Clique em um orçamento com status "Diagnosticado" abaixo para preencher e enviar ao cliente
+                  Clique em um orçamento com status &quot;Diagnosticado&quot; abaixo para preencher e enviar ao cliente
                 </p>
               </div>
               <div className="text-3xl animate-pulse">✨</div>

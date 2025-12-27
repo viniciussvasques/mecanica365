@@ -38,7 +38,7 @@ export default function NewServiceOrderPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -68,7 +68,7 @@ export default function NewServiceOrderPage() {
   const loadInitialData = async () => {
     try {
       setLoadingData(true);
-      
+
       // Carregar clientes
       const customersResponse = await customersApi.findAll({ limit: 100 });
       setCustomers(customersResponse.data);
@@ -116,7 +116,7 @@ export default function NewServiceOrderPage() {
 
     try {
       setLoading(true);
-      
+
       const data: CreateServiceOrderDto = {
         ...formData,
         reportedProblemDescription: formData.reportedProblemDescription?.trim() || undefined,
@@ -179,9 +179,9 @@ export default function NewServiceOrderPage() {
                 onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value || undefined })}
                 options={[
                   { value: '', label: 'Selecione um veículo' },
-                  ...vehicles.map(v => ({ 
-                    value: v.id, 
-                    label: `${v.placa || 'Sem placa'} - ${v.make || ''} ${v.model || ''}`.trim() || 'Veículo' 
+                  ...vehicles.map(v => ({
+                    value: v.id,
+                    label: `${v.placa || 'Sem placa'} - ${v.make || ''} ${v.model || ''}`.trim() || 'Veículo'
                   })),
                 ]}
                 disabled={!formData.customerId}

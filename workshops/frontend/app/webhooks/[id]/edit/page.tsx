@@ -17,6 +17,7 @@ export default function EditWebhookPage({ params }: { params: { id: string } }) 
 
     useEffect(() => {
         loadWebhook();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.id]);
 
     const loadWebhook = async () => {

@@ -25,6 +25,7 @@ export default function WebhooksPage() {
 
     useEffect(() => {
         loadWebhooks();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadWebhooks = async () => {
