@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,16 +42,16 @@ export default function ServiceOrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const token = authStorage.getToken();
       const subdomain = authStorage.getSubdomain();
-      
+
       if (!token || !subdomain) {
         setError('Token ou subdomain não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       const response = await serviceOrdersApi.findAll(filters);
       setServiceOrders(response.data);
       setPagination({
@@ -190,95 +191,95 @@ export default function ServiceOrdersPage() {
               );
             }
             return (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#2A3038]">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Número</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Cliente</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Veículo</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Técnico</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Status</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Total</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Data</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#2A3038]">
-                    {serviceOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-[#2A3038]/50 transition-colors">
-                        <td className="px-6 py-4 text-sm text-[#D0D6DE] font-medium">{order.number}</td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">
-                          {order.customer?.name || '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">
-                          {order.vehicle?.placa || order.vehicle?.make || '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">
-                          {order.technician?.name || '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          {getStatusBadge(order.status)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-[#D0D6DE] font-medium">
-                          {formatCurrency(order.totalCost)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">
-                          {new Date(order.createdAt).toLocaleDateString('pt-BR')}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          <div className="flex items-center space-x-2">
-                            <Link href={`/service-orders/${order.id}`}>
-                              <Button variant="outline" size="sm">
-                                Ver
-                              </Button>
-                            </Link>
-                            <Link href={`/service-orders/${order.id}/edit`}>
-                              <Button variant="secondary" size="sm">
-                                Editar
-                              </Button>
-                            </Link>
-                          </div>
-                        </td>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-[#2A3038]">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Número</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Cliente</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Veículo</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Técnico</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Status</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Total</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Data</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Ações</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Paginação */}
-              {pagination.totalPages > 1 && (
-                <div className="px-6 py-4 bg-[#2A3038] flex items-center justify-between">
-                  <p className="text-sm text-[#7E8691]">
-                    Mostrando {((pagination.page - 1) * pagination.limit) + 1} a{' '}
-                    {Math.min(pagination.page * pagination.limit, pagination.total)} de{' '}
-                    {pagination.total} ordens de serviço
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.page - 1)}
-                      disabled={pagination.page === 1}
-                    >
-                      Anterior
-                    </Button>
-                    <span className="text-sm text-[#D0D6DE]">
-                      Página {pagination.page} de {pagination.totalPages}
-                    </span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={pagination.page === pagination.totalPages}
-                    >
-                      Próxima
-                    </Button>
-                  </div>
+                    </thead>
+                    <tbody className="divide-y divide-[#2A3038]">
+                      {serviceOrders.map((order) => (
+                        <tr key={order.id} className="hover:bg-[#2A3038]/50 transition-colors">
+                          <td className="px-6 py-4 text-sm text-[#D0D6DE] font-medium">{order.number}</td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">
+                            {order.customer?.name || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">
+                            {order.vehicle?.placa || order.vehicle?.make || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">
+                            {order.technician?.name || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            {getStatusBadge(order.status)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#D0D6DE] font-medium">
+                            {formatCurrency(order.totalCost)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">
+                            {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <div className="flex items-center space-x-2">
+                              <Link href={`/service-orders/${order.id}`}>
+                                <Button variant="outline" size="sm">
+                                  Ver
+                                </Button>
+                              </Link>
+                              <Link href={`/service-orders/${order.id}/edit`}>
+                                <Button variant="secondary" size="sm">
+                                  Editar
+                                </Button>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </>
+
+                {/* Paginação */}
+                {pagination.totalPages > 1 && (
+                  <div className="px-6 py-4 bg-[#2A3038] flex items-center justify-between">
+                    <p className="text-sm text-[#7E8691]">
+                      Mostrando {((pagination.page - 1) * pagination.limit) + 1} a{' '}
+                      {Math.min(pagination.page * pagination.limit, pagination.total)} de{' '}
+                      {pagination.total} ordens de serviço
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page === 1}
+                      >
+                        Anterior
+                      </Button>
+                      <span className="text-sm text-[#D0D6DE]">
+                        Página {pagination.page} de {pagination.totalPages}
+                      </span>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page === pagination.totalPages}
+                      >
+                        Próxima
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             );
           })()}
         </div>

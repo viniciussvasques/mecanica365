@@ -21,7 +21,7 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Redirecionar para /login APENAS quando houver subdomínio do cliente
     // Exemplos que devem redirecionar: cliente.mecanica365.com, foo.bar.com, cliente.localhost
     // Exemplos que NÃO devem redirecionar: mecanica365.com, www.mecanica365.com, localhost
@@ -98,7 +98,7 @@ export default function Home() {
             let icon = GearIcon;
             if (plan.code.includes('starter')) icon = OilIcon;
             else if (plan.code.includes('enterprise')) icon = EngineIcon;
-            
+
             // Build features list
             const features = [];
             if (plan.serviceOrdersLimit) {
@@ -131,7 +131,7 @@ export default function Home() {
             if (plan.features.includes('custom_integrations')) {
               features.push('Integrações customizadas');
             }
-            
+
             return {
               name: plan.name,
               price: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(plan.monthlyPrice),
@@ -211,7 +211,7 @@ export default function Home() {
             </h1>
 
             <p className="max-w-3xl mx-auto text-xl text-[#7E8691] mb-10 leading-relaxed">
-              Sistema completo de gestão para oficinas mecânicas. Controle de ROs, estoque, clientes, 
+              Sistema completo de gestão para oficinas mecânicas. Controle de ROs, estoque, clientes,
               agendamentos e muito mais em um só lugar. <span className="text-[#00E0B8] font-semibold">Aumente sua produtividade em até 40%.</span>
             </p>
 
@@ -273,11 +273,10 @@ export default function Home() {
                 return (
                   <div
                     key={idx}
-                    className={`absolute inset-0 p-8 md:p-12 transition-all duration-500 flex items-center ${
-                      activeFeature === idx
+                    className={`absolute inset-0 p-8 md:p-12 transition-all duration-500 flex items-center ${activeFeature === idx
                         ? 'opacity-100 translate-y-0 z-10'
                         : 'opacity-0 translate-y-4 pointer-events-none z-0'
-                    }`}
+                      }`}
                   >
                     <div className="w-full flex flex-col md:flex-row items-center space-y-6 md:space-y-0 md:space-x-8">
                       <div className={`bg-gradient-to-br ${feature.color} p-6 rounded-2xl shadow-lg flex-shrink-0`}>
@@ -289,9 +288,8 @@ export default function Home() {
                           {/* Toggle Switch Indicator */}
                           <div className="relative inline-flex items-center">
                             <div className="relative w-12 h-6 bg-[#2A3038] rounded-full transition-colors">
-                              <div className={`absolute top-1 left-1 w-4 h-4 bg-[#00E0B8] rounded-full transition-transform ${
-                                activeFeature === idx ? 'translate-x-6' : 'translate-x-0'
-                              }`}></div>
+                              <div className={`absolute top-1 left-1 w-4 h-4 bg-[#00E0B8] rounded-full transition-transform ${activeFeature === idx ? 'translate-x-6' : 'translate-x-0'
+                                }`}></div>
                             </div>
                           </div>
                         </div>
@@ -307,11 +305,10 @@ export default function Home() {
                   <button
                     key={idx}
                     onClick={() => setActiveFeature(idx)}
-                    className={`rounded-full transition-all ${
-                      activeFeature === idx 
-                        ? 'bg-[#00E0B8] w-8 h-2' 
+                    className={`rounded-full transition-all ${activeFeature === idx
+                        ? 'bg-[#00E0B8] w-8 h-2'
                         : 'bg-[#7E8691] w-2 h-2 hover:bg-[#00E0B8]/50'
-                    }`}
+                      }`}
                     aria-label={`Mostrar feature ${idx + 1}`}
                   />
                 ))}
@@ -420,11 +417,10 @@ export default function Home() {
                 return (
                   <div
                     key={idx}
-                    className={`bg-[#1A1E23] border rounded-2xl p-8 relative overflow-hidden transition-all transform hover:scale-105 ${
-                      plan.popular
+                    className={`bg-[#1A1E23] border rounded-2xl p-8 relative overflow-hidden transition-all transform hover:scale-105 ${plan.popular
                         ? 'border-[#00E0B8] shadow-xl shadow-[#00E0B8]/20 scale-105'
                         : 'border-[#2A3038] hover:border-[#00E0B8]/50'
-                    }`}
+                      }`}
                   >
                     {plan.popular && (
                       <>
@@ -446,7 +442,7 @@ export default function Home() {
                     </div>
 
                     <ul className="space-y-3 mb-8">
-                      {plan.features.map((feature, fIdx) => (
+                      {plan.features.map((feature: string, fIdx: number) => (
                         <li key={fIdx} className="flex items-start text-[#7E8691]">
                           <svg className="w-5 h-5 text-[#00E0B8] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -458,11 +454,10 @@ export default function Home() {
 
                     <Link
                       href={`/register?plan=${plan.code}`}
-                      className={`block w-full text-center py-3 rounded-lg font-semibold transition-all ${
-                        plan.popular
+                      className={`block w-full text-center py-3 rounded-lg font-semibold transition-all ${plan.popular
                           ? 'bg-gradient-to-r from-[#00E0B8] to-[#3ABFF8] text-white hover:shadow-lg hover:shadow-[#00E0B8]/20'
                           : 'bg-[#2A3038] text-[#D0D6DE] hover:bg-[#00E0B8]/10 hover:text-[#00E0B8] border border-[#2A3038] hover:border-[#00E0B8]'
-                      }`}
+                        }`}
                     >
                       Começar Agora
                     </Link>

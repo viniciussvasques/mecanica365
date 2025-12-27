@@ -6,14 +6,17 @@ import Link from 'next/link';
 import { quotesApi, Quote, QuoteStatus } from '@/lib/api/quotes';
 import { notificationsApi } from '@/lib/api/notifications';
 import { Button } from '@/components/ui/Button';
-import { useNotification } from '@/components/NotificationProvider';
+// import { Button } from '@/components/ui/Button'; // Removed duplicate
+// import { useNotification } from '@/components/NotificationProvider'; // Removed
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
 export default function DiagnosedQuotesPage() {
   const router = useRouter();
-  const { showNotification } = useNotification();
+  const toast = useToast();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -47,7 +50,7 @@ export default function DiagnosedQuotesPage() {
       setQuotes(response.data);
     } catch (err: unknown) {
       logger.error('Erro ao carregar orçamentos:', err);
-      showNotification('Erro ao carregar orçamentos', 'error');
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -144,11 +147,10 @@ export default function DiagnosedQuotesPage() {
                 key={quote.id}
                 role="button"
                 tabIndex={0}
-                className={`bg-[#1A1E23] border-2 rounded-lg p-6 hover:border-[#00E0B8]/70 transition-all cursor-pointer ${
-                  unreadCount > 0 
-                    ? 'border-[#3ABFF8] animate-pulse-glow shadow-lg shadow-[#3ABFF8]/30' 
-                    : 'border-[#2A3038]'
-                }`}
+                className={`bg-[#1A1E23] border-2 rounded-lg p-6 hover:border-[#00E0B8]/70 transition-all cursor-pointer ${unreadCount > 0
+                  ? 'border-[#3ABFF8] animate-pulse-glow shadow-lg shadow-[#3ABFF8]/30'
+                  : 'border-[#2A3038]'
+                  }`}
                 onClick={() => router.push(`/quotes/${quote.id}`)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {

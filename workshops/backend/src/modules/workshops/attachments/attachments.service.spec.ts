@@ -4,13 +4,19 @@ import { PrismaService } from '@database/prisma.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateAttachmentDto, AttachmentType } from './dto';
 
-// Mock fs modules antes de importar
 jest.mock('node:fs', () => ({
   existsSync: jest.fn(),
   unlinkSync: jest.fn(),
 }));
-
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  unlinkSync: jest.fn(),
+}));
 jest.mock('node:fs/promises', () => ({
+  mkdir: jest.fn(),
+  writeFile: jest.fn(),
+}));
+jest.mock('fs/promises', () => ({
   mkdir: jest.fn(),
   writeFile: jest.fn(),
 }));
@@ -69,7 +75,7 @@ describe('AttachmentsService', () => {
         AttachmentsService,
         {
           provide: PrismaService,
-          useValue: mockPrismaService,
+          useValue: mockPrismaService as unknown,
         },
       ],
     }).compile();
@@ -277,7 +283,7 @@ describe('AttachmentsService', () => {
       mockPrismaService.attachment.findFirst.mockResolvedValue(mockAttachment);
       mockPrismaService.attachment.delete.mockResolvedValue(mockAttachment);
       (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.unlinkSync as jest.Mock).mockImplementation(() => {});
+      (fs.unlinkSync as jest.Mock).mockImplementation(() => { });
 
       await service.remove(mockTenantId, mockAttachmentId);
 
@@ -298,7 +304,7 @@ describe('AttachmentsService', () => {
       mockPrismaService.attachment.findFirst.mockResolvedValue(mockAttachment);
       mockPrismaService.attachment.delete.mockResolvedValue(mockAttachment);
       (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.unlinkSync as jest.Mock).mockImplementation(() => {});
+      (fs.unlinkSync as jest.Mock).mockImplementation(() => { });
 
       await service.remove(mockTenantId, mockAttachmentId);
 

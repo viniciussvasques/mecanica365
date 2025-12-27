@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
 import { CreateEmailSettingsDto } from './dto/create-email-settings.dto';
 import { UpdateEmailSettingsDto } from './dto/update-email-settings.dto';
@@ -7,10 +7,11 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailSettingsService {
+  private readonly logger = new Logger(EmailSettingsService.name);
   private readonly ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-encryption-key-change-in-production';
   private readonly ALGORITHM = 'aes-256-cbc';
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private encrypt(text: string): string {
     const iv = crypto.randomBytes(16);
@@ -228,7 +229,7 @@ export class EmailSettingsService {
         message: 'Email de teste enviado com sucesso!',
       };
     } catch (error) {
-      console.error('Erro ao testar configuração de email:', error);
+      this.logger.error('Erro ao testar configuração de email:', error);
       return {
         success: false,
         message: error.message || 'Falha ao enviar email de teste',

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -88,22 +89,22 @@ export default function PaymentsPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const token = authStorage.getToken();
       const subdomain = authStorage.getSubdomain();
-      
+
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       if (!subdomain) {
         setError('Subdomain não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       const response = await paymentsApi.findAll(filters);
       setPayments(response.data);
       setPagination({

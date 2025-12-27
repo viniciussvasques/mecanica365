@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { attachmentsApi, Attachment, AttachmentType, CreateAttachmentDto } from '@/lib/api/attachments';
 import { getAxiosErrorMessage } from '@/lib/utils/error.utils';
+import { logger } from '@/lib/utils/logger';
 import { Button } from './ui/Button';
 import { Modal } from './ui/Modal';
 
@@ -110,25 +111,25 @@ export function AttachmentsPanel({
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-    
+
     // Se estiver no navegador, usar o subdomain e porta corretos
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-      const isLocalhost = hostname === 'localhost' || 
-                          hostname === '127.0.0.1' || 
-                          hostname.endsWith('.localhost');
-      
+      const isLocalhost = hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname.endsWith('.localhost');
+
       if (isLocalhost) {
         // Usar porta 3001 para o backend (onde os arquivos estáticos são servidos)
         return `http://${hostname}:3001${url}`;
       }
-      
+
       // Para produção, usar a base da API sem /api
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const apiBase = baseUrl.replace(/\/api\/?$/, '');
       return `${apiBase}${url}`;
     }
-    
+
     // Fallback para SSR
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const apiBase = baseUrl.replace(/\/api\/?$/, '');

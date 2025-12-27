@@ -9,6 +9,7 @@ import { appointmentsApi, Appointment, AppointmentStatus } from '@/lib/api/appoi
 import { notificationsApi } from '@/lib/api/notifications';
 import { Button } from '@/components/ui/Button';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,7 @@ export default function MechanicDashboardPage() {
   useEffect(() => {
     const token = authStorage.getToken();
     const userRole = authStorage.getUserRole();
-    
+
     if (!token) {
       router.push('/login');
       return;
@@ -41,7 +42,7 @@ export default function MechanicDashboardPage() {
     }
 
     loadDashboard();
-    
+
     // Polling de dashboard e notificações a cada 15 segundos
     const interval = setInterval(() => {
       loadDashboard();
@@ -54,7 +55,7 @@ export default function MechanicDashboardPage() {
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      
+
       // Buscar orçamentos aguardando diagnóstico atribuídos ao mecânico atual
       const userId = authStorage.getUserId();
       if (!userId) {
@@ -65,11 +66,11 @@ export default function MechanicDashboardPage() {
       logger.log('[MechanicDashboard] Buscando orçamentos para userId:', userId);
 
       // Buscar orçamentos aguardando diagnóstico
-      const awaitingResponse = await quotesApi.findAll({ 
+      const awaitingResponse = await quotesApi.findAll({
         status: QuoteStatus.AWAITING_DIAGNOSIS,
-        limit: 100 
+        limit: 100
       });
-      
+
       logger.log('[MechanicDashboard] Orçamentos encontrados:', awaitingResponse.data.length);
       logger.log('[MechanicDashboard] Primeiro orçamento:', awaitingResponse.data[0] ? {
         id: awaitingResponse.data[0].id,
@@ -77,7 +78,7 @@ export default function MechanicDashboardPage() {
         assignedMechanicId: awaitingResponse.data[0].assignedMechanicId,
         status: awaitingResponse.data[0].status,
       } : 'Nenhum');
-      
+
       // Filtrar orçamentos que:
       // 1. Não têm mecânico atribuído (aparecem para todos) OU
       // 2. Estão atribuídos ao mecânico atual
@@ -90,9 +91,9 @@ export default function MechanicDashboardPage() {
       // Buscar orçamentos diagnosticados hoje
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      const diagnosedResponse = await quotesApi.findAll({ 
+      const diagnosedResponse = await quotesApi.findAll({
         status: QuoteStatus.DIAGNOSED,
-        limit: 100 
+        limit: 100
       });
       const diagnosedToday = diagnosedResponse.data.filter((q: Quote) => {
         if (q.assignedMechanicId !== userId) return false;
@@ -113,7 +114,7 @@ export default function MechanicDashboardPage() {
       const now = new Date();
       const nextWeek = new Date();
       nextWeek.setDate(now.getDate() + 7);
-      
+
       const appointmentsResponse = await appointmentsApi.findAll({
         assignedToId: userId,
         status: AppointmentStatus.SCHEDULED,
@@ -142,10 +143,10 @@ export default function MechanicDashboardPage() {
 
       // Orçamentos recentes (últimos 5)
       setRecentQuotes(awaitingQuotes.slice(0, 5));
-      
+
       // Próximos agendamentos (próximos 5)
       setUpcomingAppointments(upcoming.slice(0, 5));
-      
+
       // Ordens de serviço em andamento
       setInProgressOrders(myInProgressOrders.slice(0, 5));
     } catch (err: unknown) {
@@ -246,11 +247,10 @@ export default function MechanicDashboardPage() {
                   return (
                     <div
                       key={quote.id}
-                      className={`bg-[#0F1115] border-2 rounded-lg p-4 hover:border-[#00E0B8] transition-all ${
-                        isUnassigned 
-                          ? 'border-[#FFCB2B] animate-blink shadow-lg shadow-[#FFCB2B]/30 ring-2 ring-[#FFCB2B]/20' 
+                      className={`bg-[#0F1115] border-2 rounded-lg p-4 hover:border-[#00E0B8] transition-all ${isUnassigned
+                          ? 'border-[#FFCB2B] animate-blink shadow-lg shadow-[#FFCB2B]/30 ring-2 ring-[#FFCB2B]/20'
                           : 'border-[#2A3038]'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -274,7 +274,7 @@ export default function MechanicDashboardPage() {
                             <div>
                               <p className="text-[#7E8691]">Veículo</p>
                               <p className="text-[#D0D6DE]">
-                                {quote.vehicle 
+                                {quote.vehicle
                                   ? `${quote.vehicle.placa || 'Sem placa'} - ${quote.vehicle.make || ''} ${quote.vehicle.model || ''}`.trim() || 'Veículo'
                                   : 'Não informado'}
                               </p>
@@ -283,7 +283,7 @@ export default function MechanicDashboardPage() {
                         </div>
                         <div className="ml-4">
                           {isUnassigned ? (
-                            <Button 
+                            <Button
                               variant="primary"
                               onClick={async (e) => {
                                 e.preventDefault();
@@ -332,15 +332,14 @@ export default function MechanicDashboardPage() {
                   const appointmentDate = new Date(appointment.date);
                   const isToday = appointmentDate.toDateString() === new Date().toDateString();
                   const isTomorrow = appointmentDate.toDateString() === new Date(Date.now() + 86400000).toDateString();
-                  
+
                   return (
                     <div
                       key={appointment.id}
-                      className={`bg-[#0F1115] border-2 rounded-lg p-4 hover:border-[#00E0B8] transition-all ${
-                        isToday 
-                          ? 'border-[#00E0B8] shadow-lg shadow-[#00E0B8]/30' 
+                      className={`bg-[#0F1115] border-2 rounded-lg p-4 hover:border-[#00E0B8] transition-all ${isToday
+                          ? 'border-[#00E0B8] shadow-lg shadow-[#00E0B8]/30'
                           : 'border-[#2A3038]'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -425,7 +424,7 @@ export default function MechanicDashboardPage() {
                         <div>
                           <p className="text-[#7E8691]">Veículo</p>
                           <p className="text-[#D0D6DE]">
-                            {order.vehicle 
+                            {order.vehicle
                               ? `${order.vehicle.placa || 'Sem placa'} - ${order.vehicle.make || ''} ${order.vehicle.model || ''}`.trim() || 'Veículo'
                               : 'Não informado'}
                           </p>

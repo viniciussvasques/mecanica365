@@ -8,7 +8,10 @@ import { usersApi, User } from '@/lib/api/users';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
-import { useNotification } from '@/components/NotificationProvider';
+// import { Input } from '@/components/ui/Input'; // Removed
+// import { useNotification } from '@/components/NotificationProvider'; // Removed
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +26,7 @@ export default function AssignMechanicPage() {
   const [assigning, setAssigning] = useState(false);
   const [selectedMechanicId, setSelectedMechanicId] = useState('');
   const [reason, setReason] = useState('');
-  const { showNotification } = useNotification();
+  const toast = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -49,7 +52,7 @@ export default function AssignMechanicPage() {
       }
     } catch (err: unknown) {
       logger.error('Erro ao carregar dados:', err);
-      showNotification('Erro ao carregar dados', 'error');
+      toast.error(getErrorMessage(err));
       router.push(`/quotes/${id}`);
     } finally {
       setLoading(false);
@@ -60,19 +63,18 @@ export default function AssignMechanicPage() {
     e.preventDefault();
 
     if (!selectedMechanicId) {
-      showNotification('Selecione um mecânico', 'error');
+      toast.error('Selecione um mecânico');
       return;
     }
 
     try {
       setAssigning(true);
       await quotesApi.assignMechanic(id, selectedMechanicId, reason || undefined);
-      showNotification('Mecânico atribuído com sucesso!', 'success');
+      toast.success('Mecânico atribuído com sucesso!');
       router.push(`/quotes/${id}`);
     } catch (err: unknown) {
       logger.error('Erro ao atribuir mecânico:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao atribuir mecânico';
-      showNotification(errorMessage, 'error');
+      toast.error(getErrorMessage(err));
     } finally {
       setAssigning(false);
     }
@@ -124,7 +126,7 @@ export default function AssignMechanicPage() {
             <div>
               <p className="text-sm text-[#7E8691] mb-2">Veículo</p>
               <p className="text-[#D0D6DE] font-medium">
-                {quote.vehicle 
+                {quote.vehicle
                   ? `${quote.vehicle.placa || 'Sem placa'} - ${quote.vehicle.make || ''} ${quote.vehicle.model || ''}`.trim() || 'Veículo'
                   : 'Não informado'}
               </p>
@@ -154,7 +156,7 @@ export default function AssignMechanicPage() {
             {quote.assignedMechanic && (
               <div className="bg-[#FFCB2B]/10 border border-[#FFCB2B]/30 rounded-lg p-4">
                 <p className="text-sm text-[#FFCB2B]">
-                  ⚠️ Este orçamento já está atribuído a <strong>{quote.assignedMechanic.name}</strong>. 
+                  ⚠️ Este orçamento já está atribuído a <strong>{quote.assignedMechanic.name}</strong>.
                   A atribuição será alterada.
                 </p>
               </div>

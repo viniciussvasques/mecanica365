@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { useNotification } from '@/components/NotificationProvider';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export default function SettingsPage() {
         quoteFooterText: data.quoteFooterText || '',
         invoiceFooterText: data.invoiceFooterText || '',
       });
-      
+
       // Definir preview do logo se existir
       if (data.logoUrl) {
         // Se for URL relativa, construir URL completa usando a API base
@@ -105,16 +106,16 @@ export default function SettingsPage() {
     e.preventDefault();
     try {
       setSaving(true);
-      
+
       // Enviar todos os campos, removendo strings vazias e valores inválidos
       const cleanedData: CreateWorkshopSettingsDto = {};
       Object.entries(formData).forEach(([key, value]) => {
         // Pular valores nulos ou undefined
         if (value === null || value === undefined) return;
-        
+
         // Para strings vazias, enviar como undefined (será ignorado pelo backend)
         if (value === '') return;
-        
+
         // Para cores, validar formato antes de enviar
         if (['primaryColor', 'secondaryColor', 'accentColor'].includes(key)) {
           // Se não for um hex válido, não enviar
@@ -122,7 +123,7 @@ export default function SettingsPage() {
             return;
           }
         }
-        
+
         cleanedData[key as keyof CreateWorkshopSettingsDto] = value;
       });
 
@@ -154,7 +155,7 @@ export default function SettingsPage() {
               ? Number.parseFloat(value) || 0
               : value,
       };
-      
+
       // Atualizar preview do logo se a URL mudar
       if (name === 'logoUrl' && value) {
         const getApiBaseUrl3 = () => {
@@ -166,7 +167,7 @@ export default function SettingsPage() {
           }
           return baseUrl;
         };
-        
+
         if (value.startsWith('/uploads/')) {
           setLogoPreview(`${getApiBaseUrl3()}${value}`);
         } else if (value.startsWith('http://') || value.startsWith('https://')) {
@@ -180,7 +181,7 @@ export default function SettingsPage() {
       } else if (name === 'logoUrl' && !value) {
         setLogoPreview(null);
       }
-      
+
       return newData;
     });
   };
@@ -204,7 +205,7 @@ export default function SettingsPage() {
 
     try {
       setUploadingLogo(true);
-      
+
       // Criar preview
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -214,7 +215,7 @@ export default function SettingsPage() {
 
       // Fazer upload
       const result = await workshopSettingsApi.uploadLogo(file);
-      
+
       // Construir URL completa para preview
       const getApiBaseUrl = () => {
         if (typeof window === 'undefined') return 'http://localhost:3001';
@@ -225,13 +226,13 @@ export default function SettingsPage() {
         }
         return baseUrl;
       };
-      
-      const fullUrl = result.url.startsWith('/') 
+
+      const fullUrl = result.url.startsWith('/')
         ? `${getApiBaseUrl()}${result.url}`
         : result.url;
-      
+
       setLogoPreview(fullUrl);
-      
+
       // Atualizar formData com a URL retornada
       setFormData((prev) => ({
         ...prev,
@@ -239,7 +240,7 @@ export default function SettingsPage() {
       }));
 
       showNotification('Logo enviado com sucesso!', 'success');
-      
+
       // Recarregar configurações para garantir sincronização
       await loadSettings();
     } catch (err: unknown) {

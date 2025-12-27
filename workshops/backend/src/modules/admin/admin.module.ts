@@ -11,6 +11,9 @@ import { AdminSupportModule } from './support/admin-support.module';
 import { AdminJobsModule } from './jobs/admin-jobs.module';
 import { AdminWebhooksModule } from './webhooks/admin-webhooks.module';
 import { AdminCommunicationsModule } from './communications/admin-communications.module';
+import { AdminBackupModule } from './backup/admin-backup.module';
+import { AdminIntegrationsModule } from './integrations/admin-integrations.module';
+import { AdminAutomationsModule } from './automations/admin-automations.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { AdminCommunicationsModule } from './communications/admin-communications
     AdminJobsModule,
     AdminWebhooksModule,
     AdminCommunicationsModule,
+    AdminBackupModule,
+    AdminIntegrationsModule,
+    AdminAutomationsModule,
   ],
   exports: [
     AdminAuthModule,
@@ -40,6 +46,9 @@ import { AdminCommunicationsModule } from './communications/admin-communications
     AdminJobsModule,
     AdminWebhooksModule,
     AdminCommunicationsModule,
+    AdminBackupModule,
+    AdminIntegrationsModule,
+    AdminAutomationsModule,
   ],
 })
-export class AdminModule {}
+export class AdminModule { }

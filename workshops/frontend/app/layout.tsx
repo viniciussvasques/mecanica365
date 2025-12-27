@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ClientLayout } from '@/components/ClientLayout'
 import { NotificationProvider } from '@/components/NotificationProvider'
+import { ToastProvider } from '@/components/ui/Toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -27,7 +28,9 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={inter.className}>
         <NotificationProvider>
-          <ClientLayout>{children}</ClientLayout>
+          <ToastProvider>
+            <ClientLayout>{children}</ClientLayout>
+          </ToastProvider>
         </NotificationProvider>
       </body>
     </html>

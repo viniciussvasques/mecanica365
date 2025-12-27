@@ -5,10 +5,12 @@ import { PrismaModule } from '../../../database/prisma.module';
 import { AdminTenantsController } from './admin-tenants.controller';
 import { AdminTenantsService } from './admin-tenants.service';
 import { EmailService } from '../../shared/email/email.service';
+import { TenantsModule } from '../../core/tenants/tenants.module';
 
 @Module({
   imports: [
     PrismaModule,
+    TenantsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -22,4 +24,4 @@ import { EmailService } from '../../shared/email/email.service';
   providers: [AdminTenantsService, EmailService],
   exports: [AdminTenantsService],
 })
-export class AdminTenantsModule {}
+export class AdminTenantsModule { }

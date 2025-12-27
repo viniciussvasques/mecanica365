@@ -229,6 +229,7 @@ model ServiceOrder {
 
   @@unique([tenantId, number])
   @@index([tenantId, status])
+  @@index([tenantId, createdAt])
   @@index([tenantId, customerId])
   @@map("service_orders")
 }
@@ -368,6 +369,7 @@ model Part {
   quoteItems  QuoteItem[]        @relation("PartQuoteItems")
 
   @@index([tenantId, partNumber])
+  @@index([tenantId, name])
   @@index([tenantId, category])
   @@index([supplierId])
   @@map("parts")
@@ -935,6 +937,7 @@ model Quote {
 
   @@unique([tenantId, number])
   @@index([tenantId, status])
+  @@index([tenantId, createdAt])
   @@index([tenantId, customerId])
   @@index([tenantId, vehicleId])
   @@index([elevatorId])
@@ -1493,4 +1496,36 @@ model AdminWebhook {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("admin_webhooks")
+}
+
+// Admin Integrations - Integrações globais do sistema
+model AdminIntegration {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(255)
+  type      String   @db.VarChar(50)
+  apiUrl    String   @map("api_url") @db.Text
+  apiKey    String?  @map("api_key") @db.VarChar(255)
+  config    Json?
+  status    String   @default("active") @db.VarChar(50)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_integrations")
+}
+
+// Admin Automations - Automações globais do sistema
+model AdminAutomation {
+  id             String    @id @default(uuid())
+  name           String    @db.VarChar(255)
+  description    String?   @db.Text
+  trigger        String    @db.VarChar(100)
+  actions        Json      @default("[]")
+  status         String    @default("active") @db.VarChar(50)
+  executionCount Int       @default(0) @map("execution_count")
+  lastExecutedAt DateTime? @map("last_executed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("admin_automations")
 }

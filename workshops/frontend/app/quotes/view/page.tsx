@@ -9,11 +9,14 @@ import { Quote, QuoteStatus } from '@/lib/api/quotes';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SignaturePad } from '@/components/SignaturePad';
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 import { logger } from '@/lib/utils/logger';
 
 export default function QuoteViewPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const toast = useToast();
   const token = searchParams.get('token');
 
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -44,7 +47,7 @@ export default function QuoteViewPage() {
       const data = await quotesPublicApi.viewByToken(token!);
       setQuote(data);
       setSignature(data.customerSignature || null);
-      
+
       // Se já foi aprovado ou rejeitado, mostrar status
       if (data.status === QuoteStatus.ACCEPTED) {
         setApproved(true);
@@ -61,7 +64,7 @@ export default function QuoteViewPage() {
 
   const handleApprove = async () => {
     if (!token || !signature) {
-      alert('Por favor, assine o documento antes de aprovar');
+      toast.error('Por favor, assine o documento antes de aprovar');
       return;
     }
 
@@ -73,10 +76,10 @@ export default function QuoteViewPage() {
       setApproving(true);
       await quotesPublicApi.approveByToken(token, signature);
       setApproved(true);
-      alert('Orçamento aprovado com sucesso! Você receberá um retorno em breve.');
+      toast.success('Orçamento aprovado com sucesso! Você receberá um retorno em breve.');
     } catch (err: unknown) {
       logger.error('Erro ao aprovar orçamento:', err);
-      alert(err instanceof Error ? err.message : 'Erro ao aprovar orçamento');
+      toast.error(getErrorMessage(err));
     } finally {
       setApproving(false);
     }
@@ -86,7 +89,7 @@ export default function QuoteViewPage() {
     if (!token) return;
 
     if (!rejectReason.trim()) {
-      alert('Por favor, informe o motivo da rejeição');
+      toast.error('Por favor, informe o motivo da rejeição');
       return;
     }
 
@@ -98,10 +101,10 @@ export default function QuoteViewPage() {
       setRejecting(true);
       await quotesPublicApi.rejectByToken(token, rejectReason);
       setRejected(true);
-      alert('Orçamento rejeitado. Entraremos em contato em breve.');
+      toast.success('Orçamento rejeitado.');
     } catch (err: unknown) {
       logger.error('Erro ao rejeitar orçamento:', err);
-      alert(err instanceof Error ? err.message : 'Erro ao rejeitar orçamento');
+      toast.error(getErrorMessage(err));
     } finally {
       setRejecting(false);
     }
@@ -309,11 +312,10 @@ export default function QuoteViewPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="text-base text-[#D0D6DE] font-semibold">{item.name}</span>
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                        item.type === 'service' 
-                          ? 'bg-[#3ABFF8]/20 text-[#3ABFF8] border border-[#3ABFF8]/30' 
-                          : 'bg-[#00E0B8]/20 text-[#00E0B8] border border-[#00E0B8]/30'
-                      }`}>
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${item.type === 'service'
+                        ? 'bg-[#3ABFF8]/20 text-[#3ABFF8] border border-[#3ABFF8]/30'
+                        : 'bg-[#00E0B8]/20 text-[#00E0B8] border border-[#00E0B8]/30'
+                        }`}>
                         {item.type === 'service' ? '🔧 Serviço' : '⚙️ Peça'}
                       </span>
                     </div>
@@ -466,7 +468,7 @@ export default function QuoteViewPage() {
               {showRejectForm ? 'Cancelar' : '❌ Rejeitar Orçamento'}
             </Button>
           </div>
-          
+
           {/* Aviso */}
           <div className="bg-[#0F1115] rounded-lg p-4 border border-[#2A3038]">
             <p className="text-xs sm:text-sm text-[#7E8691] text-center leading-relaxed">
@@ -479,48 +481,48 @@ export default function QuoteViewPage() {
         {(quote.workshopSettings?.showAddressOnQuotes ||
           quote.workshopSettings?.showContactOnQuotes ||
           quote.workshopSettings?.quoteFooterText) && (
-          <div className="bg-[#1A1E23] border border-[#2A3038] rounded-xl p-5 sm:p-6 shadow-lg mt-6">
-            <div className="space-y-3">
-              {quote.workshopSettings?.showAddressOnQuotes &&
-                quote.workshopSettings.address && (
-                  <div className="text-sm text-[#7E8691]">
-                    <strong className="text-[#D0D6DE]">Endereço:</strong>{' '}
-                    {quote.workshopSettings.address}
-                    {quote.workshopSettings.city && `, ${quote.workshopSettings.city}`}
-                    {quote.workshopSettings.state && ` - ${quote.workshopSettings.state}`}
-                    {quote.workshopSettings.zipCode && ` ${quote.workshopSettings.zipCode}`}
+            <div className="bg-[#1A1E23] border border-[#2A3038] rounded-xl p-5 sm:p-6 shadow-lg mt-6">
+              <div className="space-y-3">
+                {quote.workshopSettings?.showAddressOnQuotes &&
+                  quote.workshopSettings.address && (
+                    <div className="text-sm text-[#7E8691]">
+                      <strong className="text-[#D0D6DE]">Endereço:</strong>{' '}
+                      {quote.workshopSettings.address}
+                      {quote.workshopSettings.city && `, ${quote.workshopSettings.city}`}
+                      {quote.workshopSettings.state && ` - ${quote.workshopSettings.state}`}
+                      {quote.workshopSettings.zipCode && ` ${quote.workshopSettings.zipCode}`}
+                    </div>
+                  )}
+                {quote.workshopSettings?.showContactOnQuotes && (
+                  <div className="flex flex-wrap gap-4 text-sm text-[#7E8691]">
+                    {quote.workshopSettings.phone && (
+                      <div>
+                        <strong className="text-[#D0D6DE]">Telefone:</strong>{' '}
+                        {quote.workshopSettings.phone}
+                      </div>
+                    )}
+                    {quote.workshopSettings.email && (
+                      <div>
+                        <strong className="text-[#D0D6DE]">Email:</strong>{' '}
+                        {quote.workshopSettings.email}
+                      </div>
+                    )}
+                    {quote.workshopSettings.whatsapp && (
+                      <div>
+                        <strong className="text-[#D0D6DE]">WhatsApp:</strong>{' '}
+                        {quote.workshopSettings.whatsapp}
+                      </div>
+                    )}
                   </div>
                 )}
-              {quote.workshopSettings?.showContactOnQuotes && (
-                <div className="flex flex-wrap gap-4 text-sm text-[#7E8691]">
-                  {quote.workshopSettings.phone && (
-                    <div>
-                      <strong className="text-[#D0D6DE]">Telefone:</strong>{' '}
-                      {quote.workshopSettings.phone}
-                    </div>
-                  )}
-                  {quote.workshopSettings.email && (
-                    <div>
-                      <strong className="text-[#D0D6DE]">Email:</strong>{' '}
-                      {quote.workshopSettings.email}
-                    </div>
-                  )}
-                  {quote.workshopSettings.whatsapp && (
-                    <div>
-                      <strong className="text-[#D0D6DE]">WhatsApp:</strong>{' '}
-                      {quote.workshopSettings.whatsapp}
-                    </div>
-                  )}
-                </div>
-              )}
-              {quote.workshopSettings?.quoteFooterText && (
-                <div className="pt-3 border-t border-[#2A3038] text-sm text-[#7E8691] text-center">
-                  {quote.workshopSettings.quoteFooterText}
-                </div>
-              )}
+                {quote.workshopSettings?.quoteFooterText && (
+                  <div className="pt-3 border-t border-[#2A3038] text-sm text-[#7E8691] text-center">
+                    {quote.workshopSettings.quoteFooterText}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </div>
   );

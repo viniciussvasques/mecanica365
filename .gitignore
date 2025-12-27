@@ -26,3 +26,8 @@ build/
 .DS_Store
 Thumbs.db
 
+# App specific
+workshops/backend/uploads/
+workshops/frontend/lint_log.txt
+workshops/frontend/lint_verification.txt
+

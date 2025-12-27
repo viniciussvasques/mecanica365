@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { quotesApi, Quote, QuoteFilters, QuoteStatus } from '@/lib/api/quotes';
 import { notificationsApi } from '@/lib/api/notifications';
+import { authStorage } from '@/lib/utils/localStorage';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -12,8 +13,12 @@ import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
+
 export default function QuotesPage() {
   const router = useRouter();
+  const toast = useToast();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,16 +60,16 @@ export default function QuotesPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const token = authStorage.getToken();
       const subdomain = authStorage.getSubdomain();
-      
+
       if (!token || !subdomain) {
         setError('Token ou subdomain não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       const response = await quotesApi.findAll(filters);
       setQuotes(response.data);
       setPagination({
@@ -75,8 +80,7 @@ export default function QuotesPage() {
       });
     } catch (err: unknown) {
       logger.error('[QuotesPage] Erro ao carregar orçamentos:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar orçamentos';
-      setError(errorMessage);
+      toast.error('Não foi possível carregar a lista de orçamentos.');
     } finally {
       setLoading(false);
     }
@@ -248,120 +252,120 @@ export default function QuotesPage() {
               );
             }
             return (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#2A3038]">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Número</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Cliente</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Veículo</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Status</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Total</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Data</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#2A3038]">
-                    {quotes.map((quote) => (
-                      <tr
-                        key={quote.id}
-                        className={(() => {
-                          if (quote.status === QuoteStatus.DIAGNOSED) {
-                            return 'hover:bg-[#2A3038]/50 transition-colors bg-[#3ABFF8]/10 border-l-4 border-[#3ABFF8] animate-pulse-glow';
-                          }
-                          if (quote.status === QuoteStatus.ACCEPTED && !quote.serviceOrderId) {
-                            return 'hover:bg-[#2A3038]/50 transition-colors bg-[#00E0B8]/5 border-l-4 border-[#00E0B8]';
-                          }
-                          return 'hover:bg-[#2A3038]/50 transition-colors';
-                        })()}
-                      >
-                        <td className="px-6 py-4 text-sm text-[#D0D6DE] font-medium">{quote.number}</td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">
-                          {quote.customer?.name || '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">
-                          {quote.vehicle?.placa || quote.vehicle?.make || '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge(quote.status)}
-                            {quote.customerSignature && (
-                              <span 
-                                className="text-[#00E0B8]" 
-                                title="Assinado digitalmente pelo cliente"
-                              >
-                                ✍️
-                              </span>
-                            )}
-                            {quote.status === QuoteStatus.VIEWED && !quote.acceptedAt && (
-                              <span 
-                                className="text-[#FFAA00]" 
-                                title="Cliente visualizou - aguardando decisão"
-                              >
-                                👁️
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-[#D0D6DE] font-medium">
-                          {formatCurrency(quote.totalCost)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">
-                          {new Date(quote.createdAt).toLocaleDateString('pt-BR')}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          <div className="flex items-center space-x-2">
-                            <Link href={`/quotes/${quote.id}`}>
-                              <Button variant="outline" size="sm">
-                                Ver
-                              </Button>
-                            </Link>
-                            <Link href={`/quotes/${quote.id}/edit`}>
-                              <Button variant="secondary" size="sm">
-                                Editar
-                              </Button>
-                            </Link>
-                          </div>
-                        </td>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-[#2A3038]">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Número</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Cliente</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Veículo</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Status</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Total</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Data</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Ações</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Paginação */}
-              {pagination.totalPages > 1 && (
-                <div className="px-6 py-4 bg-[#2A3038] flex items-center justify-between">
-                  <p className="text-sm text-[#7E8691]">
-                    Mostrando {((pagination.page - 1) * pagination.limit) + 1} a{' '}
-                    {Math.min(pagination.page * pagination.limit, pagination.total)} de{' '}
-                    {pagination.total} orçamentos
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.page - 1)}
-                      disabled={pagination.page === 1}
-                    >
-                      Anterior
-                    </Button>
-                    <span className="text-sm text-[#D0D6DE]">
-                      Página {pagination.page} de {pagination.totalPages}
-                    </span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={pagination.page === pagination.totalPages}
-                    >
-                      Próxima
-                    </Button>
-                  </div>
+                    </thead>
+                    <tbody className="divide-y divide-[#2A3038]">
+                      {quotes.map((quote) => (
+                        <tr
+                          key={quote.id}
+                          className={(() => {
+                            if (quote.status === QuoteStatus.DIAGNOSED) {
+                              return 'hover:bg-[#2A3038]/50 transition-colors bg-[#3ABFF8]/10 border-l-4 border-[#3ABFF8] animate-pulse-glow';
+                            }
+                            if (quote.status === QuoteStatus.ACCEPTED && !quote.serviceOrderId) {
+                              return 'hover:bg-[#2A3038]/50 transition-colors bg-[#00E0B8]/5 border-l-4 border-[#00E0B8]';
+                            }
+                            return 'hover:bg-[#2A3038]/50 transition-colors';
+                          })()}
+                        >
+                          <td className="px-6 py-4 text-sm text-[#D0D6DE] font-medium">{quote.number}</td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">
+                            {quote.customer?.name || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">
+                            {quote.vehicle?.placa || quote.vehicle?.make || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <div className="flex items-center gap-2">
+                              {getStatusBadge(quote.status)}
+                              {quote.customerSignature && (
+                                <span
+                                  className="text-[#00E0B8]"
+                                  title="Assinado digitalmente pelo cliente"
+                                >
+                                  ✍️
+                                </span>
+                              )}
+                              {quote.status === QuoteStatus.VIEWED && !quote.acceptedAt && (
+                                <span
+                                  className="text-[#FFAA00]"
+                                  title="Cliente visualizou - aguardando decisão"
+                                >
+                                  👁️
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#D0D6DE] font-medium">
+                            {formatCurrency(quote.totalCost)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">
+                            {new Date(quote.createdAt).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <div className="flex items-center space-x-2">
+                              <Link href={`/quotes/${quote.id}`}>
+                                <Button variant="outline" size="sm">
+                                  Ver
+                                </Button>
+                              </Link>
+                              <Link href={`/quotes/${quote.id}/edit`}>
+                                <Button variant="secondary" size="sm">
+                                  Editar
+                                </Button>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </>
+
+                {/* Paginação */}
+                {pagination.totalPages > 1 && (
+                  <div className="px-6 py-4 bg-[#2A3038] flex items-center justify-between">
+                    <p className="text-sm text-[#7E8691]">
+                      Mostrando {((pagination.page - 1) * pagination.limit) + 1} a{' '}
+                      {Math.min(pagination.page * pagination.limit, pagination.total)} de{' '}
+                      {pagination.total} orçamentos
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page === 1}
+                      >
+                        Anterior
+                      </Button>
+                      <span className="text-sm text-[#D0D6DE]">
+                        Página {pagination.page} de {pagination.totalPages}
+                      </span>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page === pagination.totalPages}
+                      >
+                        Próxima
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             );
           })()}
         </div>

@@ -6,6 +6,8 @@ import { BillingService } from '../billing/billing.service';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '@shared/email/email.service';
 import { ConfigService } from '@nestjs/config';
+import { CloudflareService } from '@shared/cloudflare/cloudflare.service';
+import { EncryptionService } from '@shared/encryption/encryption.service';
 import Stripe from 'stripe';
 
 describe('OnboardingService - Webhook Handlers', () => {
@@ -86,6 +88,15 @@ describe('OnboardingService - Webhook Handlers', () => {
       get: jest.fn(),
     };
 
+    const mockCloudflareService = {
+      createTenantSubdomain: jest.fn().mockResolvedValue(true),
+    };
+
+    const mockEncryptionService = {
+      encrypt: jest.fn(val => val),
+      decrypt: jest.fn(val => val),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OnboardingService,
@@ -95,6 +106,8 @@ describe('OnboardingService - Webhook Handlers', () => {
         { provide: UsersService, useValue: mockUsersService },
         { provide: EmailService, useValue: mockEmailService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: CloudflareService, useValue: mockCloudflareService },
+        { provide: EncryptionService, useValue: mockEncryptionService },
       ],
     }).compile();
 

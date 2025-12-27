@@ -109,14 +109,14 @@ export default function DashboardPage() {
     }
 
     // Verificar se é primeiro login ou se deve mostrar modal
-    const isFirstLogin = localStorage.getItem('isFirstLogin') === 'true' || 
-                         searchParams.get('firstLogin') === 'true' ||
-                         localStorage.getItem('showPasswordModal') === 'true';
-    
+    const isFirstLogin = localStorage.getItem('isFirstLogin') === 'true' ||
+      searchParams.get('firstLogin') === 'true' ||
+      localStorage.getItem('showPasswordModal') === 'true';
+
     const userId = localStorage.getItem('userId');
     const passwordChangedKey = userId ? `passwordChanged_${userId}` : null;
     const alreadyChanged = passwordChangedKey ? localStorage.getItem(passwordChangedKey) : null;
-    
+
     if (isFirstLogin && !alreadyChanged) {
       setShowChangePasswordModal(true);
       authStorage.removeIsFirstLogin();
@@ -161,13 +161,13 @@ export default function DashboardPage() {
       ]);
 
       // Processar Service Orders
-      const serviceOrders = serviceOrdersResponse.status === 'fulfilled' 
+      const serviceOrders = serviceOrdersResponse.status === 'fulfilled'
         ? serviceOrdersResponse.value.data || []
         : [];
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       const serviceOrdersToday = serviceOrders.filter((so: any) => {
         const soDate = new Date(so.createdAt);
         soDate.setHours(0, 0, 0, 0);
@@ -212,14 +212,14 @@ export default function DashboardPage() {
       const users = usersResponse.status === 'fulfilled'
         ? usersResponse.value || []
         : [];
-      
+
       const activeMechanics = users.filter((u: any) => u.isActive && u.role === 'mechanic');
 
       // Processar Billing
       const invoices = invoicesResponse.status === 'fulfilled'
         ? invoicesResponse.value.data || []
         : [];
-      
+
       const payments = paymentsResponse.status === 'fulfilled'
         ? paymentsResponse.value.data || []
         : [];
@@ -269,7 +269,7 @@ export default function DashboardPage() {
           const time = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           const colors = ['turquoise', 'red', 'blue', 'yellow'];
           const icons = [OilIcon, BrakePadIcon, EngineIcon, FilterIcon];
-          
+
           return {
             id: apt.id,
             time,
@@ -305,7 +305,7 @@ export default function DashboardPage() {
         .map((item: any) => {
           const icons = [BrakePadIcon, OilIcon, FilterIcon, GearIcon];
           const iconIndex = Math.floor(Math.random() * icons.length);
-          
+
           return {
             name: item.name,
             stock: item.quantity || 0,
@@ -371,7 +371,7 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
-    authStorage.clearAuthData();
+    authStorage.clearAllAuthData();
     authStorage.removeIsFirstLogin();
     router.push('/login');
   };
@@ -624,15 +624,15 @@ export default function DashboardPage() {
                   <div className="relative w-48 h-48">
                     <svg className="transform -rotate-90" viewBox="0 0 100 100">
                       <circle cx="50" cy="50" r="40" fill="none" stroke="#2A3038" strokeWidth="8" />
-                      <circle 
-                        cx="50" 
-                        cy="50" 
-                        r="40" 
-                        fill="none" 
-                        stroke="#00E0B8" 
-                        strokeWidth="8" 
-                        strokeDasharray={`${(stats?.inventory.stockPercentage || 0) * 2 * Math.PI * 40 / 100} ${2 * Math.PI * 40}`} 
-                        strokeLinecap="round" 
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke="#00E0B8"
+                        strokeWidth="8"
+                        strokeDasharray={`${(stats?.inventory.stockPercentage || 0) * 2 * Math.PI * 40 / 100} ${2 * Math.PI * 40}`}
+                        strokeLinecap="round"
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">

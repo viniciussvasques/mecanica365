@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/Input';
 import { PdfViewer } from '@/components/PdfViewer';
 import { SendQuoteModal } from '@/components/SendQuoteModal';
 import { ManualApproveModal } from '@/components/ManualApproveModal';
-import { useNotification } from '@/components/NotificationProvider';
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 import { AttachmentsPanel } from '@/components/AttachmentsPanel';
 import { Attachment } from '@/lib/api/attachments';
 import { ChecklistPanel } from '@/components/ChecklistPanel';
@@ -41,7 +42,7 @@ export default function QuoteDetailPage() {
   const [suggestions, setSuggestions] = useState<DiagnosticSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { showNotification } = useNotification();
+  const toast = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -59,7 +60,7 @@ export default function QuoteDetailPage() {
       setError(null);
       const data = await quotesApi.findOne(id);
       setQuote(data);
-      
+
       // Se estiver em modo de diagnóstico, carregar sugestões e preparar edição
       if (data.status === QuoteStatus.DIAGNOSED) {
         setEditingItems(data.items || []);
@@ -71,8 +72,7 @@ export default function QuoteDetailPage() {
         loadSuggestions(data);
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar orçamento';
-      setError(errorMessage);
+      setError(getErrorMessage(err));
       logger.error('Erro ao carregar orçamento:', err);
     } finally {
       setLoading(false);
@@ -90,9 +90,9 @@ export default function QuoteDetailPage() {
   const loadSuggestions = async (quoteData: Quote) => {
     try {
       setLoadingSuggestions(true);
-      const hasSymptoms = quoteData.identifiedProblemDescription || 
+      const hasSymptoms = quoteData.identifiedProblemDescription ||
         (quoteData.reportedProblemSymptoms && quoteData.reportedProblemSymptoms.length > 0);
-      
+
       if (!hasSymptoms) {
         return;
       }
@@ -112,15 +112,14 @@ export default function QuoteDetailPage() {
 
   const handleSendForDiagnosis = async () => {
     if (!quote) return;
-    
+
     try {
       setLoading(true);
       await quotesApi.sendForDiagnosis(quote.id);
-      showNotification('Orçamento enviado para diagnóstico com sucesso!', 'success');
+      toast.success('Orçamento enviado para diagnóstico com sucesso!');
       await loadQuote(); // Recarregar para atualizar o status
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao enviar para diagnóstico';
-      showNotification(errorMessage, 'error');
+      toast.error(getErrorMessage(err));
       logger.error('Erro ao enviar para diagnóstico:', err);
     } finally {
       setLoading(false);
@@ -213,10 +212,10 @@ export default function QuoteDetailPage() {
         medium: 0.3,
         low: 0.15,
       }[suggestion.severity.toLowerCase()] || 0.3;
-      
+
       return Math.round(suggestion.estimatedCost * severityMultiplier * 100) / 100;
     }
-    
+
     const solutionLower = solution.toLowerCase();
     if (solutionLower.includes('troca') || solutionLower.includes('substitui')) {
       return 150;
@@ -282,10 +281,10 @@ export default function QuoteDetailPage() {
     // Atualizar itens e mostrar notificação
     if (editingItems.length === 0) {
       setEditingItems(newItems);
-      showNotification(`✅ Orçamento preenchido automaticamente com ${newItems.length} item(ns)!`, 'success');
+      toast.success(`✅ Orçamento preenchido automaticamente com ${newItems.length} item(ns)!`);
     } else {
       setEditingItems((prev) => [...prev, ...newItems]);
-      showNotification(`✅ ${newItems.length} item(ns) adicionado(s) automaticamente!`, 'success');
+      toast.success(`✅ ${newItems.length} item(ns) adicionado(s) automaticamente!`);
     }
   };
 
@@ -307,12 +306,12 @@ export default function QuoteDetailPage() {
       ...updatedItems[index],
       [field]: value,
     };
-    
+
     if (field === 'quantity' || field === 'unitCost') {
-      updatedItems[index].totalCost = 
+      updatedItems[index].totalCost =
         (updatedItems[index].quantity || 1) * (updatedItems[index].unitCost || 0);
     }
-    
+
     setEditingItems(updatedItems);
   };
 
@@ -324,13 +323,13 @@ export default function QuoteDetailPage() {
     e.preventDefault();
 
     if (editingItems.length === 0) {
-      showNotification('Adicione pelo menos um item ao orçamento', 'error');
+      toast.error('Adicione pelo menos um item ao orçamento');
       return;
     }
 
     try {
       setSaving(true);
-      
+
       // Formatar items corretamente antes de enviar
       const formattedItems: QuoteItem[] = editingItems.map(item => {
         const calculatedTotalCost = (item.quantity || 1) * (item.unitCost || 0);
@@ -348,10 +347,10 @@ export default function QuoteDetailPage() {
       }).filter(item => item.name && item.unitCost > 0); // Remover itens inválidos
 
       if (formattedItems.length === 0) {
-        showNotification('Adicione pelo menos um item válido ao orçamento', 'error');
+        toast.error('Adicione pelo menos um item válido ao orçamento');
         return;
       }
-      
+
       const payloadItems = formattedItems.map(({ totalCost, ...rest }) => rest);
 
       const updateData: UpdateQuoteDto = {
@@ -364,13 +363,12 @@ export default function QuoteDetailPage() {
       };
 
       await quotesApi.update(id, updateData);
-      showNotification('Orçamento preenchido com sucesso!', 'success');
+      toast.success('Orçamento preenchido com sucesso!');
       setIsEditing(false);
       await loadQuote();
     } catch (err: unknown) {
       logger.error('Erro ao salvar orçamento:', err);
-      const errorMessage = err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data ? String(err.response.data.message) : err instanceof Error ? err.message : 'Erro ao salvar orçamento';
-      showNotification(errorMessage, 'error');
+      toast.error(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -384,7 +382,7 @@ export default function QuoteDetailPage() {
     try {
       setApprovingManually(true);
       const result = await quotesApi.approveManually(id, { customerSignature, notes });
-      showNotification('Orçamento aprovado manualmente! Ordem de serviço criada com sucesso.', 'success');
+      toast.success('Orçamento aprovado manualmente! Ordem de serviço criada com sucesso.');
       setShowManualApproveModal(false);
       await loadQuote();
       setTimeout(() => {
@@ -392,8 +390,7 @@ export default function QuoteDetailPage() {
       }, 1500);
     } catch (err: unknown) {
       logger.error('Erro ao aprovar orçamento manualmente:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao aprovar orçamento';
-      showNotification(errorMessage, 'error');
+      toast.error(getErrorMessage(err));
     } finally {
       setApprovingManually(false);
     }
@@ -407,14 +404,13 @@ export default function QuoteDetailPage() {
     try {
       setApproving(true);
       const result = await quotesApi.approve(id);
-      showNotification('Orçamento aprovado! Ordem de serviço criada com sucesso.', 'success');
+      toast.success('Orçamento aprovado! Ordem de serviço criada com sucesso.');
       setTimeout(() => {
         router.push(`/service-orders/${result.serviceOrder.id}`);
       }, 1500);
     } catch (err: unknown) {
       logger.error('Erro ao aprovar orçamento:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao aprovar orçamento';
-      showNotification(errorMessage, 'error');
+      toast.error(getErrorMessage(err));
     } finally {
       setApproving(false);
     }
@@ -434,7 +430,7 @@ export default function QuoteDetailPage() {
       a.remove();
     } catch (err: unknown) {
       logger.error('Erro ao gerar PDF:', err);
-      alert('Erro ao gerar PDF do orçamento');
+      toast.error('Erro ao gerar PDF do orçamento');
     } finally {
       setGeneratingPdf(false);
     }
@@ -453,11 +449,11 @@ export default function QuoteDetailPage() {
       [QuoteStatus.CONVERTED]: { label: 'Convertido', className: 'bg-[#00E0B8] text-[#0F1115]' },
     };
 
-    const config = statusConfig[status] || { 
-      label: status || 'Desconhecido', 
-      className: 'bg-[#7E8691] text-white' 
+    const config = statusConfig[status] || {
+      label: status || 'Desconhecido',
+      className: 'bg-[#7E8691] text-white'
     };
-    
+
     return (
       <span className={`px-3 py-1 text-sm font-semibold rounded-full ${config.className}`}>
         {config.label}
@@ -516,9 +512,9 @@ export default function QuoteDetailPage() {
           </Button>
         )}
         {shouldShowSendButton() && (
-          <Button 
-            variant="primary" 
-            onClick={() => setShowSendModal(true)} 
+          <Button
+            variant="primary"
+            onClick={() => setShowSendModal(true)}
             disabled={quote.items.length === 0}
           >
             📧 Enviar ao Cliente
@@ -531,9 +527,9 @@ export default function QuoteDetailPage() {
           {generatingPdf ? 'Gerando...' : 'Download PDF'}
         </Button>
         {shouldShowManualApproveButton() && (
-          <Button 
-            variant="primary" 
-            onClick={handleApproveManually} 
+          <Button
+            variant="primary"
+            onClick={handleApproveManually}
             disabled={approvingManually}
             className="bg-[#3ABFF8] hover:bg-[#3ABFF8]/90 text-white font-bold px-6 py-2"
           >
@@ -541,9 +537,9 @@ export default function QuoteDetailPage() {
           </Button>
         )}
         {shouldShowGenerateOSButton() && (
-          <Button 
-            variant="primary" 
-            onClick={handleApprove} 
+          <Button
+            variant="primary"
+            onClick={handleApprove}
             disabled={approving}
             className="bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115] font-bold px-6 py-2 shadow-lg shadow-[#00E0B8]/30"
           >
@@ -566,11 +562,11 @@ export default function QuoteDetailPage() {
 
   const renderApprovedAlert = () => {
     if (!quote) return null;
-    
-    const isApproved = quote.status === QuoteStatus.ACCEPTED || 
-      quote.status === QuoteStatus.VIEWED || 
+
+    const isApproved = quote.status === QuoteStatus.ACCEPTED ||
+      quote.status === QuoteStatus.VIEWED ||
       (quote.status === QuoteStatus.SENT && quote.acceptedAt);
-    
+
     if (!isApproved || quote.serviceOrderId) {
       return null;
     }
@@ -586,9 +582,9 @@ export default function QuoteDetailPage() {
             <p className="text-[#7E8691] mb-4">
               O cliente aprovou este orçamento. Clique no botão abaixo para gerar a Ordem de Serviço automaticamente.
             </p>
-            <Button 
-              variant="primary" 
-              onClick={handleApprove} 
+            <Button
+              variant="primary"
+              onClick={handleApprove}
               disabled={approving}
               className="bg-[#00E0B8] hover:bg-[#00C9A3] text-[#0F1115] font-bold px-8 py-3 text-lg shadow-lg shadow-[#00E0B8]/40"
             >
@@ -852,7 +848,7 @@ export default function QuoteDetailPage() {
                       <div className="lg:col-span-1"></div>
                     </div>
                   )}
-                  
+
                   {editingItems.map((item, index) => {
                     const itemKey = item.id || `item-${item.name || 'unnamed'}-${item.type || 'service'}-${index}`;
                     const itemTotal = (item.quantity || 1) * (item.unitCost || 0);
@@ -996,7 +992,7 @@ export default function QuoteDetailPage() {
                       <p className="text-sm text-[#7E8691]/70 mt-1">Clique em "+ Adicionar Item" para começar.</p>
                     </div>
                   )}
-                  
+
                   {/* Campos de custos */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-6 border-t border-[#2A3038]">
                     <div>
@@ -1103,12 +1099,14 @@ export default function QuoteDetailPage() {
               entityId={id}
               attachments={quote.attachments as Attachment[] | undefined}
               onAttachmentsChange={(attachments) => {
-                setQuote({ ...quote, attachments: attachments as Array<{
-                  id: string;
-                  type: string;
-                  url: string;
-                  originalName: string;
-                }> });
+                setQuote({
+                  ...quote, attachments: attachments as Array<{
+                    id: string;
+                    type: string;
+                    url: string;
+                    originalName: string;
+                  }>
+                });
               }}
               readonly={quote.status === QuoteStatus.ACCEPTED || quote.status === QuoteStatus.REJECTED}
             />
@@ -1117,18 +1115,20 @@ export default function QuoteDetailPage() {
             <ChecklistPanel
               entityType="quote"
               entityId={id}
-            checklists={quote.checklists as Checklist[] | undefined}
-            onChecklistsChange={(checklists) => {
-              setQuote({ ...quote, checklists: checklists as Array<{
-                id: string;
-                checklistType: string;
-                name: string;
-                status: string;
-              }> });
-            }}
+              checklists={quote.checklists as Checklist[] | undefined}
+              onChecklistsChange={(checklists) => {
+                setQuote({
+                  ...quote, checklists: checklists as Array<{
+                    id: string;
+                    checklistType: string;
+                    name: string;
+                    status: string;
+                  }>
+                });
+              }}
               readonly={quote.status === QuoteStatus.ACCEPTED || quote.status === QuoteStatus.REJECTED}
               canComplete={Boolean(
-                quote.status === QuoteStatus.AWAITING_DIAGNOSIS || 
+                quote.status === QuoteStatus.AWAITING_DIAGNOSIS ||
                 quote.status === QuoteStatus.DIAGNOSED ||
                 quote.status === QuoteStatus.SENT ||
                 quote.status === QuoteStatus.VIEWED
@@ -1290,11 +1290,10 @@ export default function QuoteDetailPage() {
                     {quote.approvalMethod && (
                       <div className="flex items-center justify-between">
                         <span className="text-[#7E8691]">Método de Aprovação:</span>
-                        <span className={`px-2 py-1 rounded text-sm font-medium ${
-                          quote.approvalMethod === 'digital' 
-                            ? 'bg-[#00E0B8]/20 text-[#00E0B8]' 
-                            : 'bg-[#FFAA00]/20 text-[#FFAA00]'
-                        }`}>
+                        <span className={`px-2 py-1 rounded text-sm font-medium ${quote.approvalMethod === 'digital'
+                          ? 'bg-[#00E0B8]/20 text-[#00E0B8]'
+                          : 'bg-[#FFAA00]/20 text-[#FFAA00]'
+                          }`}>
                           {quote.approvalMethod === 'digital' ? '📱 Digital (Link)' : '✍️ Manual (Presencial)'}
                         </span>
                       </div>
@@ -1306,9 +1305,9 @@ export default function QuoteDetailPage() {
                     <div className="bg-[#0F1115]/50 rounded-lg p-4">
                       <p className="text-sm text-[#7E8691] mb-3">Assinatura do Cliente:</p>
                       <div className="bg-white rounded-lg p-4 flex items-center justify-center">
-                        <img 
-                          src={quote.customerSignature} 
-                          alt="Assinatura do cliente" 
+                        <img
+                          src={quote.customerSignature}
+                          alt="Assinatura do cliente"
                           className="max-w-full max-h-32 object-contain"
                         />
                       </div>
@@ -1320,7 +1319,7 @@ export default function QuoteDetailPage() {
 
                   {/* Link para OS */}
                   {quote.serviceOrderId && (
-                    <Link 
+                    <Link
                       href={`/service-orders/${quote.serviceOrderId}`}
                       className="block w-full mt-4"
                     >

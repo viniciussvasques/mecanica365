@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
 }
@@ -16,13 +16,14 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles = 'font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#1A1E23] disabled:opacity-50 disabled:cursor-not-allowed';
-  
+
   const variants = {
     primary: 'bg-gradient-to-r from-[#00E0B8] to-[#3ABFF8] text-[#0F1115] font-bold hover:from-[#00C9A8] hover:to-[#2AA8E8] focus:ring-[#00E0B8] shadow-lg hover:shadow-xl hover:shadow-[#00E0B8]/20',
     secondary: 'bg-[#2A3038] text-[#D0D6DE] hover:bg-[#3A4048] focus:ring-[#2A3038]',
     outline: 'border-2 border-[#00E0B8] text-[#00E0B8] hover:bg-[#00E0B8]/10 focus:ring-[#00E0B8]',
+    ghost: 'bg-transparent text-[#7E8691] hover:text-[#D0D6DE] hover:bg-[#2A3038] focus:ring-[#2A3038]',
   };
-  
+
   const sizes = {
     sm: 'px-4 py-2 text-sm',
     md: 'px-6 py-3 text-base',

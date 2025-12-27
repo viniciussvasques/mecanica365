@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { JobsService } from './jobs.service';
 import { JobsController } from './jobs.controller';
@@ -18,9 +18,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         const host = configService.get<string>('redis.host') || configService.get<string>('REDIS_HOST') || 'localhost';
         const port = configService.get<number>('redis.port') || configService.get<number>('REDIS_PORT') || 6379;
         const password = configService.get<string>('redis.password') || configService.get<string>('REDIS_PASSWORD');
-        
-        console.log('Redis Config:', { host, port, hasPassword: !!password });
-        
+
+        const logger = new Logger('JobsModule');
+        logger.log(`Redis Config: host=${host}, port=${port}, hasPassword=${!!password}`);
+
         return {
           redis: {
             host,
@@ -39,4 +40,4 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   providers: [JobsService, JobsProcessor],
   exports: [JobsService],
 })
-export class JobsModule {}
+export class JobsModule { }

@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 // API base para o painel admin
-const apiUrl = typeof globalThis.window !== 'undefined' 
-  ? (globalThis.window as Window & { __NEXT_PUBLIC_API_URL__?: string }).__NEXT_PUBLIC_API_URL__ 
-    || process.env.NEXT_PUBLIC_API_URL 
-    || 'http://localhost:3001'
+const apiUrl = typeof globalThis.window !== 'undefined'
+  ? (globalThis.window as Window & { __NEXT_PUBLIC_API_URL__?: string }).__NEXT_PUBLIC_API_URL__
+  || process.env.NEXT_PUBLIC_API_URL
+  || 'http://localhost:3001'
   : 'http://localhost:3001';
 
 // Garantir que a URL não tenha /api duplicado
@@ -35,11 +35,11 @@ api.interceptors.response.use(
     // Só desloga em caso de token inválido/expirado (mensagens específicas do backend)
     if (error.response?.status === 401 && typeof globalThis.window !== 'undefined') {
       const message = error.response?.data?.message || '';
-      const isTokenError = message.includes('Token') || 
-                          message.includes('token') ||
-                          message.includes('expirado') ||
-                          message.includes('inválido');
-      
+      const isTokenError = message.includes('Token') ||
+        message.includes('token') ||
+        message.includes('expirado') ||
+        message.includes('inválido');
+
       if (isTokenError) {
         globalThis.window.localStorage.removeItem('adminToken');
         globalThis.window.localStorage.removeItem('adminUser');
@@ -211,9 +211,9 @@ export interface Plan {
   monthlyPrice?: number;
   annualPrice?: number;
   features?: string[];
-  limits?: { 
-    serviceOrders?: number; 
-    users?: number; 
+  limits?: {
+    serviceOrders?: number;
+    users?: number;
     parts?: number;
     serviceOrdersLimit?: number | null;
     usersLimit?: number | null;
@@ -390,22 +390,22 @@ export interface Webhook {
 
 export const webhooksApi = {
   findAll: async (): Promise<Webhook[]> => {
-    const response = await api.get<Webhook[]>('/webhooks');
+    const response = await api.get<Webhook[]>('/admin/webhooks');
     return response.data;
   },
 
   create: async (data: { name: string; url: string; events: string[] }): Promise<Webhook> => {
-    const response = await api.post<Webhook>('/webhooks', data);
+    const response = await api.post<Webhook>('/admin/webhooks', data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<{ name: string; url: string; events: string[]; isActive: boolean }>): Promise<Webhook> => {
-    const response = await api.patch<Webhook>(`/webhooks/${id}`, data);
+    const response = await api.patch<Webhook>(`/admin/webhooks/${id}`, data);
     return response.data;
   },
 
   remove: async (id: string): Promise<void> => {
-    await api.delete(`/webhooks/${id}`);
+    await api.delete(`/admin/webhooks/${id}`);
   },
 };
 
@@ -427,26 +427,26 @@ export interface Integration {
 
 export const integrationsApi = {
   findAll: async (): Promise<Integration[]> => {
-    const response = await api.get<Integration[]>('/integrations');
+    const response = await api.get<Integration[]>('/admin/integrations');
     return response.data;
   },
 
   create: async (data: { type: string; name: string; config: Record<string, unknown> }): Promise<Integration> => {
-    const response = await api.post<Integration>('/integrations', data);
+    const response = await api.post<Integration>('/admin/integrations', data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<Integration>): Promise<Integration> => {
-    const response = await api.patch<Integration>(`/integrations/${id}`, data);
+    const response = await api.patch<Integration>(`/admin/integrations/${id}`, data);
     return response.data;
   },
 
   remove: async (id: string): Promise<void> => {
-    await api.delete(`/integrations/${id}`);
+    await api.delete(`/admin/integrations/${id}`);
   },
 
   test: async (id: string): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post<{ success: boolean; message: string }>(`/integrations/${id}/test`);
+    const response = await api.post<{ success: boolean; message: string }>(`/admin/integrations/${id}/test`);
     return response.data;
   },
 };
@@ -470,26 +470,26 @@ export interface Automation {
 
 export const automationsApi = {
   findAll: async (): Promise<Automation[]> => {
-    const response = await api.get<Automation[]>('/automations');
+    const response = await api.get<Automation[]>('/admin/automations');
     return response.data;
   },
 
   create: async (data: { name: string; trigger: string; actions: { type: string; config: Record<string, unknown> }[] }): Promise<Automation> => {
-    const response = await api.post<Automation>('/automations', data);
+    const response = await api.post<Automation>('/admin/automations', data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<Automation>): Promise<Automation> => {
-    const response = await api.patch<Automation>(`/automations/${id}`, data);
+    const response = await api.patch<Automation>(`/admin/automations/${id}`, data);
     return response.data;
   },
 
   remove: async (id: string): Promise<void> => {
-    await api.delete(`/automations/${id}`);
+    await api.delete(`/admin/automations/${id}`);
   },
 
   execute: async (id: string): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post<{ success: boolean; message: string }>(`/automations/${id}/execute`);
+    const response = await api.post<{ success: boolean; message: string }>(`/admin/automations/${id}/execute`);
     return response.data;
   },
 };
@@ -542,32 +542,32 @@ export const backupApi = {
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.page) params.append('page', filters.page);
     if (filters?.limit) params.append('limit', filters.limit);
-    
-    const response = await api.get<{ backups: Backup[]; total: number }>(`/backup?${params.toString()}`);
+
+    const response = await api.get<{ backups: Backup[]; total: number }>(`/admin/backup?${params.toString()}`);
     return response.data;
   },
 
   findOne: async (id: string): Promise<Backup> => {
-    const response = await api.get<Backup>(`/backup/${id}`);
+    const response = await api.get<Backup>(`/admin/backup/${id}`);
     return response.data;
   },
 
   create: async (data: { type: 'full' | 'incremental'; encrypted?: boolean; retentionDays?: number }): Promise<Backup> => {
-    const response = await api.post<Backup>('/backup', data);
+    const response = await api.post<Backup>('/admin/backup', data);
     return response.data;
   },
 
   restore: async (id: string, data?: { testRestore?: boolean }): Promise<{ id: string; status: string }> => {
-    const response = await api.post<{ id: string; status: string }>(`/backup/${id}/restore`, data || {});
+    const response = await api.post<{ id: string; status: string }>(`/admin/backup/${id}/restore`, data || {});
     return response.data;
   },
 
   remove: async (id: string): Promise<void> => {
-    await api.delete(`/backup/${id}`);
+    await api.delete(`/admin/backup/${id}`);
   },
 
   getStatus: async (): Promise<BackupStatus> => {
-    const response = await api.get<BackupStatus>('/backup/status');
+    const response = await api.get<BackupStatus>('/admin/backup/status');
     return response.data;
   },
 };

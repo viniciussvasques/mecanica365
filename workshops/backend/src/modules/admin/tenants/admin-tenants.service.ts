@@ -2,13 +2,20 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { EmailService } from '../../shared/email/email.service';
+import { TenantsService } from '../../core/tenants/tenants.service';
+import { CreateTenantDto } from '../../core/tenants/dto';
 
 @Injectable()
 export class AdminTenantsService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
-  ) {}
+    private tenantsService: TenantsService,
+  ) { }
+
+  async create(createDto: CreateTenantDto) {
+    return this.tenantsService.create(createDto);
+  }
 
   async findAll(filters?: {
     status?: string;

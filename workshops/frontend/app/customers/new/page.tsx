@@ -12,9 +12,12 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { VEHICLE_BRANDS, VEHICLE_COLORS } from '@/lib/constants/vehicles';
 import { logger } from '@/lib/utils/logger';
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 
 export default function NewCustomerPage() {
   const router = useRouter();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showVehicleForm, setShowVehicleForm] = useState(false);
@@ -83,12 +86,12 @@ export default function NewCustomerPage() {
 
     try {
       setLoading(true);
-      
+
       // Formatar telefone para o padrão esperado pelo backend: (00) 00000-0000 ou (00) 0000-0000
       const formatPhone = (phone: string): string => {
         // Remover todos os caracteres não numéricos
         const numbers = phone.replace(/\D/g, '');
-        
+
         // Se tiver 10 ou 11 dígitos, formatar
         if (numbers.length === 10) {
           // (00) 0000-0000
@@ -97,11 +100,11 @@ export default function NewCustomerPage() {
           // (00) 00000-0000
           return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
         }
-        
+
         // Se não tiver formato válido, retornar como está (será validado no backend)
         return phone;
       };
-      
+
       const data: CreateCustomerDto = {
         name: formData.name.trim(),
         phone: formatPhone(formData.phone.trim()),
@@ -115,7 +118,7 @@ export default function NewCustomerPage() {
 
       logger.log('[NewCustomer] Enviando dados:', data);
       const customer = await customersApi.create(data);
-      
+
       // Se houver dados de veículo preenchidos, criar o veículo também
       if (showVehicleForm && (vehicleData.placa || vehicleData.vin || vehicleData.renavan)) {
         try {
@@ -124,7 +127,7 @@ export default function NewCustomerPage() {
             ...(vehicleData.placa?.trim() && { placa: vehicleData.placa.trim().toUpperCase() }),
             ...(vehicleData.vin?.trim() && { vin: vehicleData.vin.trim().toUpperCase() }),
             ...(vehicleData.renavan?.trim() && { renavan: vehicleData.renavan.trim() }),
-            ...(vehicleData.make === 'Outro' 
+            ...(vehicleData.make === 'Outro'
               ? (customMake.trim() && { make: customMake.trim() })
               : (vehicleData.make?.trim() && { make: vehicleData.make.trim() })),
             ...(vehicleData.model === 'Outro'
@@ -136,32 +139,22 @@ export default function NewCustomerPage() {
               : (vehicleData.color?.trim() && { color: vehicleData.color.trim() })),
             isDefault: true, // Primeiro veículo é padrão
           };
-          
+
           logger.log('[NewCustomer] Criando veículo:', vehiclePayload);
           await vehiclesApi.create(vehiclePayload);
         } catch (vehicleError: unknown) {
           logger.error('Erro ao criar veículo:', vehicleError);
           // Não bloquear o fluxo se o veículo falhar - cliente já foi criado
-          alert('Cliente criado com sucesso, mas houve um erro ao adicionar o veículo. Você pode adicioná-lo depois.');
+          toast.warning('Cliente criado com sucesso, mas houve um erro ao adicionar o veículo. Você pode adicioná-lo depois.');
         }
+      } else {
+        toast.success('Cliente criado com sucesso!');
       }
-      
+
       router.push('/customers');
     } catch (err: unknown) {
       logger.error('Erro ao criar cliente:', err);
-      let errorMessage = 'Erro ao criar cliente';
-      
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response?: { data?: { message?: string | string[] } } };
-        if (axiosError.response?.data?.message) {
-          const message = axiosError.response.data.message;
-          errorMessage = Array.isArray(message) ? message.join(', ') : message;
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      
-      alert(errorMessage);
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -199,7 +192,7 @@ export default function NewCustomerPage() {
                   let value = e.target.value.replace(/\D/g, '');
                   // Limitar a 11 dígitos
                   if (value.length > 11) value = value.slice(0, 11);
-                  
+
                   // Formatar enquanto digita
                   let formatted = value;
                   if (value.length > 0) {
@@ -213,7 +206,7 @@ export default function NewCustomerPage() {
                       formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
                     }
                   }
-                  
+
                   setFormData({ ...formData, phone: formatted });
                 }}
                 error={errors.phone}

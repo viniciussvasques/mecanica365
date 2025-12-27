@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,16 +42,16 @@ export default function ElevatorsPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const token = authStorage.getToken();
       const subdomain = authStorage.getSubdomain();
-      
+
       if (!token || !subdomain) {
         setError('Token ou subdomain não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       const response = await elevatorsApi.findAll(filters);
       setElevators(response.data);
       setPagination({

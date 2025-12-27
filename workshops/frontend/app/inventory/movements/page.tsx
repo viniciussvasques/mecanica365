@@ -9,6 +9,7 @@ import { inventoryApi, InventoryItem } from '@/lib/api/inventory';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -48,22 +49,22 @@ export default function InventoryMovementsPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const token = authStorage.getToken();
       const subdomain = authStorage.getSubdomain();
-      
+
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       if (!subdomain) {
         setError('Subdomain não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       logger.log('[InventoryMovementsPage] Carregando itens com subdomain:', subdomain);
       const response = await inventoryApi.findAll({ isActive: true, limit: 1000 });
       setItems(response.data);
@@ -108,7 +109,7 @@ export default function InventoryMovementsPage() {
         {/* Nota */}
         <div className="bg-[#3ABFF8]/10 border border-[#3ABFF8] rounded-lg p-4 mb-6">
           <p className="text-[#3ABFF8] text-sm">
-            ℹ️ <strong>Nota:</strong> O histórico detalhado de movimentações será implementado em uma versão futura. 
+            ℹ️ <strong>Nota:</strong> O histórico detalhado de movimentações será implementado em uma versão futura.
             Por enquanto, você pode visualizar as informações atuais de cada item e editar as quantidades diretamente nas peças.
           </p>
         </div>

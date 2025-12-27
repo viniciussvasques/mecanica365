@@ -40,6 +40,7 @@ export function ChecklistPanel({
 
   useEffect(() => {
     loadChecklists();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId, entityType]);
 
   const loadChecklists = async () => {
@@ -109,7 +110,7 @@ export function ChecklistPanel({
 
       logger.log('Enviando items para completar checklist:', JSON.stringify(items, null, 2));
       logger.log('Payload completo:', JSON.stringify({ items }, null, 2));
-      
+
       try {
         const result = await checklistsApi.complete(selectedChecklist.id, { items });
         logger.log('Checklist completado com sucesso:', result);
@@ -124,7 +125,7 @@ export function ChecklistPanel({
           logger.error('[ChecklistPanel] Response data:', axiosError.response?.data);
           logger.error('[ChecklistPanel] Response status:', axiosError.response?.status);
         }
-        
+
         const errorMessage = getAxiosErrorMessage(apiError) || 'Erro ao completar checklist. Verifique se todos os itens obrigatórios foram marcados.';
         alert(errorMessage);
         throw apiError; // Re-throw para não continuar

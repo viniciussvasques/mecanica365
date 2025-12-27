@@ -5,14 +5,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { quotesApi, Quote, QuoteStatus } from '@/lib/api/quotes';
 import { Button } from '@/components/ui/Button';
-import { useNotification } from '@/components/NotificationProvider';
+// import { Button } from '@/components/ui/Button'; // Removed duplicate
+// import { useNotification } from '@/components/NotificationProvider'; // Removed
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
 export default function PendingDiagnosisPage() {
   const router = useRouter();
-  const { showNotification } = useNotification();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [quotes, setQuotes] = useState<Quote[]>([]);
 
@@ -23,14 +26,14 @@ export default function PendingDiagnosisPage() {
   const loadPendingQuotes = async () => {
     try {
       setLoading(true);
-      const response = await quotesApi.findAll({ 
+      const response = await quotesApi.findAll({
         status: QuoteStatus.AWAITING_DIAGNOSIS,
-        limit: 100 
+        limit: 100
       });
       setQuotes(response.data);
     } catch (err: unknown) {
       logger.error('Erro ao carregar orçamentos pendentes:', err);
-      showNotification('Erro ao carregar orçamentos pendentes', 'error');
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -113,7 +116,7 @@ export default function PendingDiagnosisPage() {
                   <div>
                     <p className="text-sm text-[#7E8691]">Veículo</p>
                     <p className="text-[#D0D6DE] font-medium">
-                      {quote.vehicle 
+                      {quote.vehicle
                         ? `${quote.vehicle.placa || 'Sem placa'} - ${quote.vehicle.make || ''} ${quote.vehicle.model || ''}`.trim() || 'Veículo'
                         : 'Não informado'}
                     </p>

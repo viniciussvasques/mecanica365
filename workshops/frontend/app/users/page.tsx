@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,7 @@ export default function UsersPage() {
   }>({});
 
   useEffect(() => {
-      const token = authStorage.getToken();
+    const token = authStorage.getToken();
     if (!token) {
       router.push('/login');
       return;
@@ -51,14 +52,14 @@ export default function UsersPage() {
     try {
       setLoading(true);
       setError(null);
-      
-    const token = authStorage.getToken();
-    if (!token) {
-      setError('Token de autenticação não encontrado. Faça login novamente.');
-      router.push('/login');
-      return;
-    }
-      
+
+      const token = authStorage.getToken();
+      if (!token) {
+        setError('Token de autenticação não encontrado. Faça login novamente.');
+        router.push('/login');
+        return;
+      }
+
       const response = await usersApi.findAll({
         role: filters.role,
         includeInactive: filters.includeInactive,
@@ -196,11 +197,10 @@ export default function UsersPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            user.isActive 
-                              ? 'bg-[#00E0B8]/20 text-[#00E0B8] border border-[#00E0B8]/30' 
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${user.isActive
+                              ? 'bg-[#00E0B8]/20 text-[#00E0B8] border border-[#00E0B8]/30'
                               : 'bg-[#7E8691]/20 text-[#7E8691] border border-[#7E8691]/30'
-                          }`}>
+                            }`}>
                             {user.isActive ? 'Ativo' : 'Inativo'}
                           </span>
                         </td>

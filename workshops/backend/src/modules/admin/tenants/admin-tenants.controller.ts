@@ -12,13 +12,20 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { AdminTenantsService } from './admin-tenants.service';
 import { UpdateTenantPlanDto } from './dto/update-tenant-plan.dto';
+import { CreateTenantDto } from '../../core/tenants/dto';
 
 @ApiTags('Admin - Tenants')
 @ApiBearerAuth()
 @UseGuards(AdminGuard)
 @Controller('admin/tenants')
 export class AdminTenantsController {
-  constructor(private readonly adminTenantsService: AdminTenantsService) {}
+  constructor(private readonly adminTenantsService: AdminTenantsService) { }
+
+  @Post()
+  @ApiOperation({ summary: 'Criar nova oficina (tenant)' })
+  create(@Body() createDto: CreateTenantDto) {
+    return this.adminTenantsService.create(createDto);
+  }
 
   @Get()
   @ApiOperation({ summary: 'Listar oficinas (tenants)' })

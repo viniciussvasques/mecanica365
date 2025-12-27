@@ -2,18 +2,25 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-
-export const dynamic = 'force-dynamic';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { customersApi, Customer } from '@/lib/api/customers';
 import { vehiclesApi, Vehicle } from '@/lib/api/vehicles';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
 import { logger } from '@/lib/utils/logger';
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
+
+// Lazy load the modal
+const TransferVehicleModal = dynamic(() => import('@/components/modals/TransferVehicleModal'), {
+  loading: () => <p>Carregando...</p>,
+  ssr: false
+});
 
 export default function CustomerDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const toast = useToast();
   const id = params.id as string;
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -21,7 +28,6 @@ export default function CustomerDetailPage() {
   const [loadingVehicles, setLoadingVehicles] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transferringVehicleId, setTransferringVehicleId] = useState<string | null>(null);
-  const [newOwnerId, setNewOwnerId] = useState<string>('');
   const [availableCustomers, setAvailableCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
@@ -43,7 +49,7 @@ export default function CustomerDetailPage() {
       const data = await customersApi.findOne(id);
       setCustomer(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar cliente';
+      const errorMessage = getErrorMessage(err);
       setError(errorMessage);
       logger.error('Erro ao carregar cliente:', err);
     } finally {
@@ -83,9 +89,9 @@ export default function CustomerDetailPage() {
     }
   };
 
-  const handleTransferVehicle = async (vehicleId: string) => {
+  const handleTransferVehicle = async (vehicleId: string, newOwnerId: string) => {
     if (!newOwnerId) {
-      alert('Selecione o novo proprietário');
+      toast.error('Selecione o novo proprietário');
       return;
     }
 
@@ -95,13 +101,12 @@ export default function CustomerDetailPage() {
 
     try {
       await vehiclesApi.update(vehicleId, { customerId: newOwnerId, isDefault: true });
-      alert('Veículo transferido com sucesso!');
+      toast.success('Veículo transferido com sucesso!');
       setTransferringVehicleId(null);
-      setNewOwnerId('');
       await loadVehicles();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao transferir veículo';
-      alert(errorMessage);
+      const errorMessage = getErrorMessage(err);
+      toast.error(errorMessage);
       logger.error('Erro ao transferir veículo:', err);
     }
   };
@@ -114,9 +119,10 @@ export default function CustomerDetailPage() {
     try {
       await customersApi.remove(id);
       router.push('/customers');
+      toast.success('Cliente excluído com sucesso!');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir cliente';
-      alert(errorMessage);
+      const errorMessage = getErrorMessage(err);
+      toast.error(errorMessage);
       logger.error('Erro ao excluir cliente:', err);
     }
   };
@@ -347,7 +353,6 @@ export default function CustomerDetailPage() {
                         size="sm"
                         onClick={() => {
                           setTransferringVehicleId(vehicle.id);
-                          setNewOwnerId('');
                         }}
                         className="text-[#3ABFF8] border-[#3ABFF8] hover:bg-[#3ABFF8]/10"
                       >
@@ -363,44 +368,15 @@ export default function CustomerDetailPage() {
 
         {/* Modal de Transferência */}
         {transferringVehicleId && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-[#1A1E23] border border-[#2A3038] rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-xl font-semibold text-[#D0D6DE] mb-4">Transferir Veículo</h3>
-              <p className="text-[#7E8691] mb-4">
-                Selecione o novo proprietário para este veículo:
-              </p>
-              <Select
-                label="Novo Proprietário *"
-                value={newOwnerId}
-                onChange={(e) => setNewOwnerId(e.target.value)}
-                options={[
-                  { value: '', label: 'Selecione um cliente...' },
-                  ...availableCustomers.map(customer => ({
-                    value: customer.id,
-                    label: `${customer.name}${customer.phone ? ` - ${customer.phone}` : ''}`,
-                  })),
-                ]}
-              />
-              <div className="flex items-center justify-end gap-3 mt-6">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setTransferringVehicleId(null);
-                    setNewOwnerId('');
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => handleTransferVehicle(transferringVehicleId)}
-                  disabled={!newOwnerId}
-                >
-                  Transferir
-                </Button>
-              </div>
-            </div>
-          </div>
+          <TransferVehicleModal
+            isOpen={!!transferringVehicleId}
+            onClose={() => {
+              setTransferringVehicleId(null);
+            }}
+            onConfirm={handleTransferVehicle}
+            vehicleId={transferringVehicleId}
+            availableCustomers={availableCustomers}
+          />
         )}
       </div>
     </div>

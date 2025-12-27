@@ -16,13 +16,13 @@ import { Prisma } from '@prisma/client';
 import { getErrorMessage, getErrorStack } from '@common/utils/error.utils';
 
 // Tipo para CustomerVehicle do Prisma
-type PrismaVehicle = Prisma.CustomerVehicleGetPayload<Record<string, never>>;
+export type PrismaVehicle = Prisma.CustomerVehicleGetPayload<Record<string, never>>;
 
 @Injectable()
 export class VehiclesService {
   private readonly logger = new Logger(VehiclesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Cria um novo veículo
@@ -831,8 +831,8 @@ export class VehiclesService {
     vehicle:
       | PrismaVehicle
       | Prisma.CustomerVehicleGetPayload<{
-          include: { customer: true };
-        }>,
+        include: { customer: true };
+      }>,
   ): VehicleResponseDto {
     const vehicleWithRenavan = vehicle as typeof vehicle & {
       renavan?: string | null;

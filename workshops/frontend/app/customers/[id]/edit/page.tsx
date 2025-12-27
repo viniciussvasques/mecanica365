@@ -11,10 +11,13 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { authStorage } from '@/lib/utils/localStorage';
 import { logger } from '@/lib/utils/logger';
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 
 export default function EditCustomerPage() {
   const router = useRouter();
   const params = useParams();
+  const toast = useToast();
   const id = params.id as string;
   const [loading, setLoading] = useState(false);
   const [loadingCustomer, setLoadingCustomer] = useState(true);
@@ -64,8 +67,8 @@ export default function EditCustomerPage() {
         notes: customer.notes || '',
       });
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar cliente';
-      alert(errorMessage);
+      const errorMessage = getErrorMessage(err);
+      toast.error(errorMessage);
       logger.error('Erro ao carregar cliente:', err);
       router.push('/customers');
     } finally {
@@ -107,7 +110,7 @@ export default function EditCustomerPage() {
 
     try {
       setLoading(true);
-      
+
       // Formatar telefone se fornecido
       const formatPhone = (phone?: string): string | undefined => {
         if (!phone) return undefined;
@@ -119,7 +122,7 @@ export default function EditCustomerPage() {
         }
         return phone;
       };
-      
+
       const data: UpdateCustomerDto = {
         name: formData.name.trim() || undefined,
         phone: formatPhone(formData.phone.trim()),
@@ -133,22 +136,11 @@ export default function EditCustomerPage() {
 
       logger.log('[EditCustomer] Enviando dados:', data);
       await customersApi.update(id, data);
+      toast.success('Cliente atualizado com sucesso!');
       router.push(`/customers/${id}`);
     } catch (err: unknown) {
       logger.error('Erro ao atualizar cliente:', err);
-      let errorMessage = 'Erro ao atualizar cliente';
-      
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response?: { data?: { message?: string | string[] } } };
-        if (axiosError.response?.data?.message) {
-          const message = axiosError.response.data.message;
-          errorMessage = Array.isArray(message) ? message.join(', ') : message;
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      
-      alert(errorMessage);
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -198,7 +190,7 @@ export default function EditCustomerPage() {
                 onChange={(e) => {
                   let value = e.target.value.replace(/\D/g, '');
                   if (value.length > 11) value = value.slice(0, 11);
-                  
+
                   let formatted = value;
                   if (value.length > 0) {
                     if (value.length <= 2) {
@@ -211,7 +203,7 @@ export default function EditCustomerPage() {
                       formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
                     }
                   }
-                  
+
                   setFormData({ ...formData, phone: formatted });
                 }}
               />

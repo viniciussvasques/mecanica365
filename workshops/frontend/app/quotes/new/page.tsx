@@ -10,7 +10,8 @@ import { elevatorsApi, Elevator } from '@/lib/api/elevators';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useNotification } from '@/components/NotificationProvider';
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +36,7 @@ const PROBLEM_CATEGORIES = [
 
 export default function NewQuotePage() {
   const router = useRouter();
-  const { showNotification } = useNotification();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -69,7 +70,7 @@ export default function NewQuotePage() {
   const loadInitialData = async () => {
     try {
       setLoadingData(true);
-      
+
       const customersResponse = await customersApi.findAll({ limit: 100 });
       setCustomers(customersResponse.data);
 
@@ -77,7 +78,7 @@ export default function NewQuotePage() {
       setElevators(elevatorsResponse.data);
     } catch (err: unknown) {
       logger.error('Erro ao carregar dados:', err);
-      showNotification('Erro ao carregar dados', 'error');
+      toast.error('Erro ao carregar dados');
     } finally {
       setLoadingData(false);
     }
@@ -134,13 +135,13 @@ export default function NewQuotePage() {
     e.preventDefault();
 
     if (!validateForm()) {
-      showNotification('Preencha todos os campos obrigatórios', 'error');
+      toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
     try {
       setLoading(true);
-      
+
       const data: CreateQuoteDto = {
         customerId: formData.customerId,
         vehicleId: formData.vehicleId,
@@ -156,11 +157,10 @@ export default function NewQuotePage() {
 
       const quote = await quotesApi.create(data);
       setCreatedQuoteId(quote.id);
-      showNotification('Orçamento criado com sucesso! Agora envie para diagnóstico.', 'success');
+      toast.success('Orçamento criado com sucesso! Agora envie para diagnóstico.');
     } catch (err: unknown) {
       logger.error('Erro ao criar orçamento:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao criar orçamento';
-      showNotification(errorMessage, 'error');
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -168,19 +168,18 @@ export default function NewQuotePage() {
 
   const handleSendForDiagnosis = async () => {
     if (!createdQuoteId) {
-      showNotification('Crie o orçamento primeiro', 'error');
+      toast.error('Crie o orçamento primeiro');
       return;
     }
 
     try {
       setLoading(true);
       await quotesApi.sendForDiagnosis(createdQuoteId);
-      showNotification('Orçamento enviado para diagnóstico do mecânico!', 'success');
+      toast.success('Orçamento enviado para diagnóstico do mecânico!');
       router.push('/quotes');
     } catch (err: unknown) {
       logger.error('Erro ao enviar para diagnóstico:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao enviar para diagnóstico';
-      showNotification(errorMessage, 'error');
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -205,7 +204,7 @@ export default function NewQuotePage() {
             </Link>
           </div>
           <p className="text-[#7E8691]">
-            {createdQuoteId 
+            {createdQuoteId
               ? 'Orçamento criado! Envie para diagnóstico do mecânico.'
               : 'Preencha os sintomas e envie para diagnóstico do mecânico. Os itens serão adicionados depois.'}
           </p>
@@ -233,9 +232,9 @@ export default function NewQuotePage() {
                 onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value || undefined })}
                 options={[
                   { value: '', label: 'Selecione um veículo' },
-                  ...vehicles.map(v => ({ 
-                    value: v.id, 
-                    label: `${v.placa || 'Sem placa'} - ${v.make || ''} ${v.model || ''}`.trim() || 'Veículo' 
+                  ...vehicles.map(v => ({
+                    value: v.id,
+                    label: `${v.placa || 'Sem placa'} - ${v.make || ''} ${v.model || ''}`.trim() || 'Veículo'
                   })),
                 ]}
                 disabled={!formData.customerId}
@@ -337,8 +336,8 @@ export default function NewQuotePage() {
               <div>
                 <h4 className="font-semibold text-[#D0D6DE] mb-1">Fluxo de Orçamento</h4>
                 <p className="text-sm text-[#7E8691]">
-                  1. Preencha os sintomas e crie o orçamento<br/>
-                  2. Envie para diagnóstico do mecânico<br/>
+                  1. Preencha os sintomas e crie o orçamento<br />
+                  2. Envie para diagnóstico do mecânico<br />
                   3. Após o diagnóstico, você poderá adicionar itens e valores na edição do orçamento
                 </p>
               </div>
@@ -356,9 +355,9 @@ export default function NewQuotePage() {
                 {loading ? 'Criando...' : 'Criar Orçamento'}
               </Button>
             ) : (
-              <Button 
-                variant="primary" 
-                type="button" 
+              <Button
+                variant="primary"
+                type="button"
                 onClick={handleSendForDiagnosis}
                 disabled={loading}
               >

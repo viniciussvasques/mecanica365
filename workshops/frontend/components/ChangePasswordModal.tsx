@@ -5,7 +5,9 @@ import { Modal } from './ui/Modal';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { GearIcon } from './icons/MechanicIcons';
+import { authStorage } from '@/lib/utils/localStorage';
 import api from '@/lib/api';
+import { getAxiosErrorMessage } from '@/lib/utils/error.utils';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -100,10 +102,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         }
       }, 2000);
     } catch (err: unknown) {
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        'Erro ao alterar senha. Verifique sua senha atual.';
+      const errorMessage = getAxiosErrorMessage(err) || 'Erro ao alterar senha. Verifique sua senha atual.';
       setError(errorMessage);
     } finally {
       setLoading(false);

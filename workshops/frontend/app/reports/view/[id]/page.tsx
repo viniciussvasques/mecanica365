@@ -3,29 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { reportsApi, ReportResponse } from '@/lib/api/reports';
 import { Button } from '@/components/ui/Button';
 import { useNotification } from '@/components/NotificationProvider';
 import { logger } from '@/lib/utils/logger';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 
-export const dynamic = 'force-dynamic';
+// Lazy load the chart component
+const ReportCharts = dynamic(() => import('@/components/reports/ReportCharts'), {
+  loading: () => <div className="h-96 flex items-center justify-center text-[#7E8691]">Carregando gráfico...</div>,
+  ssr: false
+});
 
-const COLORS = ['#00E0B8', '#3ABFF8', '#FFCB2B', '#FF4E3D', '#7E8691'];
+export const dynamicParams = true; // Renamed to avoid reserved word conflict, though 'dynamic' export is correct for route config
 
 export default function ReportViewPage() {
   const router = useRouter();
@@ -51,7 +41,7 @@ export default function ReportViewPage() {
     try {
       setLoading(true);
       const reportData = await reportsApi.findOne(id);
-      
+
       setReport({
         id: reportData.id,
         type: reportData.type,
@@ -62,7 +52,7 @@ export default function ReportViewPage() {
         generatedAt: reportData.generatedAt,
         summary: reportData.summary,
       });
-      
+
       // Processar dados para gráficos
       if (reportData.summary) {
         processChartData(reportData.type, reportData.summary);
@@ -127,7 +117,7 @@ export default function ReportViewPage() {
 
   const handleDownload = async () => {
     if (!report) return;
-    
+
     try {
       const blob = await reportsApi.download(report.id);
       const url = globalThis.window.URL.createObjectURL(blob);
@@ -209,8 +199,8 @@ export default function ReportViewPage() {
                     {typeof value === 'number' && key.toLowerCase().includes('total') && key.toLowerCase().includes('value')
                       ? formatCurrency(value)
                       : typeof value === 'number'
-                      ? value.toLocaleString('pt-BR')
-                      : String(value)}
+                        ? value.toLocaleString('pt-BR')
+                        : String(value)}
                   </p>
                 </div>
               ))}
@@ -222,63 +212,7 @@ export default function ReportViewPage() {
         {chartData && (
           <div className="bg-[#1A1E23] border border-[#2A3038] rounded-lg p-6">
             <h2 className="text-xl font-semibold text-[#D0D6DE] mb-6">Visualizações</h2>
-            <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                {chartData.type === 'pie' ? (
-                  <PieChart>
-                    <Pie
-                      data={chartData.data}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={(entry: any) => {
-                        const percent = entry.percent || 0;
-                        return `${entry.name}: ${(percent * 100).toFixed(0)}%`;
-                      }}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {chartData.data.map((_entry: unknown, index: number) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1A1E23',
-                        border: '1px solid #2A3038',
-                        borderRadius: '8px',
-                        color: '#D0D6DE',
-                      }}
-                    />
-                    <Legend />
-                  </PieChart>
-                ) : (
-                  <BarChart data={chartData.data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2A3038" />
-                    <XAxis
-                      dataKey="name"
-                      stroke="#7E8691"
-                      style={{ fontSize: '12px' }}
-                    />
-                    <YAxis
-                      stroke="#7E8691"
-                      style={{ fontSize: '12px' }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1A1E23',
-                        border: '1px solid #2A3038',
-                        borderRadius: '8px',
-                        color: '#D0D6DE',
-                      }}
-                    />
-                    <Legend />
-                    <Bar dataKey="value" fill="#00E0B8" />
-                  </BarChart>
-                )}
-              </ResponsiveContainer>
-            </div>
+            <ReportCharts chartData={chartData} />
           </div>
         )}
       </div>

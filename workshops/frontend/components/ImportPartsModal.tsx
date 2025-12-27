@@ -52,7 +52,7 @@ export function ImportPartsModal({
       () => new TextDecoder('windows-1252').decode(arrayBuffer),
       () => new TextDecoder('iso-8859-1').decode(arrayBuffer),
     ];
-    
+
     for (const decoder of decoders) {
       try {
         return decoder();
@@ -62,7 +62,7 @@ export function ImportPartsModal({
         continue;
       }
     }
-    
+
     // Se ainda não conseguiu, usar UTF-8 como fallback
     // Se falhar, relançar o erro original
     try {
@@ -111,11 +111,11 @@ export function ImportPartsModal({
     const result: string[] = [];
     let current = '';
     let inQuotes = false;
-    
+
     for (let idx = 0; idx < line.length; idx++) {
       const char = line[idx];
       const nextChar = line[idx + 1];
-      
+
       if (char === '"') {
         if (inQuotes && nextChar === '"') {
           // Aspas duplas dentro de aspas (escape)
@@ -135,7 +135,7 @@ export function ImportPartsModal({
         current += char;
       }
     }
-    
+
     // Adicionar ultimo campo
     result.push(current.trim());
     return result;
@@ -190,7 +190,6 @@ export function ImportPartsModal({
       case 'costPrice':
       case 'sellPrice': {
         // Remover caracteres não numéricos e substituir vírgula por ponto
-        // eslint-disable-next-line @typescript-eslint/prefer-string-replace-all
         const cleanedValue = value.replace(/[^\d,.-]/g, '').replaceAll(',', '.');
         const price = Number.parseFloat(cleanedValue);
         if (Number.isNaN(price) || price < 0) {
@@ -208,75 +207,72 @@ export function ImportPartsModal({
 
   // Mapear colunas esperadas (suporta variações de encoding)
   const columnMap: Record<string, string> = {
-      'codigo': 'partNumber',
-      'código': 'partNumber',
-      'cÃ³digo': 'partNumber', // Encoding incorreto comum
-      'partnumber': 'partNumber',
-      'part_number': 'partNumber',
-      'nome': 'name',
-      'name': 'name',
-      'descricao': 'description',
-      'descrição': 'description',
-      'descriÃ§Ã£o': 'description', // Encoding incorreto comum
-      'description': 'description',
-      'categoria': 'category',
-      'category': 'category',
-      'marca': 'brand',
-      'brand': 'brand',
-      'fornecedor': 'supplierId',
-      'supplierid': 'supplierId',
-      'supplier_id': 'supplierId',
-      'quantidade': 'quantity',
-      'quantity': 'quantity',
-      'qtd': 'quantity',
-      'quantidade_minima': 'minQuantity',
-      'quantidade mínima': 'minQuantity',
-      'quantidade mÃ-nima': 'minQuantity', // Encoding incorreto comum
-      'minquantity': 'minQuantity',
-      'min_quantity': 'minQuantity',
-      'preco_custo': 'costPrice',
-      'preço custo': 'costPrice',
-      'preço de custo': 'costPrice',
-      'preÃ§o custo': 'costPrice', // Encoding incorreto comum
-      'costprice': 'costPrice',
-      'cost_price': 'costPrice',
-      'preco_venda': 'sellPrice',
-      'preço venda': 'sellPrice',
-      'preço de venda': 'sellPrice',
-      'preÃ§o venda': 'sellPrice', // Encoding incorreto comum
-      'sellprice': 'sellPrice',
-      'sell_price': 'sellPrice',
-      'localizacao': 'location',
-      'localização': 'location',
-      'localizaÃ§Ã£o': 'location', // Encoding incorreto comum
-      'location': 'location',
-      'ativo': 'isActive',
-      'isactive': 'isActive',
-      'is_active': 'isActive',
-    };
+    'codigo': 'partNumber',
+    'código': 'partNumber',
+    'cÃ³digo': 'partNumber', // Encoding incorreto comum
+    'partnumber': 'partNumber',
+    'part_number': 'partNumber',
+    'nome': 'name',
+    'name': 'name',
+    'descricao': 'description',
+    'descrição': 'description',
+    'descriÃ§Ã£o': 'description', // Encoding incorreto comum
+    'description': 'description',
+    'categoria': 'category',
+    'category': 'category',
+    'marca': 'brand',
+    'brand': 'brand',
+    'fornecedor': 'supplierId',
+    'supplierid': 'supplierId',
+    'supplier_id': 'supplierId',
+    'quantidade': 'quantity',
+    'quantity': 'quantity',
+    'qtd': 'quantity',
+    'quantidade_minima': 'minQuantity',
+    'quantidade mínima': 'minQuantity',
+    'quantidade mÃ-nima': 'minQuantity', // Encoding incorreto comum
+    'minquantity': 'minQuantity',
+    'min_quantity': 'minQuantity',
+    'preco_custo': 'costPrice',
+    'preço custo': 'costPrice',
+    'preço de custo': 'costPrice',
+    'preÃ§o custo': 'costPrice', // Encoding incorreto comum
+    'costprice': 'costPrice',
+    'cost_price': 'costPrice',
+    'preco_venda': 'sellPrice',
+    'preço venda': 'sellPrice',
+    'preço de venda': 'sellPrice',
+    'preÃ§o venda': 'sellPrice', // Encoding incorreto comum
+    'sellprice': 'sellPrice',
+    'sell_price': 'sellPrice',
+    'localizacao': 'location',
+    'localização': 'location',
+    'localizaÃ§Ã£o': 'location', // Encoding incorreto comum
+    'location': 'location',
+    'ativo': 'isActive',
+    'isactive': 'isActive',
+    'is_active': 'isActive',
+  };
 
   const parseCSV = (csvText: string): ParsedPart[] => {
     // Normalizar quebras de linha (regex necessário para múltiplas ocorrências)
-    // eslint-disable-next-line @typescript-eslint/prefer-string-replace-all
     const normalizedText = csvText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const lines = normalizedText.split('\n').filter((line) => line.trim().length > 0);
-    
+
     if (lines.length < 2) {
       throw new Error('Arquivo CSV deve ter pelo menos uma linha de cabeçalho e uma linha de dados');
     }
 
     // Parse header (regex necessário para múltiplas ocorrências - replaceAll não funciona com regex)
-    // eslint-disable-next-line @typescript-eslint/prefer-string-replace-all
     const header = parseCSVLine(lines[0])
       .map((h) => h.trim().replace(/(^"|"$)/g, '').toLowerCase()); // NOSONAR - replace necessário pois replaceAll não suporta regex
-    
+
     const parsed: ParsedPart[] = [];
 
     for (let rowIndex = 1; rowIndex < lines.length; rowIndex++) {
       const line = lines[rowIndex];
-      // eslint-disable-next-line @typescript-eslint/prefer-string-replace-all
       const values = parseCSVLine(line).map((v) => v.trim().replace(/(^"|"$)/g, ''));
-      
+
       const part: Partial<CreatePartDto> = {};
       const errors: string[] = [];
 
@@ -310,7 +306,7 @@ export function ImportPartsModal({
     const fileName = selectedFile.name.toLowerCase();
     const isCSV = fileName.endsWith('.csv');
     const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
-    
+
     if (!isCSV && !isExcel) {
       alert('Por favor, selecione um arquivo CSV ou Excel (.xlsx, .xls)');
       return;
@@ -321,7 +317,7 @@ export function ImportPartsModal({
 
     try {
       setLoading(true);
-      
+
       if (isExcel) {
         alert('Importação de arquivos Excel será implementada em breve. Por enquanto, exporte o arquivo como CSV e tente novamente.');
         setParsedParts([]);
@@ -378,7 +374,7 @@ export function ImportPartsModal({
       setImporting(true);
       const result = await partsApi.import(validParts);
       setImportResult(result);
-      
+
       if (result.errors === 0) {
         setTimeout(() => {
           onSuccess();

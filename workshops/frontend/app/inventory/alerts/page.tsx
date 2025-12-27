@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { inventoryApi, InventoryAlert, AlertStatus } from '@/lib/api/inventory';
 import { Button } from '@/components/ui/Button';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 const getStatusBadge = (status: AlertStatus) => {
   const badges = {
@@ -42,22 +43,22 @@ export default function InventoryAlertsPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const token = authStorage.getToken();
       const subdomain = authStorage.getSubdomain();
-      
+
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       if (!subdomain) {
         setError('Subdomain não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       logger.log('[InventoryAlertsPage] Carregando alertas com subdomain:', subdomain);
       const alertsData = await inventoryApi.getAlerts();
       setAlerts(alertsData);

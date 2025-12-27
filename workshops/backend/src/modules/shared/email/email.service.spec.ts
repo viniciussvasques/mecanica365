@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from './email.service';
 import { EmailTemplatesService } from './email-templates.service';
+import { PrismaService } from '@database/prisma.service';
 import { WelcomeEmailData } from './interfaces/email-data.interfaces';
 import * as nodemailer from 'nodemailer';
 
@@ -23,7 +24,10 @@ describe('EmailService', () => {
     (nodemailer.createTransport as jest.Mock).mockReturnValue(mockTransporter);
 
     const mockConfigService = {
-      get: jest.fn(),
+      get: jest.fn((key: string) => {
+        if (key.startsWith('SMTP_')) return 'some_value';
+        return null;
+      }),
     };
 
     const mockTemplatesService = {
@@ -58,8 +62,9 @@ describe('EmailService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EmailService,
-        { provide: ConfigService, useValue: mockConfigService },
-        { provide: EmailTemplatesService, useValue: mockTemplatesService },
+        { provide: ConfigService, useValue: mockConfigService as unknown },
+        { provide: EmailTemplatesService, useValue: mockTemplatesService as unknown },
+        { provide: PrismaService, useValue: {} as unknown },
       ],
     }).compile();
 
@@ -521,6 +526,7 @@ describe('EmailService', () => {
               getWelcomeEmailTextVersion: jest.fn(),
             },
           },
+          { provide: PrismaService, useValue: {} as unknown },
         ],
       }).compile();
 
@@ -545,6 +551,7 @@ describe('EmailService', () => {
               getWelcomeEmailTextVersion: jest.fn(),
             },
           },
+          { provide: PrismaService, useValue: {} as unknown },
         ],
       }).compile();
 
@@ -574,6 +581,7 @@ describe('EmailService', () => {
               getWelcomeEmailTextVersion: jest.fn(),
             },
           },
+          { provide: PrismaService, useValue: {} },
         ],
       }).compile();
 
@@ -598,6 +606,7 @@ describe('EmailService', () => {
               getWelcomeEmailTextVersion: jest.fn(),
             },
           },
+          { provide: PrismaService, useValue: {} },
         ],
       }).compile();
 

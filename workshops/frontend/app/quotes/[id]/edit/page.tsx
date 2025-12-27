@@ -10,6 +10,8 @@ import { elevatorsApi, Elevator } from '@/lib/api/elevators';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +37,7 @@ const PROBLEM_CATEGORIES = [
 export default function EditQuotePage() {
   const router = useRouter();
   const params = useParams();
+  const toast = useToast();
   const id = params.id as string;
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -99,13 +102,13 @@ export default function EditQuotePage() {
         recommendations: data.recommendations,
         items: data.items || [],
       });
-      
+
       if (data.customerId) {
         await loadVehicles(data.customerId);
       }
     } catch (err: unknown) {
       logger.error('Erro ao carregar orçamento:', err);
-      alert('Erro ao carregar orçamento');
+      toast.error(getErrorMessage(err));
       router.push('/quotes');
     } finally {
       setLoadingData(false);
@@ -139,7 +142,7 @@ export default function EditQuotePage() {
 
   const addItem = () => {
     if (!newItem.name || !newItem.unitCost) {
-      alert('Preencha nome e custo unitário do item');
+      toast.error('Preencha nome e custo unitário do item');
       return;
     }
 
@@ -202,18 +205,18 @@ export default function EditQuotePage() {
     );
 
     if (!canEditItems && (formData.items && formData.items.length > 0)) {
-      alert('Não é possível adicionar itens antes do diagnóstico. O orçamento deve estar com status DIAGNOSED ou superior.');
+      toast.error('Não é possível adicionar itens antes do diagnóstico. O orçamento deve estar com status DIAGNOSED ou superior.');
       return;
     }
 
     if (canEditItems && (!formData.items || formData.items.length === 0)) {
-      alert('Adicione pelo menos um item ao orçamento');
+      toast.error('Adicione pelo menos um item ao orçamento');
       return;
     }
 
     try {
       setLoading(true);
-      
+
       // Preparar dados para envio
       const data: UpdateQuoteDto = {
         ...formData,
@@ -249,18 +252,11 @@ export default function EditQuotePage() {
       }
 
       await quotesApi.update(id, data);
+      toast.success('Orçamento atualizado com sucesso!');
       router.push(`/quotes/${id}`);
     } catch (err: unknown) {
       logger.error('Erro ao atualizar orçamento:', err);
-      let errorMessage = 'Erro ao atualizar orçamento';
-      
-      if (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data) {
-        errorMessage = err.response.data.message;
-      } else if (err?.message) {
-        errorMessage = err.message;
-      }
-      
-      alert(errorMessage);
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -310,9 +306,9 @@ export default function EditQuotePage() {
                 onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value || undefined })}
                 options={[
                   { value: '', label: 'Selecione um veículo' },
-                  ...vehicles.map(v => ({ 
-                    value: v.id, 
-                    label: `${v.placa || 'Sem placa'} - ${v.make || ''} ${v.model || ''}`.trim() || 'Veículo' 
+                  ...vehicles.map(v => ({
+                    value: v.id,
+                    label: `${v.placa || 'Sem placa'} - ${v.make || ''} ${v.model || ''}`.trim() || 'Veículo'
                   })),
                 ]}
                 disabled={!formData.customerId}
@@ -437,131 +433,131 @@ export default function EditQuotePage() {
 
           {/* Itens do Orçamento - Só aparece depois do diagnóstico */}
           {quote && (quote.status === QuoteStatus.DIAGNOSED || quote.status === QuoteStatus.SENT || quote.status === QuoteStatus.VIEWED || quote.status === QuoteStatus.ACCEPTED) && (
-          <div className="border-t border-[#2A3038] pt-6">
-            <h3 className="text-lg font-semibold text-[#D0D6DE] mb-4">Itens do Orçamento</h3>
-            
-            <div className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038] mb-4">
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                <div>
-                  <Select
-                    label="Tipo"
-                    value={newItem.type || QuoteItemType.SERVICE}
-                    onChange={(e) => setNewItem({ ...newItem, type: e.target.value as QuoteItemType })}
-                    options={[
-                      { value: QuoteItemType.SERVICE, label: 'Serviço' },
-                      { value: QuoteItemType.PART, label: 'Peça' },
-                    ]}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <Input
-                    label="Nome"
-                    placeholder="Nome do serviço ou peça"
-                    value={newItem.name || ''}
-                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Input
-                    label="Quantidade"
-                    type="number"
-                    min="1"
-                    value={newItem.quantity || 1}
-                    onChange={(e) => setNewItem({ ...newItem, quantity: Number.parseInt(e.target.value, 10) || 1 })}
-                  />
-                </div>
-                <div>
-                  <Input
-                    label="Custo Unitário"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={newItem.unitCost || 0}
-                    onChange={(e) => setNewItem({ ...newItem, unitCost: Number.parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button type="button" variant="secondary" onClick={addItem}>
-                    Adicionar
-                  </Button>
+            <div className="border-t border-[#2A3038] pt-6">
+              <h3 className="text-lg font-semibold text-[#D0D6DE] mb-4">Itens do Orçamento</h3>
+
+              <div className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038] mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  <div>
+                    <Select
+                      label="Tipo"
+                      value={newItem.type || QuoteItemType.SERVICE}
+                      onChange={(e) => setNewItem({ ...newItem, type: e.target.value as QuoteItemType })}
+                      options={[
+                        { value: QuoteItemType.SERVICE, label: 'Serviço' },
+                        { value: QuoteItemType.PART, label: 'Peça' },
+                      ]}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Nome"
+                      placeholder="Nome do serviço ou peça"
+                      value={newItem.name || ''}
+                      onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      label="Quantidade"
+                      type="number"
+                      min="1"
+                      value={newItem.quantity || 1}
+                      onChange={(e) => setNewItem({ ...newItem, quantity: Number.parseInt(e.target.value, 10) || 1 })}
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      label="Custo Unitário"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newItem.unitCost || 0}
+                      onChange={(e) => setNewItem({ ...newItem, unitCost: Number.parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button type="button" variant="secondary" onClick={addItem}>
+                      Adicionar
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {formData.items && formData.items.length > 0 && (
-              <div className="space-y-2">
-                {formData.items.map((item, itemIndex) => {
-                  const itemKey = item.id || `${item.name}-${item.type}-${itemIndex}`;
-                  return (
-                    <div key={itemKey} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038] flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-[#D0D6DE]">{item.name}</span>
-                          <span className="text-xs text-[#7E8691]">
-                            ({item.type === QuoteItemType.SERVICE ? 'Serviço' : 'Peça'})
-                          </span>
+              {formData.items && formData.items.length > 0 && (
+                <div className="space-y-2">
+                  {formData.items.map((item, itemIndex) => {
+                    const itemKey = item.id || `${item.name}-${item.type}-${itemIndex}`;
+                    return (
+                      <div key={itemKey} className="bg-[#0F1115] p-4 rounded-lg border border-[#2A3038] flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-[#D0D6DE]">{item.name}</span>
+                            <span className="text-xs text-[#7E8691]">
+                              ({item.type === QuoteItemType.SERVICE ? 'Serviço' : 'Peça'})
+                            </span>
+                          </div>
+                          {item.description && (
+                            <p className="text-sm text-[#7E8691] mt-1">{item.description}</p>
+                          )}
+                          <div className="text-sm text-[#7E8691] mt-1">
+                            {item.quantity}x R$ {item.unitCost.toFixed(2)} = R${' '}
+                            {(item.totalCost ??
+                              (item.unitCost || 0) * (item.quantity || 1)
+                            ).toFixed(2)}
+                          </div>
                         </div>
-                        {item.description && (
-                          <p className="text-sm text-[#7E8691] mt-1">{item.description}</p>
-                        )}
-                    <div className="text-sm text-[#7E8691] mt-1">
-                      {item.quantity}x R$ {item.unitCost.toFixed(2)} = R${' '}
-                      {(item.totalCost ??
-                        (item.unitCost || 0) * (item.quantity || 1)
-                      ).toFixed(2)}
-                    </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeItem(itemIndex)}
+                          className="text-[#FF4E3D] border-[#FF4E3D] hover:bg-[#FF4E3D]/10"
+                        >
+                          Remover
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeItem(itemIndex)}
-                        className="text-[#FF4E3D] border-[#FF4E3D] hover:bg-[#FF4E3D]/10"
-                      >
-                        Remover
-                      </Button>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <Input
+                  label="Custo de Mão de Obra"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.laborCost || 0}
+                  onChange={(e) => setFormData({ ...formData, laborCost: Number.parseFloat(e.target.value) || 0 })}
+                />
+                <Input
+                  label="Custo de Peças"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.partsCost || 0}
+                  onChange={(e) => setFormData({ ...formData, partsCost: Number.parseFloat(e.target.value) || 0 })}
+                />
+                <Input
+                  label="Desconto"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.discount || 0}
+                  onChange={(e) => setFormData({ ...formData, discount: Number.parseFloat(e.target.value) || 0 })}
+                />
               </div>
-            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <Input
-                label="Custo de Mão de Obra"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.laborCost || 0}
-                onChange={(e) => setFormData({ ...formData, laborCost: Number.parseFloat(e.target.value) || 0 })}
-              />
-              <Input
-                label="Custo de Peças"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.partsCost || 0}
-                onChange={(e) => setFormData({ ...formData, partsCost: Number.parseFloat(e.target.value) || 0 })}
-              />
-              <Input
-                label="Desconto"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.discount || 0}
-                onChange={(e) => setFormData({ ...formData, discount: Number.parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div className="mt-4 p-4 bg-[#2A3038] rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold text-[#D0D6DE]">Total:</span>
-                <span className="text-2xl font-bold text-[#00E0B8]">
-                  R$ {calculateTotal().toFixed(2)}
-                </span>
+              <div className="mt-4 p-4 bg-[#2A3038] rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold text-[#D0D6DE]">Total:</span>
+                  <span className="text-2xl font-bold text-[#00E0B8]">
+                    R$ {calculateTotal().toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
           )}
 
           {/* Mensagem se não pode editar itens ainda */}
@@ -573,7 +569,7 @@ export default function EditQuotePage() {
                   <div>
                     <h4 className="font-semibold text-[#D0D6DE] mb-1">Aguardando Diagnóstico</h4>
                     <p className="text-sm text-[#7E8691]">
-                      {quote.status === QuoteStatus.DRAFT 
+                      {quote.status === QuoteStatus.DRAFT
                         ? 'Envie o orçamento para diagnóstico do mecânico primeiro.'
                         : 'O mecânico ainda está avaliando o orçamento. Após o diagnóstico, você poderá adicionar itens e valores.'}
                     </p>

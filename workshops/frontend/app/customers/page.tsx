@@ -11,9 +11,12 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { logger } from '@/lib/utils/logger';
 import { authStorage } from '@/lib/utils/localStorage';
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 
 export default function CustomersPage() {
   const router = useRouter();
+  const toast = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,23 +45,23 @@ export default function CustomersPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Verificar se token e subdomain estão disponíveis
       const token = authStorage.getToken();
       const subdomain = authStorage.getSubdomain();
-      
+
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       if (!subdomain) {
         setError('Subdomain não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       logger.log('[CustomersPage] Carregando clientes com subdomain:', subdomain);
       const response = await customersApi.findAll(filters);
       setCustomers(response.data);
@@ -70,8 +73,11 @@ export default function CustomersPage() {
       });
     } catch (err: unknown) {
       logger.error('[CustomersPage] Erro ao carregar clientes:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar clientes';
+      const errorMessage = getErrorMessage(err);
       setError(errorMessage);
+      if (err instanceof Error && err.message !== 'Token de autenticação não encontrado. Faça login novamente.') {
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -101,8 +107,8 @@ export default function CustomersPage() {
       await customersApi.remove(id);
       await loadCustomers();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir cliente';
-      alert(errorMessage);
+      const errorMessage = getErrorMessage(err);
+      toast.error(errorMessage);
       logger.error('Erro ao excluir cliente:', err);
     }
   };
@@ -196,91 +202,91 @@ export default function CustomersPage() {
               );
             }
             return (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#2A3038]">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Nome</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Telefone</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Email</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Tipo</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Documento</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#2A3038]">
-                    {customers.map((customer) => (
-                      <tr key={customer.id} className="hover:bg-[#2A3038]/50 transition-colors">
-                        <td className="px-6 py-4 text-sm text-[#D0D6DE]">{customer.name}</td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">{customer.phone}</td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">{customer.email || '-'}</td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">
-                          {customer.documentType === 'cpf' ? 'CPF' : 'CNPJ'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-[#7E8691]">
-                          {customer.documentType === 'cpf' ? (customer.cpf || '-') : (customer.cnpj || '-')}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          <div className="flex items-center space-x-2">
-                            <Link href={`/customers/${customer.id}`}>
-                              <Button variant="outline" size="sm">
-                                Ver
-                              </Button>
-                            </Link>
-                            <Link href={`/customers/${customer.id}/edit`}>
-                              <Button variant="secondary" size="sm">
-                                Editar
-                              </Button>
-                            </Link>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(customer.id)}
-                              className="text-[#FF4E3D] border-[#FF4E3D] hover:bg-[#FF4E3D]/10"
-                            >
-                              Excluir
-                            </Button>
-                          </div>
-                        </td>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-[#2A3038]">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Nome</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Telefone</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Email</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Tipo</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Documento</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#D0D6DE]">Ações</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Paginação */}
-              {pagination.totalPages > 1 && (
-                <div className="px-6 py-4 bg-[#2A3038] flex items-center justify-between">
-                  <p className="text-sm text-[#7E8691]">
-                    Mostrando {((pagination.page - 1) * pagination.limit) + 1} a{' '}
-                    {Math.min(pagination.page * pagination.limit, pagination.total)} de{' '}
-                    {pagination.total} clientes
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.page - 1)}
-                      disabled={pagination.page === 1}
-                    >
-                      Anterior
-                    </Button>
-                    <span className="text-sm text-[#D0D6DE]">
-                      Página {pagination.page} de {pagination.totalPages}
-                    </span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={pagination.page === pagination.totalPages}
-                    >
-                      Próxima
-                    </Button>
-                  </div>
+                    </thead>
+                    <tbody className="divide-y divide-[#2A3038]">
+                      {customers.map((customer) => (
+                        <tr key={customer.id} className="hover:bg-[#2A3038]/50 transition-colors">
+                          <td className="px-6 py-4 text-sm text-[#D0D6DE]">{customer.name}</td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">{customer.phone}</td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">{customer.email || '-'}</td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">
+                            {customer.documentType === 'cpf' ? 'CPF' : 'CNPJ'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#7E8691]">
+                            {customer.documentType === 'cpf' ? (customer.cpf || '-') : (customer.cnpj || '-')}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <div className="flex items-center space-x-2">
+                              <Link href={`/customers/${customer.id}`}>
+                                <Button variant="outline" size="sm">
+                                  Ver
+                                </Button>
+                              </Link>
+                              <Link href={`/customers/${customer.id}/edit`}>
+                                <Button variant="secondary" size="sm">
+                                  Editar
+                                </Button>
+                              </Link>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(customer.id)}
+                                className="text-[#FF4E3D] border-[#FF4E3D] hover:bg-[#FF4E3D]/10"
+                              >
+                                Excluir
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </>
+
+                {/* Paginação */}
+                {pagination.totalPages > 1 && (
+                  <div className="px-6 py-4 bg-[#2A3038] flex items-center justify-between">
+                    <p className="text-sm text-[#7E8691]">
+                      Mostrando {((pagination.page - 1) * pagination.limit) + 1} a{' '}
+                      {Math.min(pagination.page * pagination.limit, pagination.total)} de{' '}
+                      {pagination.total} clientes
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page === 1}
+                      >
+                        Anterior
+                      </Button>
+                      <span className="text-sm text-[#D0D6DE]">
+                        Página {pagination.page} de {pagination.totalPages}
+                      </span>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page === pagination.totalPages}
+                      >
+                        Próxima
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             );
           })()}
         </div>

@@ -7,6 +7,8 @@ import { TenantsService } from '../tenants/tenants.service';
 import { BillingService } from '../billing/billing.service';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../../shared/email/email.service';
+import { CloudflareService } from '../../shared/cloudflare/cloudflare.service';
+import { EncryptionService } from '../../shared/encryption/encryption.service';
 import { CreateOnboardingDto } from './dto/create-onboarding.dto';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import {
@@ -20,6 +22,20 @@ import {
 } from '../billing/dto/subscription-response.dto';
 import { UserRole } from '../users/dto/create-user.dto';
 import Stripe from 'stripe';
+
+jest.mock('stripe', () => {
+  return class MockStripe {
+    checkout = {
+      sessions: {
+        create: jest.fn().mockResolvedValue({
+          id: 'cs_test_123',
+          url: 'https://checkout.stripe.com/test',
+        }),
+      },
+    };
+    constructor() { }
+  };
+});
 
 describe('OnboardingService', () => {
   let service: OnboardingService;
@@ -57,6 +73,15 @@ describe('OnboardingService', () => {
       },
       subscription: {
         findFirst: jest.fn(),
+      },
+      systemPaymentGateway: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'gateway-id',
+          type: 'stripe',
+          isActive: true,
+          secretKey: 'sk_test_mock',
+          publicKey: 'pk_test_mock',
+        }),
       },
     };
 
@@ -99,12 +124,14 @@ describe('OnboardingService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OnboardingService,
-        { provide: PrismaService, useValue: mockPrismaService },
-        { provide: TenantsService, useValue: mockTenantsService },
-        { provide: BillingService, useValue: mockBillingService },
-        { provide: UsersService, useValue: mockUsersService },
-        { provide: EmailService, useValue: mockEmailService },
-        { provide: ConfigService, useValue: mockConfigService },
+        { provide: PrismaService, useValue: mockPrismaService as unknown },
+        { provide: TenantsService, useValue: mockTenantsService as unknown },
+        { provide: BillingService, useValue: mockBillingService as unknown },
+        { provide: UsersService, useValue: mockUsersService as unknown },
+        { provide: EmailService, useValue: mockEmailService as unknown },
+        { provide: ConfigService, useValue: mockConfigService as unknown },
+        { provide: CloudflareService, useValue: { createTenantSubdomain: jest.fn(), deleteTenantSubdomain: jest.fn() } },
+        { provide: EncryptionService, useValue: { encrypt: jest.fn(val => val), decrypt: jest.fn(val => val) } },
       ],
     }).compile();
 
@@ -230,6 +257,8 @@ describe('OnboardingService', () => {
             { provide: UsersService, useValue: usersService },
             { provide: EmailService, useValue: emailService },
             { provide: ConfigService, useValue: { get: jest.fn() } },
+            { provide: CloudflareService, useValue: { createTenantSubdomain: jest.fn(), deleteTenantSubdomain: jest.fn() } },
+            { provide: EncryptionService, useValue: { encrypt: jest.fn(val => val), decrypt: jest.fn(val => val) } },
           ],
         },
       ).compile();
@@ -245,6 +274,11 @@ describe('OnboardingService', () => {
       (prismaService.tenant.findUnique as jest.Mock).mockResolvedValue(
         mockTenant as unknown,
       );
+
+      // Force systemPaymentGateway to return null to simulate missing configuration
+      // We need to access prismaService on the moduleWithoutStripe
+      const prismaServiceLocal = moduleWithoutStripe.get(PrismaService);
+      (prismaServiceLocal.systemPaymentGateway.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
         serviceWithoutStripe.createCheckoutSession(createCheckoutDto),
@@ -487,7 +521,9 @@ describe('OnboardingService', () => {
       await service.createCheckoutSession(createCheckoutDtoLocal);
 
       // Verificar se o email do tenant foi usado
-      expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
+      // Verificar se o email do tenant foi usado
+      const stripeInstance = (service as any).stripe;
+      expect(stripeInstance.checkout.sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({
           customer_email: 'admin@oficina.com',
         }),
@@ -530,7 +566,8 @@ describe('OnboardingService', () => {
 
       await service.createCheckoutSession(createCheckoutDtoLocal);
 
-      expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
+      const stripeInstance = (service as any).stripe;
+      expect(stripeInstance.checkout.sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({
           customer_email: 'user@oficina.com',
         }),
@@ -572,7 +609,8 @@ describe('OnboardingService', () => {
 
       await service.createCheckoutSession(createCheckoutDtoLocal);
 
-      expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
+      const stripeInstance = (service as any).stripe;
+      expect(stripeInstance.checkout.sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({
           customer_email: expect.stringContaining('@temp.com'),
         }),
@@ -601,15 +639,10 @@ describe('OnboardingService', () => {
         expires_at: Math.floor(Date.now() / 1000) + 3600,
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-      const mockStripe = (service as any).stripe;
-      if (mockStripe) {
-        mockStripe.checkout = {
-          sessions: {
-            create: jest.fn().mockResolvedValue(mockStripeSession),
-          },
-        };
-      }
+      // Inicializar Stripe para configurar o mock
+      await (service as any).getStripeInstance();
+      const stripeInstance = (service as any).stripe;
+      stripeInstance.checkout.sessions.create.mockResolvedValue(mockStripeSession);
 
       await expect(
         service.createCheckoutSession(createCheckoutDtoLocal),

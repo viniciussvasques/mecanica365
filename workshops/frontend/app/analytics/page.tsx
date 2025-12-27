@@ -19,7 +19,7 @@ import {
   CreditCardIcon,
   HelpIcon,
 } from '@/components/icons/MechanicIcons';
-import { analyticsApi, DashboardAnalytics } from '@/lib/api/analytics';
+import { analyticsApi, DashboardAnalytics, Alert } from '@/lib/api/analytics';
 import { Button } from '@/components/ui/Button';
 import { logger } from '@/lib/utils/logger';
 
@@ -94,7 +94,7 @@ const StatusBadge = ({ status, count }: { status: string; count: number }) => {
   );
 };
 
-const AlertCard = ({ alert }: { alert: any }) => {
+const AlertCard = ({ alert }: { alert: Alert }) => {
   const severityColors = {
     low: 'border-[#7E8691] bg-[#7E8691]/10',
     medium: 'border-[#FFA500] bg-[#FFA500]/10',
@@ -136,6 +136,7 @@ export default function AnalyticsPage() {
     }
 
     loadAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadAnalytics = async () => {

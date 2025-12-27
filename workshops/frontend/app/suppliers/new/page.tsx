@@ -43,7 +43,6 @@ export default function NewSupplierPage() {
     }
 
     if (formData.document && formData.documentType) {
-      // eslint-disable-next-line @typescript-eslint/prefer-string-replace-all
       const doc = formData.document.replace(/\D/g, '');
       if (formData.documentType === DocumentType.CNPJ && doc.length !== 14) {
         newErrors.document = 'CNPJ deve ter 14 dígitos';
@@ -70,18 +69,16 @@ export default function NewSupplierPage() {
 
     try {
       setLoading(true);
-      
+
       const data: CreateSupplierDto = {
         name: formData.name.trim(),
         documentType: formData.documentType || undefined,
-        // eslint-disable-next-line @typescript-eslint/prefer-string-replace-all
         document: formData.document?.replace(/\D/g, '') || undefined,
         phone: formData.phone?.trim() || undefined,
         email: formData.email?.trim() || undefined,
         address: formData.address?.trim() || undefined,
         city: formData.city?.trim() || undefined,
         state: formData.state?.trim().toUpperCase() || undefined,
-        // eslint-disable-next-line @typescript-eslint/prefer-string-replace-all
         zipCode: formData.zipCode?.replace(/\D/g, '') || undefined,
         contactName: formData.contactName?.trim() || undefined,
         notes: formData.notes?.trim() || undefined,
@@ -93,7 +90,7 @@ export default function NewSupplierPage() {
     } catch (err: unknown) {
       logger.error('Erro ao criar fornecedor:', err);
       let errorMessage = 'Erro ao criar fornecedor';
-      
+
       if (err && typeof err === 'object' && 'response' in err) {
         const axiosError = err as { response?: { data?: { message?: string | string[] } } };
         if (axiosError.response?.data?.message) {
@@ -101,7 +98,7 @@ export default function NewSupplierPage() {
           errorMessage = Array.isArray(message) ? message.join(', ') : message;
         }
       }
-      
+
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -110,7 +107,6 @@ export default function NewSupplierPage() {
 
   const formatDocument = (value: string): string => {
     if (!formData.documentType) return value;
-    // eslint-disable-next-line @typescript-eslint/prefer-string-replace-all
     const numbers = value.replace(/\D/g, '');
     if (formData.documentType === DocumentType.CNPJ) {
       return numbers.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
@@ -122,7 +118,6 @@ export default function NewSupplierPage() {
   };
 
   const formatPhone = (value: string): string => {
-    // eslint-disable-next-line @typescript-eslint/prefer-string-replace-all
     const numbers = value.replace(/\D/g, '');
     if (numbers.length <= 10) {
       return numbers.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
@@ -131,7 +126,6 @@ export default function NewSupplierPage() {
   };
 
   const formatZipCode = (value: string): string => {
-    // eslint-disable-next-line @typescript-eslint/prefer-string-replace-all
     const numbers = value.replace(/\D/g, '');
     return numbers.replace(/^(\d{5})(\d{3})$/, '$1-$2');
   };

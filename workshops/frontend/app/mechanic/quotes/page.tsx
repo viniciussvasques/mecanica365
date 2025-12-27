@@ -7,6 +7,7 @@ import { quotesApi, Quote, QuoteStatus } from '@/lib/api/quotes';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,23 +38,23 @@ export default function MechanicQuotesPage() {
   const loadQuotes = async () => {
     try {
       setLoading(true);
-      
+
       const userId = authStorage.getUserId();
       if (!userId) {
         router.push('/login');
         return;
       }
 
-      const response = await quotesApi.findAll({ 
+      const response = await quotesApi.findAll({
         status: filterStatus || undefined,
-        limit: 100 
+        limit: 100
       });
-      
+
       // Filtrar apenas os atribuídos ao mecânico atual
       const myQuotes = response.data.filter(
         (q: Quote) => q.assignedMechanicId === userId
       );
-      
+
       setQuotes(myQuotes);
     } catch (err: unknown) {
       logger.error('Erro ao carregar orçamentos:', err);
@@ -138,7 +139,7 @@ export default function MechanicQuotesPage() {
               Nenhum orçamento encontrado
             </h3>
             <p className="text-[#7E8691]">
-              {filterStatus 
+              {filterStatus
                 ? 'Não há orçamentos com este status atribuídos a você.'
                 : 'Você não tem orçamentos atribuídos no momento.'}
             </p>
@@ -172,7 +173,7 @@ export default function MechanicQuotesPage() {
                   <div>
                     <p className="text-sm text-[#7E8691]">Veículo</p>
                     <p className="text-[#D0D6DE] font-medium">
-                      {quote.vehicle 
+                      {quote.vehicle
                         ? `${quote.vehicle.placa || 'Sem placa'} - ${quote.vehicle.make || ''} ${quote.vehicle.model || ''}`.trim() || 'Veículo'
                         : 'Não informado'}
                     </p>

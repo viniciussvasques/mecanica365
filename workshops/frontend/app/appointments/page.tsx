@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { AppointmentCalendar } from '@/components/AppointmentCalendar';
 import { AppointmentModal } from '@/components/AppointmentModal';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,15 +30,16 @@ export default function AppointmentsPage() {
     }
 
     loadAppointments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus]);
 
   const loadAppointments = async () => {
     try {
       setLoading(true);
-      
+
       const userId = authStorage.getUserId();
       const userRole = authStorage.getUserRole();
-      
+
       const filters: {
         assignedToId?: string;
         status?: AppointmentStatus;
@@ -71,13 +73,13 @@ export default function AppointmentsPage() {
       logger.log('[AppointmentsPage] Filtros:', filters);
       logger.log('[AppointmentsPage] userId:', userId);
       logger.log('[AppointmentsPage] userRole:', userRole);
-      
+
       const response = await appointmentsApi.findAll(filters);
-      
+
       logger.log('[AppointmentsPage] Resposta da API:', response);
       logger.log('[AppointmentsPage] Total de agendamentos:', response.total);
       logger.log('[AppointmentsPage] Agendamentos encontrados:', response.data.length);
-      
+
       // Para mecânicos: mostrar todos, mas destacar os disponíveis (sem assignedToId)
       // Para outros roles: mostrar todos
       setAppointments(response.data);
@@ -202,21 +204,19 @@ export default function AppointmentsPage() {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setViewMode('calendar')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  viewMode === 'calendar'
-                    ? 'bg-[#00E0B8]/20 text-[#00E0B8]'
-                    : 'bg-[#0F1115] text-[#7E8691] hover:text-[#D0D6DE]'
-                }`}
+                className={`px-4 py-2 rounded-lg transition-colors ${viewMode === 'calendar'
+                  ? 'bg-[#00E0B8]/20 text-[#00E0B8]'
+                  : 'bg-[#0F1115] text-[#7E8691] hover:text-[#D0D6DE]'
+                  }`}
               >
                 Calendário
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-[#00E0B8]/20 text-[#00E0B8]'
-                    : 'bg-[#0F1115] text-[#7E8691] hover:text-[#D0D6DE]'
-                }`}
+                className={`px-4 py-2 rounded-lg transition-colors ${viewMode === 'list'
+                  ? 'bg-[#00E0B8]/20 text-[#00E0B8]'
+                  : 'bg-[#0F1115] text-[#7E8691] hover:text-[#D0D6DE]'
+                  }`}
               >
                 Lista
               </button>
@@ -239,132 +239,131 @@ export default function AppointmentsPage() {
         {/* Lista de Agendamentos */}
         {(viewMode === 'list' || viewMode === 'calendar') && (
           <div className="bg-[#1A1E23] border border-[#2A3038] rounded-lg p-6">
-          {appointments.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-[#7E8691]">Nenhum agendamento encontrado</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {appointments.map((appointment) => {
-                const appointmentDate = new Date(appointment.date);
-                const isToday = appointmentDate.toDateString() === new Date().toDateString();
-                const isPast = appointmentDate < new Date();
-                const userId = authStorage.getUserId();
-                const userRole = authStorage.getUserRole();
-                const isAvailable = !appointment.assignedToId;
-                const isMine = appointment.assignedToId === userId;
-                const canClaim = userRole === 'mechanic' && isAvailable && !isPast && appointment.status === AppointmentStatus.SCHEDULED;
-                
-                return (
-                  <div
-                    key={appointment.id}
-                    className={`bg-[#0F1115] border-2 rounded-lg p-4 hover:border-[#00E0B8] transition-all ${
-                      isToday 
-                        ? 'border-[#00E0B8] shadow-lg shadow-[#00E0B8]/30' 
+            {appointments.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-[#7E8691]">Nenhum agendamento encontrado</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {appointments.map((appointment) => {
+                  const appointmentDate = new Date(appointment.date);
+                  const isToday = appointmentDate.toDateString() === new Date().toDateString();
+                  const isPast = appointmentDate < new Date();
+                  const userId = authStorage.getUserId();
+                  const userRole = authStorage.getUserRole();
+                  const isAvailable = !appointment.assignedToId;
+                  const isMine = appointment.assignedToId === userId;
+                  const canClaim = userRole === 'mechanic' && isAvailable && !isPast && appointment.status === AppointmentStatus.SCHEDULED;
+
+                  return (
+                    <div
+                      key={appointment.id}
+                      className={`bg-[#0F1115] border-2 rounded-lg p-4 hover:border-[#00E0B8] transition-all ${isToday
+                        ? 'border-[#00E0B8] shadow-lg shadow-[#00E0B8]/30'
                         : isAvailable && userRole === 'mechanic'
                           ? 'border-[#FFD700] shadow-lg shadow-[#FFD700]/20' // Dourado para disponíveis
                           : isPast
                             ? 'border-[#2A3038] opacity-60'
                             : 'border-[#2A3038]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2 flex-wrap">
-                          <h3 className="text-lg font-semibold text-[#D0D6DE]">
-                            {formatDate(appointment.date)}
-                          </h3>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusBadge(appointment.status)}`}>
-                            {getStatusLabel(appointment.status)}
-                          </span>
-                          {isToday && (
-                            <span className="px-2 py-1 bg-[#00E0B8]/20 text-[#00E0B8] text-xs font-semibold rounded animate-pulse">
-                              Hoje
+                        }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2 flex-wrap">
+                            <h3 className="text-lg font-semibold text-[#D0D6DE]">
+                              {formatDate(appointment.date)}
+                            </h3>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusBadge(appointment.status)}`}>
+                              {getStatusLabel(appointment.status)}
                             </span>
-                          )}
-                          {isAvailable && userRole === 'mechanic' && (
-                            <span className="px-2 py-1 bg-[#FFD700]/20 text-[#FFD700] text-xs font-semibold rounded animate-pulse">
-                              ⚡ Disponível
-                            </span>
-                          )}
-                          {isMine && (
-                            <span className="px-2 py-1 bg-[#00E0B8]/20 text-[#00E0B8] text-xs font-semibold rounded">
-                              Meu Agendamento
-                            </span>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-[#7E8691]">Cliente</p>
-                            <p className="text-[#D0D6DE]">{appointment.customer?.name || 'Não informado'}</p>
+                            {isToday && (
+                              <span className="px-2 py-1 bg-[#00E0B8]/20 text-[#00E0B8] text-xs font-semibold rounded animate-pulse">
+                                Hoje
+                              </span>
+                            )}
+                            {isAvailable && userRole === 'mechanic' && (
+                              <span className="px-2 py-1 bg-[#FFD700]/20 text-[#FFD700] text-xs font-semibold rounded animate-pulse">
+                                ⚡ Disponível
+                              </span>
+                            )}
+                            {isMine && (
+                              <span className="px-2 py-1 bg-[#00E0B8]/20 text-[#00E0B8] text-xs font-semibold rounded">
+                                Meu Agendamento
+                              </span>
+                            )}
                           </div>
-                          <div>
-                            <p className="text-[#7E8691]">OS</p>
-                            <p className="text-[#D0D6DE]">
-                              {appointment.serviceOrder?.number || 'Sem OS'}
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-[#7E8691]">Cliente</p>
+                              <p className="text-[#D0D6DE]">{appointment.customer?.name || 'Não informado'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[#7E8691]">OS</p>
+                              <p className="text-[#D0D6DE]">
+                                {appointment.serviceOrder?.number || 'Sem OS'}
+                              </p>
+                            </div>
+                          </div>
+                          {appointment.serviceType && (
+                            <p className="text-sm text-[#7E8691] mt-2">
+                              {appointment.serviceType}
                             </p>
-                          </div>
+                          )}
+                          {appointment.notes && (
+                            <p className="text-sm text-[#7E8691] mt-1">
+                              {appointment.notes}
+                            </p>
+                          )}
                         </div>
-                        {appointment.serviceType && (
-                          <p className="text-sm text-[#7E8691] mt-2">
-                            {appointment.serviceType}
-                          </p>
-                        )}
-                        {appointment.notes && (
-                          <p className="text-sm text-[#7E8691] mt-1">
-                            {appointment.notes}
-                          </p>
-                        )}
-                      </div>
-                      <div className="ml-4 flex flex-col space-y-2">
-                        {canClaim ? (
-                          <Button
-                            variant="primary"
-                            onClick={async () => {
-                              try {
-                                await appointmentsApi.claim(appointment.id);
-                                await loadAppointments();
-                                alert('Agendamento atribuído a você com sucesso!');
-                              } catch (err: unknown) {
-                                logger.error('Erro ao pegar agendamento:', err);
-                                const errorMessage = err instanceof Error ? err.message : 'Erro ao pegar agendamento. Tente novamente.';
-                                alert(errorMessage);
-                              }
-                            }}
-                          >
-                            ⚡ Pegar
-                          </Button>
-                        ) : appointment.serviceOrderId ? (
-                          <Link href={`/service-orders/${appointment.serviceOrderId}`}>
-                            <Button variant="primary">Ver OS</Button>
-                          </Link>
-                        ) : (
-                          <span className="text-xs text-[#7E8691]">Sem OS</span>
-                        )}
-                        {appointment.status === AppointmentStatus.SCHEDULED && !isPast && (isMine || userRole !== 'mechanic') && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              try {
-                                await appointmentsApi.cancel(appointment.id);
-                                await loadAppointments();
-                              } catch (err: unknown) {
-                                logger.error('Erro ao cancelar agendamento:', err);
-                                alert('Erro ao cancelar agendamento');
-                              }
-                            }}
-                          >
-                            Cancelar
-                          </Button>
-                        )}
+                        <div className="ml-4 flex flex-col space-y-2">
+                          {canClaim ? (
+                            <Button
+                              variant="primary"
+                              onClick={async () => {
+                                try {
+                                  await appointmentsApi.claim(appointment.id);
+                                  await loadAppointments();
+                                  alert('Agendamento atribuído a você com sucesso!');
+                                } catch (err: unknown) {
+                                  logger.error('Erro ao pegar agendamento:', err);
+                                  const errorMessage = err instanceof Error ? err.message : 'Erro ao pegar agendamento. Tente novamente.';
+                                  alert(errorMessage);
+                                }
+                              }}
+                            >
+                              ⚡ Pegar
+                            </Button>
+                          ) : appointment.serviceOrderId ? (
+                            <Link href={`/service-orders/${appointment.serviceOrderId}`}>
+                              <Button variant="primary">Ver OS</Button>
+                            </Link>
+                          ) : (
+                            <span className="text-xs text-[#7E8691]">Sem OS</span>
+                          )}
+                          {appointment.status === AppointmentStatus.SCHEDULED && !isPast && (isMine || userRole !== 'mechanic') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await appointmentsApi.cancel(appointment.id);
+                                  await loadAppointments();
+                                } catch (err: unknown) {
+                                  logger.error('Erro ao cancelar agendamento:', err);
+                                  alert('Erro ao cancelar agendamento');
+                                }
+                              }}
+                            >
+                              Cancelar
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

@@ -9,8 +9,17 @@ import { partsApi, Part, PartFilters } from '@/lib/api/parts';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { ImportPartsModal } from '@/components/ImportPartsModal';
 import { logger } from '@/lib/utils/logger';
+import { authStorage } from '@/lib/utils/localStorage';
+import nextDynamic from 'next/dynamic';
+
+const ImportPartsModal = nextDynamic(
+  () => import('@/components/ImportPartsModal').then((mod) => mod.ImportPartsModal),
+  {
+    loading: () => null,
+    ssr: false
+  }
+);
 
 export default function PartsPage() {
   const router = useRouter();
@@ -38,28 +47,29 @@ export default function PartsPage() {
     }
 
     loadParts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const loadParts = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const token = authStorage.getToken();
       const subdomain = authStorage.getSubdomain();
-      
+
       if (!token) {
         setError('Token de autenticação não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       if (!subdomain) {
         setError('Subdomain não encontrado. Faça login novamente.');
         router.push('/login');
         return;
       }
-      
+
       logger.log('[PartsPage] Carregando peças com subdomain:', subdomain);
       const response = await partsApi.findAll(filters);
       setParts(response.data);
@@ -264,11 +274,10 @@ export default function PartsPage() {
                           </td>
                           <td className="px-6 py-4 text-sm">
                             <span
-                              className={`px-2 py-1 rounded text-xs ${
-                                part.isActive
-                                  ? 'bg-[#00E0B8]/20 text-[#00E0B8]'
-                                  : 'bg-[#7E8691]/20 text-[#7E8691]'
-                              }`}
+                              className={`px-2 py-1 rounded text-xs ${part.isActive
+                                ? 'bg-[#00E0B8]/20 text-[#00E0B8]'
+                                : 'bg-[#7E8691]/20 text-[#7E8691]'
+                                }`}
                             >
                               {part.isActive ? 'Ativa' : 'Inativa'}
                             </span>

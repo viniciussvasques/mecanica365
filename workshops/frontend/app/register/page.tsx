@@ -70,19 +70,21 @@ export default function RegisterPage() {
       setStep(2);
     } catch (err: unknown) {
       let errorMessage = 'Erro ao registrar. Tente novamente.';
-      
-      if (err.response?.data) {
-        if (Array.isArray(err.response.data.message)) {
-          errorMessage = err.response.data.message.join('\n');
-        } else if (typeof err.response.data.message === 'string') {
-          errorMessage = err.response.data.message;
-        } else if (err.response.data.error) {
-          errorMessage = err.response.data.error;
+
+      const apiError = err as any;
+
+      if (apiError.response?.data) {
+        if (Array.isArray(apiError.response.data.message)) {
+          errorMessage = apiError.response.data.message.join('\n');
+        } else if (typeof apiError.response.data.message === 'string') {
+          errorMessage = apiError.response.data.message;
+        } else if (apiError.response.data.error) {
+          errorMessage = apiError.response.data.error;
         }
-      } else if (err.message) {
-        errorMessage = err.message;
+      } else if (apiError.message) {
+        errorMessage = apiError.message;
       }
-      
+
       setError(errorMessage);
       setShowErrorModal(true);
     } finally {
@@ -99,7 +101,7 @@ export default function RegisterPage() {
     try {
       // Salvar subdomain no localStorage para usar na página de sucesso
       localStorage.setItem('onboarding_subdomain', formData.subdomain);
-      
+
       const response = await onboardingApi.checkout({
         tenantId,
         plan: formData.plan,
@@ -111,19 +113,21 @@ export default function RegisterPage() {
       }
     } catch (err: unknown) {
       let errorMessage = 'Erro ao criar checkout. Tente novamente.';
-      
-      if (err.response?.data) {
-        if (Array.isArray(err.response.data.message)) {
-          errorMessage = err.response.data.message.join('\n');
-        } else if (typeof err.response.data.message === 'string') {
-          errorMessage = err.response.data.message;
-        } else if (err.response.data.error) {
-          errorMessage = err.response.data.error;
+
+      const apiError = err as any;
+
+      if (apiError.response?.data) {
+        if (Array.isArray(apiError.response.data.message)) {
+          errorMessage = apiError.response.data.message.join('\n');
+        } else if (typeof apiError.response.data.message === 'string') {
+          errorMessage = apiError.response.data.message;
+        } else if (apiError.response.data.error) {
+          errorMessage = apiError.response.data.error;
         }
-      } else if (err.message) {
-        errorMessage = err.message;
+      } else if (apiError.message) {
+        errorMessage = apiError.message;
       }
-      
+
       setError(errorMessage);
       setShowErrorModal(true);
       setLoading(false);
@@ -226,7 +230,7 @@ export default function RegisterPage() {
             {step === 1 ? 'Crie sua conta e escolha seu plano' : 'Finalize seu pagamento'}
           </h2>
           <p className="text-[#7E8691]">
-            {step === 1 
+            {step === 1
               ? 'Preencha os dados abaixo e selecione o plano que melhor atende sua oficina'
               : 'Escolha o ciclo de cobrança e finalize seu pagamento'
             }
@@ -275,8 +279,8 @@ export default function RegisterPage() {
                   id="documentType"
                   label="Tipo de Documento"
                   value={formData.documentType}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
+                  onChange={(e) => setFormData({
+                    ...formData,
                     documentType: e.target.value as 'cpf' | 'cnpj',
                     document: ''
                   })}
@@ -306,9 +310,9 @@ export default function RegisterPage() {
                   type="text"
                   required
                   value={formData.subdomain}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') 
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
                   })}
                   placeholder="minha-oficina"
                   helperText={`Seu acesso será: ${formData.subdomain || 'seu-subdomain'}.mecanica365.app`}

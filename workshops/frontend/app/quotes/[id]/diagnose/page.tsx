@@ -8,11 +8,28 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { authStorage } from '@/lib/utils/localStorage';
-import { DiagnosticPanel } from '@/components/DiagnosticPanel';
-import { ChecklistPanel } from '@/components/ChecklistPanel';
 import { Checklist } from '@/lib/api/checklists';
-import { useNotification } from '@/components/NotificationProvider';
+// import { Checklist } from '@/lib/api/checklists'; // Removing duplicate
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 import { logger } from '@/lib/utils/logger';
+import nextDynamic from 'next/dynamic';
+
+const DiagnosticPanel = nextDynamic(
+  () => import('@/components/DiagnosticPanel').then((mod) => mod.DiagnosticPanel),
+  {
+    loading: () => <div className="animate-pulse bg-[#1A1E23] h-96 rounded-lg mb-6 border border-[#2A3038]" />,
+    ssr: false
+  }
+);
+
+const ChecklistPanel = nextDynamic(
+  () => import('@/components/ChecklistPanel').then((mod) => mod.ChecklistPanel),
+  {
+    loading: () => <div className="animate-pulse bg-[#1A1E23] h-64 rounded-lg mb-6 border border-[#2A3038]" />,
+    ssr: false
+  }
+);
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +54,7 @@ const PROBLEM_CATEGORIES = [
 export default function DiagnoseQuotePage() {
   const router = useRouter();
   const params = useParams();
-  const { showNotification } = useNotification();
+  const toast = useToast();
   const quoteId = params.id as string;
 
   const [loading, setLoading] = useState(true);
@@ -65,8 +82,9 @@ export default function DiagnoseQuotePage() {
       setQuote(data);
 
       // Verificar se o status permite diagnóstico
+      // Verificar se o status permite diagnóstico
       if (data.status !== QuoteStatus.AWAITING_DIAGNOSIS) {
-        showNotification('Este orçamento não está aguardando diagnóstico', 'error');
+        toast.error('Este orçamento não está aguardando diagnóstico');
         router.push(`/quotes/${quoteId}`);
         return;
       }
@@ -98,7 +116,7 @@ export default function DiagnoseQuotePage() {
       }
     } catch (err: unknown) {
       logger.error('Erro ao carregar orçamento:', err);
-      showNotification('Erro ao carregar orçamento', 'error');
+      toast.error(getErrorMessage(err));
       router.push('/quotes');
     } finally {
       setLoading(false);
@@ -111,12 +129,11 @@ export default function DiagnoseQuotePage() {
     try {
       setSaving(true);
       await quotesApi.completeDiagnosis(quoteId, diagnosis);
-      showNotification('Diagnóstico concluído com sucesso!', 'success');
+      toast.success('Diagnóstico concluído com sucesso!');
       router.push(`/quotes/${quoteId}`);
     } catch (err: unknown) {
       logger.error('Erro ao completar diagnóstico:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao completar diagnóstico';
-      showNotification(errorMessage, 'error');
+      toast.error(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -176,7 +193,7 @@ export default function DiagnoseQuotePage() {
             <div>
               <p className="text-sm text-[#7E8691]">Veículo</p>
               <p className="text-[#D0D6DE] font-medium">
-                {quote.vehicle 
+                {quote.vehicle
                   ? `${quote.vehicle.placa || 'Sem placa'} - ${quote.vehicle.make || ''} ${quote.vehicle.model || ''}`.trim() || 'Veículo'
                   : 'Não informado'}
               </p>
@@ -217,7 +234,7 @@ export default function DiagnoseQuotePage() {
         {/* Painel de Diagnóstico */}
         <div className="bg-[#1A1E23] border border-[#2A3038] rounded-lg p-6 mb-6">
           <h2 className="text-lg font-semibold text-[#D0D6DE] mb-4">Diagnóstico</h2>
-          
+
           <DiagnosticPanel
             symptoms={quote.reportedProblemSymptoms || []}
             category={quote.reportedProblemCategory as ProblemCategory}
@@ -237,9 +254,9 @@ export default function DiagnoseQuotePage() {
               <Select
                 label="Categoria do Problema Identificado"
                 value={diagnosis.identifiedProblemCategory || ''}
-                onChange={(e) => setDiagnosis({ 
-                  ...diagnosis, 
-                  identifiedProblemCategory: e.target.value as ProblemCategory || undefined 
+                onChange={(e) => setDiagnosis({
+                  ...diagnosis,
+                  identifiedProblemCategory: e.target.value as ProblemCategory || undefined
                 })}
                 options={[
                   { value: '', label: 'Selecione uma categoria' },
@@ -258,9 +275,9 @@ export default function DiagnoseQuotePage() {
                 rows={3}
                 placeholder="Descreva o problema identificado..."
                 value={diagnosis.identifiedProblemDescription || ''}
-                onChange={(e) => setDiagnosis({ 
-                  ...diagnosis, 
-                  identifiedProblemDescription: e.target.value 
+                onChange={(e) => setDiagnosis({
+                  ...diagnosis,
+                  identifiedProblemDescription: e.target.value
                 })}
               />
             </div>
@@ -275,9 +292,9 @@ export default function DiagnoseQuotePage() {
                 rows={4}
                 placeholder="Anotações durante o diagnóstico..."
                 value={diagnosis.diagnosticNotes || ''}
-                onChange={(e) => setDiagnosis({ 
-                  ...diagnosis, 
-                  diagnosticNotes: e.target.value 
+                onChange={(e) => setDiagnosis({
+                  ...diagnosis,
+                  diagnosticNotes: e.target.value
                 })}
               />
             </div>
@@ -292,9 +309,9 @@ export default function DiagnoseQuotePage() {
                 rows={4}
                 placeholder="Recomendações do mecânico (troca de peça, manutenção preventiva, etc.)..."
                 value={diagnosis.recommendations || ''}
-                onChange={(e) => setDiagnosis({ 
-                  ...diagnosis, 
-                  recommendations: e.target.value 
+                onChange={(e) => setDiagnosis({
+                  ...diagnosis,
+                  recommendations: e.target.value
                 })}
               />
             </div>
@@ -330,12 +347,14 @@ export default function DiagnoseQuotePage() {
             entityId={quoteId}
             checklists={quote.checklists as Checklist[] | undefined}
             onChecklistsChange={(checklists) => {
-              setQuote({ ...quote, checklists: checklists as Array<{
-                id: string;
-                checklistType: string;
-                name: string;
-                status: string;
-              }> });
+              setQuote({
+                ...quote, checklists: checklists as Array<{
+                  id: string;
+                  checklistType: string;
+                  name: string;
+                  status: string;
+                }>
+              });
             }}
             readonly={false}
             canComplete={true}
@@ -347,8 +366,8 @@ export default function DiagnoseQuotePage() {
           <Link href="/quotes/pending-diagnosis">
             <Button variant="outline">Cancelar</Button>
           </Link>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={handleCompleteDiagnosis}
             disabled={saving}
           >
