@@ -17,7 +17,7 @@ services:
       - mecanica365_workshops_postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mecanica365} -d ${POSTGRES_DB:-mecanica365_db}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mecanica365} -d ${POSTGRES_DB:-mecanica365_db}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -74,7 +74,7 @@ services:
     volumes:
       - mecanica365_workshops_redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -113,7 +113,7 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9000/api/system/status || exit 1"]
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9000/api/system/status || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -132,7 +132,7 @@ services:
     networks:
       - mecanica365-workshops-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sonar -d sonar"]
+      test: [ "CMD-SHELL", "pg_isready -U sonar -d sonar" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -197,17 +197,18 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || curl -f http://localhost:3001/api/health 2>/dev/null || exit 1"]
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || curl -f http://localhost:3001/api/health 2>/dev/null || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
   frontend:
-    image: node:20-alpine
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.dev
     container_name: mecanica365-workshops-frontend
     restart: unless-stopped
-    working_dir: /app
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://localhost:3001/api
@@ -218,9 +219,8 @@ services:
       - "3000:3000"
     volumes:
       - ../frontend:/app:cached
-      - frontend_node_modules:/app/node_modules
-      - frontend_next:/app/.next
-    command: sh -c "npm install && npm run dev"
+      - /app/node_modules
+      - /app/.next
     networks:
       - mecanica365-workshops-network
     depends_on:
@@ -232,10 +232,11 @@ services:
         max-file: "3"
 
   admin:
-    image: node:20-alpine
+    build:
+      context: ../admin
+      dockerfile: Dockerfile.dev
     container_name: mecanica365-workshops-admin
     restart: unless-stopped
-    working_dir: /app
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://localhost:3001/api
@@ -246,9 +247,8 @@ services:
       - "3003:3002"
     volumes:
       - ../admin:/app:cached
-      - admin_node_modules:/app/node_modules
-      - admin_next:/app/.next
-    command: sh -c "npm install && npm run dev"
+      - /app/node_modules
+      - /app/.next
     networks:
       - mecanica365-workshops-network
     depends_on:
@@ -271,14 +271,6 @@ volumes:
   mecanica365_workshops_sonarqube_logs:
     driver: local
   mecanica365_workshops_sonarqube_db_data:
-    driver: local
-  frontend_node_modules:
-    driver: local
-  frontend_next:
-    driver: local
-  admin_node_modules:
-    driver: local
-  admin_next:
     driver: local
 
 networks:
