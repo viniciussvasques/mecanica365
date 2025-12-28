@@ -39,7 +39,7 @@ export class TenantsService {
     private readonly prisma: PrismaService,
     private readonly billingService: BillingService,
     private readonly usersService: UsersService,
-  ) {}
+  ) { }
 
   async create(createTenantDto: CreateTenantDto): Promise<TenantResponseDto> {
     try {
@@ -200,6 +200,7 @@ export class TenantsService {
         adminEmail: createTenantDto.adminEmail
           ? createTenantDto.adminEmail.toLowerCase().trim()
           : null,
+        referredByLinkId: createTenantDto.referredByLinkId,
       },
       include: { subscription: true },
     });
@@ -467,8 +468,8 @@ export class TenantsService {
     tenant:
       | TenantWithSubscription
       | Prisma.TenantGetPayload<{
-          include: { subscription: true };
-        }>,
+        include: { subscription: true };
+      }>,
   ): TenantResponseDto {
     return {
       id: tenant.id,
@@ -480,12 +481,12 @@ export class TenantsService {
       status: tenant.status as TenantResponseDto['status'],
       subscription: tenant.subscription
         ? {
-            id: tenant.subscription.id,
-            plan: tenant.subscription.plan,
-            status: tenant.subscription.status,
-            currentPeriodStart: tenant.subscription.currentPeriodStart,
-            currentPeriodEnd: tenant.subscription.currentPeriodEnd,
-          }
+          id: tenant.subscription.id,
+          plan: tenant.subscription.plan,
+          status: tenant.subscription.status,
+          currentPeriodStart: tenant.subscription.currentPeriodStart,
+          currentPeriodEnd: tenant.subscription.currentPeriodEnd,
+        }
         : undefined,
       createdAt: tenant.createdAt,
       updatedAt: tenant.updatedAt,

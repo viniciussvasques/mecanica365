@@ -2,69 +2,72 @@
 
 import {
     RocketIcon,
-    ExternalLinkIcon,
-    PlusIcon
+    LayersIcon,
+    ArrowRightIcon,
 } from '@radix-ui/react-icons';
+import { useEffect, useState } from 'react';
+import { affiliateApi } from '@/lib/api';
 
 export default function AffiliateProducts() {
-    const products = [
-        {
-            id: '1',
-            name: 'Mecanica365',
-            description: 'O sistema #1 para gestão de oficinas mecânicas no Brasil.',
-            commission: '30% recorrente',
-            features: ['Gestão de ROs', 'Estoque Inteligente', 'App para Mecânicos'],
-            image: 'https://images.unsplash.com/photo-1599256621730-535171e28e50?q=80&w=200&h=200&auto=format&fit=crop'
-        },
-        {
-            id: '2',
-            name: 'CRM Hub',
-            description: 'Potencialize suas vendas com o CRM mais completo do mercado.',
-            commission: '25% recorrente',
-            features: ['Automação de WhatsApp', 'Funil de Vendas', 'IA para Atendimento'],
-            image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=200&h=200&auto=format&fit=crop'
-        },
-    ];
+    const [products, setProducts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadProducts() {
+            try {
+                const data = await affiliateApi.getProducts();
+                setProducts(data);
+            } catch (error) {
+                console.error('Erro ao carregar produtos:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadProducts();
+    }, []);
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <header>
-                <h1 className="text-3xl font-extrabold text-white">Catálogo de Produtos</h1>
-                <p className="text-[#8B8B9E] mt-1">Conheça os sistemas que você pode promover e ganhar comissões.</p>
+                <h1 className="text-3xl font-extrabold text-white uppercase tracking-tighter italic">Catálogo SaaS</h1>
+                <p className="text-[#8B8B9E] mt-1">Produtos disponíveis para você promover e lucrar.</p>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {products.map((product) => (
-                    <div key={product.id} className="bg-[#121214] border border-white/5 rounded-3xl overflow-hidden hover:border-white/10 transition-all flex flex-col group">
-                        <div className="aspect-video relative overflow-hidden">
-                            <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0B] via-transparent to-transparent"></div>
-                            <div className="absolute top-4 right-4 bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg">
-                                {product.commission}
+                {loading ? (
+                    [1, 2].map(i => (
+                        <div key={i} className="h-64 bg-white/5 animate-pulse rounded-3xl border border-white/5" />
+                    ))
+                ) : products.map((product, i) => (
+                    <div key={i} className="bg-[#121214]/50 backdrop-blur-xl border border-white/5 rounded-3xl p-8 hover:border-white/10 transition-all group overflow-hidden relative">
+                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#FF6B6B]/5 rounded-full blur-3xl group-hover:bg-[#FF6B6B]/10 transition-colors"></div>
+
+                        <div className="flex items-start justify-between mb-6 relative z-10">
+                            <div className="w-14 h-14 bg-gradient-to-br from-[#FF6B6B] to-[#EE5A5A] rounded-2xl flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+                                <RocketIcon className="text-white w-8 h-8" />
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] font-bold text-[#FF6B6B] uppercase tracking-widest bg-[#FF6B6B]/10 px-2 py-1 rounded-full">Recorrente</span>
+                                <p className="text-white font-bold text-2xl mt-2">10% <small className="text-xs text-[#8B8B9E] font-normal">/mês</small></p>
                             </div>
                         </div>
 
-                        <div className="p-8 flex-1 flex flex-col">
-                            <h2 className="text-2xl font-bold text-white mb-3">{product.name}</h2>
-                            <p className="text-[#8B8B9E] text-sm mb-6 leading-relaxed">{product.description}</p>
+                        <h3 className="text-2xl font-bold text-white mb-2">{product.name}</h3>
+                        <p className="text-[#8B8B9E] text-sm mb-8 leading-relaxed">
+                            {product.description || 'Promova nossa solução líder de mercado e garanta comissões mensais vitalícias enquanto o cliente estiver ativo.'}
+                        </p>
 
-                            <div className="space-y-3 mb-8">
-                                {product.features.map((feature, i) => (
-                                    <div key={i} className="flex items-center gap-2 text-xs text-[#D0D6DE]">
-                                        <div className="w-1.5 h-1.5 bg-[#FF6B6B] rounded-full"></div>
-                                        {feature}
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mt-auto flex gap-3">
-                                <button className="flex-1 py-3 bg-[#FF6B6B] text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-[#FF6B6B]/20 transition-all">
-                                    Promover Agora
-                                </button>
-                                <button className="p-3 border border-white/5 rounded-xl text-[#8B8B9E] hover:text-white transition-all">
-                                    <ExternalLinkIcon className="w-5 h-5" />
-                                </button>
-                            </div>
+                        <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-auto">
+                            <ul className="flex items-center gap-4">
+                                <li className="flex items-center gap-1 text-[10px] text-[#6B6B7E] font-bold uppercase tracking-tighter">
+                                    <LayersIcon className="w-3 h-3" />
+                                    Marketing Kit
+                                </li>
+                            </ul>
+                            <button className="flex items-center gap-2 text-white font-bold text-sm bg-white/5 hover:bg-[#FF6B6B] px-5 py-2.5 rounded-xl transition-all group/btn">
+                                Promover agora
+                                <ArrowRightIcon className="group-hover/btn:translate-x-1 transition-transform" />
+                            </button>
                         </div>
                     </div>
                 ))}

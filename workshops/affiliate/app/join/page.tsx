@@ -27,7 +27,7 @@ export default function AffiliateJoin() {
                     </h1>
 
                     <p className="text-xl text-[#8B8B9E] max-w-2xl mx-auto mb-12 leading-relaxed">
-                        Seja um parceiro do sistema #1 para oficinas mecânicas no Brasil e ganhe <span className="text-white font-bold">30% de comissão mensal</span> sobre cada venda indicada.
+                        Seja um parceiro do sistema #1 para oficinas mecânicas no Brasil e ganhe <span className="text-white font-bold">10% de comissão mensal</span> sobre cada venda indicada.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

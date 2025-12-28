@@ -315,7 +315,7 @@ export default function RegisterPage() {
                     subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
                   })}
                   placeholder="minha-oficina"
-                  helperText={`Seu acesso será: ${formData.subdomain || 'seu-subdomain'}.mecanica365.app`}
+                  helperText={`Seu acesso será: ${formData.subdomain || 'seu-subdomain'}.mecanica365.com`}
                   autoComplete="off"
                 />
 

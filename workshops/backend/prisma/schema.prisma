@@ -344,6 +344,8 @@ model CustomerVehicle {
   maintenanceHistory   MaintenanceHistory[] // Histórico de manutenções
 
   @@index([renavan])
+  @@index([placa])
+  @@index([vin])
   @@map("customer_vehicles")
 }
 
@@ -1585,6 +1587,7 @@ model AffiliateLink {
 
   @@index([affiliateId])
   @@index([productId])
+  @@index([code])
   @@map("affiliate_links")
 }
 

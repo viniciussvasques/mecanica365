@@ -1,8 +1,8 @@
 {
   "name": "mecanica365-backend",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Mecânica365 - Backend API para oficinas mecânicas",
-  "author": "",
+  "author": "INNEXAR LLC",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

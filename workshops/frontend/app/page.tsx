@@ -362,7 +362,7 @@ export default function Home() {
               </p>
               <ul className="space-y-4">
                 {[
-                  'Comissões recorrentes de até 30%',
+                  'Comissões recorrentes de até 10%',
                   'Suporte total ao parceiro',
                   'Dashboard modular multi-SaaS',
                   'Materiais de marketing gratuitos'
@@ -377,7 +377,7 @@ export default function Home() {
               </ul>
               <div className="pt-4">
                 <a
-                  href="http://localhost:3004/join"
+                  href={process.env.NEXT_PUBLIC_AFFILIATE_URL || "http://localhost:3004/join"}
                   className="inline-block px-10 py-4 bg-gradient-to-r from-[#FF6B6B] to-[#EE5A5A] text-white rounded-2xl font-bold text-lg hover:shadow-xl hover:shadow-[#FF6B6B]/20 transition-all transform hover:scale-105"
                 >
                   Quero ser um Afiliado
@@ -543,13 +543,14 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-[#0F1115] border-t border-[#2A3038] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div className="flex items-center space-x-2">
               <GearIcon className="text-[#00E0B8]" size={24} />
               <span className="text-[#D0D6DE] font-semibold">Mecânica365</span>
             </div>
-            <div className="text-[#7E8691] text-sm">
-              © 2024 Mecânica365. Todos os direitos reservados.
+            <div className="text-center text-[#7E8691] text-sm">
+              <div>© 2024 Mecânica365. Todos os direitos reservados.</div>
+              <div className="text-xs mt-1">Desenvolvido por <span className="text-[#00E0B8] font-semibold">INNEXAR LLC</span></div>
             </div>
           </div>
         </div>

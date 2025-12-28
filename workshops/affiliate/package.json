@@ -1,6 +1,8 @@
 {
-  "name": "affiliate",
-  "version": "0.1.0",
+  "name": "mecanica365-affiliate",
+  "version": "1.0.0",
+  "description": "Mecânica365 - Hub de Afiliados",
+  "author": "INNEXAR LLC",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3004",

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { AdminAffiliatesService } from './admin-affiliates.service';
 import { CreateAffiliateDto, UpdateAffiliateDto, CreateAffiliateLinkDto } from './dto/affiliates.dto';
-import { AdminGuard } from '../../../common/guards/admin.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 @Controller('admin/affiliates')
 @UseGuards(AdminGuard)

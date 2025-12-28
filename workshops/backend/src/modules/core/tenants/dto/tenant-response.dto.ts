@@ -49,6 +49,12 @@ export class TenantResponseDto {
   status: TenantStatus;
 
   @ApiProperty({
+    description: 'ID do link de indicação',
+    required: false,
+  })
+  referredByLinkId?: string;
+
+  @ApiProperty({
     description: 'Subscription',
     type: SubscriptionResponseDto,
     required: false,

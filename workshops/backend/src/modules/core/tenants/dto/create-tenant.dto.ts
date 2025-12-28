@@ -119,4 +119,13 @@ export class CreateTenantDto {
   @MinLength(8, { message: 'Senha deve ter no mínimo 8 caracteres' })
   @IsOptional()
   adminPassword?: string;
+
+  @ApiProperty({
+    description: 'ID do link de indicação do afiliado',
+    example: 'uuid',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  referredByLinkId?: string;
 }

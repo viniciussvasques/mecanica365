@@ -47,6 +47,7 @@ import { AnalyticsModule } from '../modules/workshops/analytics/analytics.module
 import { KnowledgeModule } from '../modules/workshops/knowledge/knowledge.module';
 import { PredictiveModule } from '../modules/workshops/predictive/predictive.module';
 import { PublicAffiliatesModule } from '../modules/public/affiliates/public-affiliates.module';
+import { AffiliatePortalModule } from '../modules/core/affiliate-portal/affiliate-portal.module';
 import { TenantResolverMiddleware } from '../common/middleware/tenant-resolver.middleware';
 import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
 import { ValidationPipe } from '../common/pipes/validation.pipe';
@@ -102,6 +103,7 @@ import appConfig from '../config/app.config';
     KnowledgeModule,
     PredictiveModule,
     PublicAffiliatesModule,
+    AffiliatePortalModule,
     // Módulos adicionais serão adicionados conforme necessário
   ],
   controllers: [AppController],

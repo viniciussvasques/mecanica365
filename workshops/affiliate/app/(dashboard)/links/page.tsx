@@ -1,83 +1,107 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Link2Icon,
     CopyIcon,
-    CheckIcon,
     ExternalLinkIcon,
-    PlusIcon
+    PlusIcon,
 } from '@radix-ui/react-icons';
+import { affiliateApi } from '@/lib/api';
 
 export default function AffiliateLinks() {
-    const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [links, setLinks] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const myLinks = [
-        { id: '1', product: 'Mecanica365', code: 'PROMO365', clicks: 856, sales: 5, url: 'https://mecanica365.com/ref/PROMO365' },
-        { id: '2', product: 'CRM Hub', code: 'VINI_CRM', clicks: 245, sales: 2, url: 'https://mecanica365.com/ref/VINI_CRM' },
-    ];
+    useEffect(() => {
+        async function loadLinks() {
+            try {
+                const data = await affiliateApi.getLinks();
+                setLinks(data.map((l: any) => ({
+                    name: l.product.name,
+                    code: l.code,
+                    clicks: l._count.visits,
+                    sales: l._count.commissions,
+                    url: `${l.product.baseUrl}/ref/${l.code}`
+                })));
+            } catch (error) {
+                console.error('Erro ao carregar links:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadLinks();
+    }, []);
 
-    const handleCopy = (url: string, id: string) => {
-        navigator.clipboard.writeText(url);
-        setCopiedId(id);
-        setTimeout(() => setCopiedId(null), 2000);
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        // Toast notification would go here
     };
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <header className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-white">Meus Links</h1>
-                    <p className="text-[#8B8B9E] mt-1">Gerencie e compartilhe seus códigos de rastreio.</p>
+                    <h1 className="text-3xl font-extrabold text-white uppercase tracking-tighter italic">Meus Links</h1>
+                    <p className="text-[#8B8B9E] mt-1">Gerencie e acompanhe o desempenho dos seus links de indicação.</p>
                 </div>
-                <button className="flex items-center justify-center gap-2 px-6 py-3 bg-[#FF6B6B] text-white rounded-xl font-bold hover:shadow-lg hover:shadow-[#FF6B6B]/20 transition-all">
-                    <PlusIcon className="w-5 h-5" />
-                    Gerar Novo Link
+                <button className="bg-[#FF6B6B] text-white px-6 py-3 rounded-xl font-bold text-sm hover:scale-105 transition-all shadow-lg shadow-[#FF6B6B]/20 flex items-center gap-2">
+                    <PlusIcon />
+                    Novo Link
                 </button>
             </header>
 
             <div className="grid grid-cols-1 gap-4">
-                {myLinks.map((link) => (
-                    <div key={link.id} className="bg-[#121214] border border-white/5 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-white/10 transition-colors">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-[#FF6B6B]/10 rounded-2xl flex items-center justify-center">
-                                <Link2Icon className="text-[#FF6B6B] w-6 h-6" />
-                            </div>
-                            <div>
-                                <h3 className="text-white font-bold">{link.product}</h3>
-                                <code className="text-[#FF6B6B] text-xs font-mono bg-[#FF6B6B]/5 px-2 py-0.5 rounded italic">Code: {link.code}</code>
-                            </div>
-                        </div>
-
-                        <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-6 md:px-8">
-                            <div className="flex-1">
-                                <p className="text-[#6B6B7E] text-[10px] uppercase font-bold tracking-widest mb-1">Link de Indicação</p>
-                                <div className="flex items-center gap-2 bg-black/30 p-2 rounded-lg border border-white/5 group">
-                                    <span className="text-[#8B8B9E] text-xs truncate flex-1">{link.url}</span>
-                                    <button
-                                        onClick={() => handleCopy(link.url, link.id)}
-                                        className="p-1.5 hover:bg-white/10 rounded-md transition-colors"
-                                    >
-                                        {copiedId === link.id ? <CheckIcon className="text-emerald-400" /> : <CopyIcon className="text-[#8B8B9E]" />}
-                                    </button>
+                {loading ? (
+                    [1, 2].map(i => (
+                        <div key={i} className="h-24 bg-white/5 animate-pulse rounded-3xl border border-white/5" />
+                    ))
+                ) : links.map((link, i) => (
+                    <div key={i} className="bg-[#121214]/50 backdrop-blur-xl border border-white/5 p-6 rounded-3xl hover:border-white/10 transition-all group">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-[#FF6B6B]/10 rounded-2xl flex items-center justify-center">
+                                    <Link2Icon className="text-[#FF6B6B] w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-bold text-lg">{link.name}</h3>
+                                    <p className="text-[#6B6B7E] text-xs font-mono">{link.code}</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-8 pr-4">
+                            <div className="flex items-center gap-8">
                                 <div className="text-center">
-                                    <p className="text-white font-bold">{link.clicks}</p>
-                                    <p className="text-[#6B6B7E] text-[10px] uppercase font-bold tracking-tighter">Cliques</p>
+                                    <p className="text-[#6B6B7E] text-[10px] uppercase font-bold tracking-widest">Cliques</p>
+                                    <p className="text-white font-bold text-lg">{link.clicks}</p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-emerald-400 font-bold">{link.sales}</p>
-                                    <p className="text-[#6B6B7E] text-[10px] uppercase font-bold tracking-tighter">Vendas</p>
+                                    <p className="text-[#6B6B7E] text-[10px] uppercase font-bold tracking-widest">Vendas</p>
+                                    <p className="text-white font-bold text-lg">{link.sales}</p>
                                 </div>
                             </div>
-                        </div>
 
-                        <button className="p-2 text-[#6B6B7E] hover:text-white transition-colors">
-                            <ExternalLinkIcon className="w-5 h-5" />
-                        </button>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-black/40 border border-white/5 px-4 py-2 rounded-xl text-xs text-[#8B8B9E] font-mono truncate max-w-[300px]">
+                                    {link.url}
+                                </div>
+                                <button
+                                    onClick={() => copyToClipboard(link.url)}
+                                    className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors"
+                                    title="Copiar Link"
+                                >
+                                    <CopyIcon />
+                                </button>
+                                <a
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 bg-[#FF6B6B] hover:bg-[#EE5A5A] rounded-lg text-white transition-colors"
+                                    title="Abrir Link"
+                                >
+                                    <ExternalLinkIcon />
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 ))}
             </div>

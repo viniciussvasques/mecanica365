@@ -16,28 +16,28 @@ import { authStorage } from '@/lib/utils/localStorage';
 // Função para extrair subdomain da URL atual
 const getSubdomainFromUrl = (): string | null => {
   if (typeof window === 'undefined') return null;
-  
+
   const hostname = window.location.hostname;
-  
+
   // Padrão: subdomain.localhost ou subdomain.domain.com
   // Exemplo: oficinartee.localhost -> oficinartee
   const parts = hostname.split('.');
-  
+
   // Se for localhost simples ou IP, não tem subdomain
   if (hostname === 'localhost' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
     return null;
   }
-  
+
   // Se for subdomain.localhost ou subdomain.localhost:3000
   if (parts.length >= 2 && parts[parts.length - 1].startsWith('localhost')) {
     return parts[0]; // Retorna o subdomain (ex: oficinartee)
   }
-  
+
   // Para domínios reais (subdomain.domain.com)
   if (parts.length >= 3) {
     return parts[0];
   }
-  
+
   return null;
 };
 
@@ -57,7 +57,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Detectar subdomain da URL atual
     const detectedSubdomain = getSubdomainFromUrl();
     if (detectedSubdomain) {
@@ -74,7 +74,7 @@ export default function LoginPage() {
       if (urlSubdomain) {
         return;
       }
-      
+
       if (formData.email.includes('@') && formData.email.length > 5 && !subdomain && !findingTenant) {
         setFindingTenant(true);
         try {
@@ -106,7 +106,7 @@ export default function LoginPage() {
     // IMPORTANTE: Se tem subdomain na URL, usar ESSE subdomain (não buscar outro)
     // Isso garante que usuário só pode logar no tenant da URL
     let tenantSubdomain = urlSubdomain || subdomain;
-    
+
     // Só buscar tenant por email se não houver subdomain na URL
     if (!tenantSubdomain) {
       setFindingTenant(true);
@@ -135,7 +135,7 @@ export default function LoginPage() {
         email: formData.email,
         password: formData.password,
       });
-      
+
       if (response.accessToken) {
         authStorage.setToken(response.accessToken);
         authStorage.setRefreshToken(response.refreshToken || '');
@@ -167,11 +167,11 @@ export default function LoginPage() {
           authStorage.setIsFirstLogin(true);
           authStorage.setShowPasswordModal(true);
         }
-        
+
         // Redirecionar baseado no role
         const userRole = response.user?.role;
         const queryParams = `subdomain=${tenantSubdomain}${isFirstLogin && !alreadyChanged ? '&firstLogin=true' : ''}`;
-        
+
         if (userRole === 'mechanic') {
           router.push(`/mechanic/dashboard?${queryParams}`);
         } else {
@@ -180,15 +180,15 @@ export default function LoginPage() {
       }
     } catch (err: unknown) {
       logger.error('[LoginPage] Erro ao fazer login:', err);
-      
+
       let errorMessage = getAxiosErrorMessage(err) || 'Erro ao fazer login. Verifique suas credenciais.';
-      
+
       // Se houver subdomain na URL e o erro for credenciais inválidas,
       // dar uma mensagem mais específica
       if (urlSubdomain && errorMessage.includes('Credenciais inválidas')) {
         errorMessage = 'Email ou senha incorretos para esta oficina. Verifique se você está acessando a URL correta.';
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -242,7 +242,7 @@ export default function LoginPage() {
                   <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  Conta encontrada: <span className="font-semibold ml-1">{subdomain}.mecanica365.app</span>
+                  Conta encontrada: <span className="font-semibold ml-1">{subdomain}.mecanica365.com</span>
                 </p>
               </div>
             )}
@@ -257,7 +257,7 @@ export default function LoginPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="seu@email.com"
-                helperText={findingTenant ? 'Buscando sua conta...' : subdomain ? `Conta: ${subdomain}.mecanica365.app` : undefined}
+                helperText={findingTenant ? 'Buscando sua conta...' : subdomain ? `Conta: ${subdomain}.mecanica365.com` : undefined}
                 className="w-full"
               />
 

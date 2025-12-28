@@ -1,6 +1,8 @@
 {
   "name": "mecanica365-frontend",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Mecânica365 - Sistema completo de gestão para oficinas mecânicas",
+  "author": "INNEXAR LLC",
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0",

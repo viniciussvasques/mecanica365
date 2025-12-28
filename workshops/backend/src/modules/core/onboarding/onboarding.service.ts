@@ -420,19 +420,27 @@ export class OnboardingService {
       if (updatedTenant.referredByLinkId) {
         try {
           const amount = session.amount_total ? session.amount_total / 100 : 0;
-          const commissionRate = 0.30; // 30% de comissão
+          const commissionRate = 0.10; // 10% de comissão
           const commissionAmount = amount * commissionRate;
 
-          await this.prisma.affiliateCommission.create({
-            data: {
-              affiliateLinkId: updatedTenant.referredByLinkId,
-              orderId: session.id,
-              amount: commissionAmount,
-              status: 'pending', // Fica pendente para aprovação/pagamento
-              description: `Comissão referente ao plano ${plan} do tenant ${tenant.subdomain}`,
-            },
+          // Buscar dados do link para pegar o affiliateId
+          const affiliateLink = await (this.prisma as any).affiliateLink.findUnique({
+            where: { id: updatedTenant.referredByLinkId },
           });
-          this.logger.log(`Comissão de afiliado registrada: ${commissionAmount} para link ${updatedTenant.referredByLinkId}`);
+
+          if (affiliateLink) {
+            await (this.prisma as any).affiliateCommission.create({
+              data: {
+                affiliateId: affiliateLink.affiliateId,
+                linkId: affiliateLink.id,
+                orderId: session.id,
+                amount: commissionAmount,
+                status: 'pending',
+                description: `Comissão referente ao plano ${plan} do tenant ${tenant.subdomain}`,
+              },
+            });
+            this.logger.log(`Comissão de afiliado registrada: ${commissionAmount} para link ${updatedTenant.referredByLinkId}`);
+          }
         } catch (commError: unknown) {
           this.logger.error(`Erro ao registrar comissão de afiliado: ${(commError as Error).message}`);
         }

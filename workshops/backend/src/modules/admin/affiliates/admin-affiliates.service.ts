@@ -7,7 +7,7 @@ export class AdminAffiliatesService {
     constructor(private prisma: PrismaService) { }
 
     async findAll() {
-        return this.prisma.affiliate.findMany({
+        return (this.prisma as any).affiliate.findMany({
             include: {
                 links: {
                     include: {
@@ -26,7 +26,7 @@ export class AdminAffiliatesService {
     }
 
     async findOne(id: string) {
-        const affiliate = await this.prisma.affiliate.findUnique({
+        const affiliate = await (this.prisma as any).affiliate.findUnique({
             where: { id },
             include: {
                 links: {
@@ -48,7 +48,7 @@ export class AdminAffiliatesService {
     }
 
     async create(dto: CreateAffiliateDto) {
-        const existing = await this.prisma.affiliate.findUnique({
+        const existing = await (this.prisma as any).affiliate.findUnique({
             where: { email: dto.email },
         });
 
@@ -56,7 +56,7 @@ export class AdminAffiliatesService {
             throw new ConflictException('Affiliate with this email already exists');
         }
 
-        return this.prisma.affiliate.create({
+        return (this.prisma as any).affiliate.create({
             data: dto,
         });
     }
@@ -64,7 +64,7 @@ export class AdminAffiliatesService {
     async update(id: string, dto: UpdateAffiliateDto) {
         await this.findOne(id);
 
-        return this.prisma.affiliate.update({
+        return (this.prisma as any).affiliate.update({
             where: { id },
             data: dto,
         });
@@ -72,14 +72,14 @@ export class AdminAffiliatesService {
 
     async remove(id: string) {
         await this.findOne(id);
-        return this.prisma.affiliate.delete({ where: { id } });
+        return (this.prisma as any).affiliate.delete({ where: { id } });
     }
 
     // Links management
     async createLink(affiliateId: string, dto: CreateAffiliateLinkDto) {
         await this.findOne(affiliateId);
 
-        const existingLink = await this.prisma.affiliateLink.findUnique({
+        const existingLink = await (this.prisma as any).affiliateLink.findUnique({
             where: { code: dto.code },
         });
 
@@ -87,7 +87,7 @@ export class AdminAffiliatesService {
             throw new ConflictException('Link code already in use');
         }
 
-        return this.prisma.affiliateLink.create({
+        return (this.prisma as any).affiliateLink.create({
             data: {
                 ...dto,
                 affiliateId,
@@ -98,12 +98,12 @@ export class AdminAffiliatesService {
     async getMetrics(id: string) {
         const affiliate = await this.findOne(id);
 
-        const totalCommissions = await this.prisma.affiliateCommission.aggregate({
+        const totalCommissions = await (this.prisma as any).affiliateCommission.aggregate({
             where: { affiliateId: id, status: 'approved' },
             _sum: { amount: true },
         });
 
-        const totalVisits = await this.prisma.affiliateVisit.count({
+        const totalVisits = await (this.prisma as any).affiliateVisit.count({
             where: { affiliateId: id },
         });
 
@@ -116,7 +116,7 @@ export class AdminAffiliatesService {
 
     // SaaS Products management (simplified for now)
     async findAllProducts() {
-        return this.prisma.saasProduct.findMany({
+        return (this.prisma as any).saaSProduct.findMany({
             where: { isActive: true },
         });
     }

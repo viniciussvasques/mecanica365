@@ -129,7 +129,7 @@ Sistema SaaS completo de gestão para oficinas mecânicas, com foco em:
 **Multi-tenant Strategy**
 - **Schema por Tenant**: Isolamento completo (Enterprise)
 - **Row-level Security**: tenant_id em todas as tabelas (Starter/Professional)
-- **Subdomínios**: `{subdomain}.mecanica365.app`
+- **Subdomínios**: `{subdomain}.mecanica365.com`
 
 ---
 

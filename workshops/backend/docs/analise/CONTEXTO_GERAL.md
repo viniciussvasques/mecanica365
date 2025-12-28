@@ -41,7 +41,7 @@ O backend do **Mecânica365** é uma API REST desenvolvida em **NestJS 11+** com
 
 - **Padrão:** Monolito Modular (preparado para microserviços)
 - **Multi-tenant:** Row-level security com `tenant_id`
-- **Subdomínios:** `{subdomain}.mecanica365.app`
+- **Subdomínios:** `{subdomain}.mecanica365.com`
 - **Feature Flags:** Sistema de ativação por plano
 
 ---
