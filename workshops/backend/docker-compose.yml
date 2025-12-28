@@ -259,6 +259,31 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  affiliate:
+    build:
+      context: ../affiliate
+      dockerfile: Dockerfile.dev
+    container_name: mecanica365-workshops-affiliate
+    ports:
+      - "3004:3004"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ../affiliate:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - mecanica365-workshops-network
+    depends_on:
+      - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   mecanica365_workshops_postgres_data:
     driver: local

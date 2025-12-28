@@ -14,6 +14,7 @@ import { AdminCommunicationsModule } from './communications/admin-communications
 import { AdminBackupModule } from './backup/admin-backup.module';
 import { AdminIntegrationsModule } from './integrations/admin-integrations.module';
 import { AdminAutomationsModule } from './automations/admin-automations.module';
+import { AdminAffiliatesModule } from './affiliates/admin-affiliates.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AdminAutomationsModule } from './automations/admin-automations.module';
     AdminBackupModule,
     AdminIntegrationsModule,
     AdminAutomationsModule,
+    AdminAffiliatesModule,
   ],
   exports: [
     AdminAuthModule,
@@ -49,6 +51,7 @@ import { AdminAutomationsModule } from './automations/admin-automations.module';
     AdminBackupModule,
     AdminIntegrationsModule,
     AdminAutomationsModule,
+    AdminAffiliatesModule,
   ],
 })
 export class AdminModule { }

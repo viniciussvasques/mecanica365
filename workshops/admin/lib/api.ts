@@ -572,3 +572,84 @@ export const backupApi = {
   },
 };
 
+// ========================
+// AFFILIATES API
+// ========================
+
+export interface Affiliate {
+  id: string;
+  name: string;
+  email: string;
+  cpfCnpj?: string;
+  status: 'pending' | 'active' | 'blocked';
+  pixKey?: string;
+  createdAt: string;
+  updatedAt: string;
+  links: AffiliateLink[];
+  _count?: {
+    visits: number;
+    commissions: number;
+  };
+}
+
+export interface AffiliateLink {
+  id: string;
+  affiliateId: string;
+  productId: string;
+  code: string;
+  targetUrl: string;
+  createdAt: string;
+  product?: SaaSProduct;
+}
+
+export interface SaaSProduct {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  baseUrl: string;
+  isActive: boolean;
+}
+
+export const affiliatesApi = {
+  findAll: async (): Promise<Affiliate[]> => {
+    const response = await api.get<Affiliate[]>('/admin/affiliates');
+    return response.data;
+  },
+
+  findOne: async (id: string): Promise<Affiliate> => {
+    const response = await api.get<Affiliate>(`/admin/affiliates/${id}`);
+    return response.data;
+  },
+
+  create: async (data: any): Promise<Affiliate> => {
+    const response = await api.post<Affiliate>('/admin/affiliates', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: any): Promise<Affiliate> => {
+    const response = await api.patch<Affiliate>(`/admin/affiliates/${id}`, data);
+    return response.data;
+  },
+
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/admin/affiliates/${id}`);
+  },
+
+  createLink: async (affiliateId: string, data: any): Promise<AffiliateLink> => {
+    const response = await api.post<AffiliateLink>(`/admin/affiliates/${affiliateId}/links`, data);
+    return response.data;
+  },
+
+  getMetrics: async (id: string): Promise<any> => {
+    const response = await api.get(`/admin/affiliates/${id}/metrics`);
+    return response.data;
+  },
+
+  getProducts: async (): Promise<SaaSProduct[]> => {
+    const response = await api.get<SaaSProduct[]>('/admin/affiliates/products');
+    return response.data;
+  },
+};
+
+

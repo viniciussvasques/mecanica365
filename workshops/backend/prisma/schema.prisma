@@ -51,6 +51,8 @@ model Tenant {
   backups                     Backup[]
   restoreOperations           RestoreOperation[]
 
+  referredByLinkId            String?                      @map("referred_by_link_id")
+
   @@map("tenants")
 }
 
@@ -1529,3 +1531,98 @@ model AdminAutomation {
 
   @@map("admin_automations")
 }
+
+// Affiliate System - Sistema modular de afiliados multi-SaaS
+
+// SaaS Product - Representa os diferentes sistemas disponíveis para venda
+model SaaSProduct {
+  id          String   @id @default(uuid())
+  code        String   @unique @db.VarChar(50) // mecanica365, crm_hub, etc.
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  baseUrl     String   @map("base_url") @db.VarChar(255) // URL do sistema
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  affiliateLinks AffiliateLink[]
+
+  @@map("saas_products")
+}
+
+// Affiliate - Parceiros que revendem os sistemas
+model Affiliate {
+  id            String   @id @default(uuid())
+  userId        String?  @unique @map("user_id") // Opcional: Link para um usuário do sistema
+  name          String   @db.VarChar(255)
+  email         String   @unique @db.VarChar(255)
+  cpfCnpj       String?  @map("cpf_cnpj") @db.VarChar(20)
+  status        String   @default("pending") @db.VarChar(50) // pending, active, blocked
+  pixKey        String?  @map("pix_key") @db.VarChar(255)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  links         AffiliateLink[]
+  commissions   AffiliateCommission[]
+  visits        AffiliateVisit[]
+
+  @@map("affiliates")
+}
+
+// AffiliateLink - Links específicos de cada afiliado para cada produto
+model AffiliateLink {
+  id          String   @id @default(uuid())
+  affiliateId String   @map("affiliate_id")
+  productId   String   @map("product_id")
+  code        String   @unique @db.VarChar(50) // Código único de rastreio (ex: VINICIUS365)
+  targetUrl   String   @map("target_url") @db.Text // URL destino final
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  affiliate   Affiliate     @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  product     SaaSProduct   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  visits      AffiliateVisit[]
+  commissions AffiliateCommission[]
+
+  @@index([affiliateId])
+  @@index([productId])
+  @@map("affiliate_links")
+}
+
+// AffiliateVisit - Rastreio de cliques
+model AffiliateVisit {
+  id            String   @id @default(uuid())
+  linkId        String   @map("link_id")
+  ip            String?  @db.VarChar(50)
+  userAgent     String?  @map("user_agent") @db.Text
+  referrer      String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  link          AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  affiliateId   String?       @map("affiliate_id") // redundante para queries rápidas
+  affiliate     Affiliate?    @relation(fields: [affiliateId], references: [id])
+
+  @@index([linkId])
+  @@index([createdAt])
+  @@map("affiliate_visits")
+}
+
+// AffiliateCommission - Registro de ganhos
+model AffiliateCommission {
+  id          String   @id @default(uuid())
+  affiliateId String   @map("affiliate_id")
+  linkId      String   @map("link_id")
+  amount      Decimal  @db.Decimal(10, 2)
+  status      String   @default("pending") @db.VarChar(50) // pending, approved, paid, cancelled
+  description String?  @db.Text
+  orderId     String?  @map("order_id") @db.VarChar(255) // Referência externa da venda
+  createdAt   DateTime @default(now()) @map("created_at")
+  paidAt      DateTime? @map("paid_at")
+
+  affiliate   Affiliate     @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  link        AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId])
+  @@index([status])
+  @@map("affiliate_commissions")
+}
+

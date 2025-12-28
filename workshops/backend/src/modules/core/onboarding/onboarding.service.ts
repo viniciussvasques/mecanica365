@@ -218,6 +218,17 @@ export class OnboardingService {
       };
     }
 
+    // Buscar link de afiliado se fornecido
+    let referredByLinkId: string | undefined;
+    if (createOnboardingDto.affiliateCode) {
+      const link = await this.prisma.affiliateLink.findFirst({
+        where: { code: createOnboardingDto.affiliateCode },
+      });
+      if (link) {
+        referredByLinkId = link.id;
+      }
+    }
+
     // Criar tenant com status PENDING (será ativado após pagamento)
     const tenant = await this.tenantsService.create({
       name: createOnboardingDto.name,
@@ -228,6 +239,7 @@ export class OnboardingService {
       status: TenantStatus.PENDING, // Pendente até confirmação de pagamento
       adminEmail: createOnboardingDto.email,
       adminPassword: createOnboardingDto.password || undefined, // Senha opcional, será usada após pagamento
+      referredByLinkId, // Associação com afiliado
     });
 
     this.logger.log(
@@ -397,12 +409,34 @@ export class OnboardingService {
       );
 
       // 1. Ativar Tenant
-      await this.tenantsService.update(tenant.id, {
+      const updatedTenant = await this.tenantsService.update(tenant.id, {
         status: TenantStatus.ACTIVE,
         plan: plan as TenantPlan,
       });
 
       this.logger.log(`Tenant ativado: ${tenant.id}`);
+
+      // 1.1 Processar Comissão de Afiliado
+      if (updatedTenant.referredByLinkId) {
+        try {
+          const amount = session.amount_total ? session.amount_total / 100 : 0;
+          const commissionRate = 0.30; // 30% de comissão
+          const commissionAmount = amount * commissionRate;
+
+          await this.prisma.affiliateCommission.create({
+            data: {
+              affiliateLinkId: updatedTenant.referredByLinkId,
+              orderId: session.id,
+              amount: commissionAmount,
+              status: 'pending', // Fica pendente para aprovação/pagamento
+              description: `Comissão referente ao plano ${plan} do tenant ${tenant.subdomain}`,
+            },
+          });
+          this.logger.log(`Comissão de afiliado registrada: ${commissionAmount} para link ${updatedTenant.referredByLinkId}`);
+        } catch (commError: unknown) {
+          this.logger.error(`Erro ao registrar comissão de afiliado: ${(commError as Error).message}`);
+        }
+      }
 
       // 1.5. Copiar configuração de email do tenant admin para o novo tenant
       try {

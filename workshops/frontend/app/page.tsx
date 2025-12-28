@@ -274,8 +274,8 @@ export default function Home() {
                   <div
                     key={idx}
                     className={`absolute inset-0 p-8 md:p-12 transition-all duration-500 flex items-center ${activeFeature === idx
-                        ? 'opacity-100 translate-y-0 z-10'
-                        : 'opacity-0 translate-y-4 pointer-events-none z-0'
+                      ? 'opacity-100 translate-y-0 z-10'
+                      : 'opacity-0 translate-y-4 pointer-events-none z-0'
                       }`}
                   >
                     <div className="w-full flex flex-col md:flex-row items-center space-y-6 md:space-y-0 md:space-x-8">
@@ -306,8 +306,8 @@ export default function Home() {
                     key={idx}
                     onClick={() => setActiveFeature(idx)}
                     className={`rounded-full transition-all ${activeFeature === idx
-                        ? 'bg-[#00E0B8] w-8 h-2'
-                        : 'bg-[#7E8691] w-2 h-2 hover:bg-[#00E0B8]/50'
+                      ? 'bg-[#00E0B8] w-8 h-2'
+                      : 'bg-[#7E8691] w-2 h-2 hover:bg-[#00E0B8]/50'
                       }`}
                     aria-label={`Mostrar feature ${idx + 1}`}
                   />
@@ -344,6 +344,77 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Affiliate Section */}
+      <section id="affiliates" className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0F1115] via-[#1A1E23] to-[#0F1115]"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-[#1A1E23]/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-16 shadow-2xl flex flex-col lg:flex-row items-center gap-12">
+            <div className="flex-1 space-y-6">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 bg-[#FF6B6B]/10 border border-[#FF6B6B]/20 rounded-full">
+                <span className="text-xs font-bold text-[#FF6B6B] uppercase tracking-wider">Oportunidade de Parceria</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-extrabold text-white leading-tight">
+                Seja um parceiro <span className="bg-gradient-to-r from-[#FF6B6B] to-[#EE5A5A] bg-clip-text text-transparent">Mecânica365</span>
+              </h2>
+              <p className="text-xl text-[#8B8B9E] leading-relaxed">
+                Indique nossa solução para oficinas e fature comissões recorrentes. Tenha acesso a um dashboard exclusivo para acompanhar seus ganhos e métricas em tempo real.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  'Comissões recorrentes de até 30%',
+                  'Suporte total ao parceiro',
+                  'Dashboard modular multi-SaaS',
+                  'Materiais de marketing gratuitos'
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center space-x-3 text-[#D0D6DE]">
+                    <div className="w-5 h-5 bg-[#FF6B6B]/20 rounded-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-[#FF6B6B] rounded-full"></div>
+                    </div>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="pt-4">
+                <a
+                  href="http://localhost:3004/join"
+                  className="inline-block px-10 py-4 bg-gradient-to-r from-[#FF6B6B] to-[#EE5A5A] text-white rounded-2xl font-bold text-lg hover:shadow-xl hover:shadow-[#FF6B6B]/20 transition-all transform hover:scale-105"
+                >
+                  Quero ser um Afiliado
+                </a>
+              </div>
+            </div>
+            <div className="flex-1 relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-[#FF6B6B]/20 to-[#3ABFF8]/20 rounded-full blur-3xl opacity-50"></div>
+              <div className="relative bg-[#0F1115] border border-white/10 rounded-2xl overflow-hidden shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500">
+                <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                  </div>
+                  <div className="text-[10px] text-[#4B4B5E] font-mono">affiliate-dashboard.v1</div>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="h-4 w-1/3 bg-white/10 rounded"></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="h-20 bg-[#FF6B6B]/10 rounded-xl border border-[#FF6B6B]/20 p-3">
+                      <div className="h-2 w-1/2 bg-[#FF6B6B]/20 rounded mb-2"></div>
+                      <div className="h-6 w-3/4 bg-[#FF6B6B]/40 rounded"></div>
+                    </div>
+                    <div className="h-20 bg-[#3ABFF8]/10 rounded-xl border border-[#3ABFF8]/20 p-3">
+                      <div className="h-2 w-1/2 bg-[#3ABFF8]/20 rounded mb-2"></div>
+                      <div className="h-6 w-3/4 bg-[#3ABFF8]/40 rounded"></div>
+                    </div>
+                  </div>
+                  <div className="h-32 bg-white/5 rounded-xl border border-white/5"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
 
       {/* Benefits Section */}
       <section id="benefits" className="py-20 bg-[#0F1115]">
@@ -418,8 +489,8 @@ export default function Home() {
                   <div
                     key={idx}
                     className={`bg-[#1A1E23] border rounded-2xl p-8 relative overflow-hidden transition-all transform hover:scale-105 ${plan.popular
-                        ? 'border-[#00E0B8] shadow-xl shadow-[#00E0B8]/20 scale-105'
-                        : 'border-[#2A3038] hover:border-[#00E0B8]/50'
+                      ? 'border-[#00E0B8] shadow-xl shadow-[#00E0B8]/20 scale-105'
+                      : 'border-[#2A3038] hover:border-[#00E0B8]/50'
                       }`}
                   >
                     {plan.popular && (
@@ -455,8 +526,8 @@ export default function Home() {
                     <Link
                       href={`/register?plan=${plan.code}`}
                       className={`block w-full text-center py-3 rounded-lg font-semibold transition-all ${plan.popular
-                          ? 'bg-gradient-to-r from-[#00E0B8] to-[#3ABFF8] text-white hover:shadow-lg hover:shadow-[#00E0B8]/20'
-                          : 'bg-[#2A3038] text-[#D0D6DE] hover:bg-[#00E0B8]/10 hover:text-[#00E0B8] border border-[#2A3038] hover:border-[#00E0B8]'
+                        ? 'bg-gradient-to-r from-[#00E0B8] to-[#3ABFF8] text-white hover:shadow-lg hover:shadow-[#00E0B8]/20'
+                        : 'bg-[#2A3038] text-[#D0D6DE] hover:bg-[#00E0B8]/10 hover:text-[#00E0B8] border border-[#2A3038] hover:border-[#00E0B8]'
                         }`}
                     >
                       Começar Agora

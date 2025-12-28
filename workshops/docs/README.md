@@ -7,12 +7,11 @@
 
 ## 📚 Índice
 
-- [Visão Geral](./OVERVIEW.md)
-- [Arquitetura](./ARCHITECTURE.md)
-- [API Documentation](./API.md)
-- [Development Guide](./DEVELOPMENT.md)
-- [Deployment Guide](./DEPLOY.md)
-- [Testing Guide](./TESTING.md)
+- [Visão Geral](./architecture/OVERVIEW.md)
+- [Planejamento de Usuários](./planning/PLANEJAMENTO_GERENCIAMENTO_USUARIOS_MECANICO.md)
+- [Módulos e Funcionalidades](./architecture/ANALISE_MODULOS_FUNCIONALIDADES.md)
+- [Configuração de Rede](./setup/ACESSO_REDE_LOCAL.md)
+- [Guia de Troubleshooting](./troubleshooting/TROUBLESHOOTING_TYPESCRIPT.md)
 
 ---
 

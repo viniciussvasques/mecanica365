@@ -41,6 +41,7 @@ const menuItems: MenuItem[] = [
   { label: 'Jobs', href: '/jobs', icon: LightningBoltIcon },
   { label: 'Backups', href: '/backups', icon: FileTextIcon },
   { label: 'Webhooks', href: '/webhooks', icon: Link2Icon },
+  { label: 'Afiliados', href: '/affiliates', icon: CardStackIcon },
   { label: 'Integrações', href: '/integrations', icon: MixerHorizontalIcon },
   { label: 'Automações', href: '/automations', icon: BellIcon },
   { label: 'Configurações', href: '/settings', icon: GearIcon },
@@ -134,8 +135,8 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: Readonly<S
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg
                     transition-all duration-200
-                    ${active 
-                      ? 'bg-gradient-to-r from-[#FF6B6B]/20 to-[#EE5A5A]/10 text-[#FF6B6B] border-l-2 border-[#FF6B6B]' 
+                    ${active
+                      ? 'bg-gradient-to-r from-[#FF6B6B]/20 to-[#EE5A5A]/10 text-[#FF6B6B] border-l-2 border-[#FF6B6B]'
                       : 'text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-white'
                     }
                     ${collapsed ? 'justify-center' : ''}

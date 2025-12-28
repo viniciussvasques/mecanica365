@@ -75,4 +75,13 @@ export class CreateOnboardingDto {
   @MinLength(8, { message: 'Senha deve ter no mínimo 8 caracteres' })
   @IsOptional()
   password?: string;
+
+  @ApiProperty({
+    description: 'Código de afiliado (opcional)',
+    example: 'VINI365',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  affiliateCode?: string;
 }
