@@ -20,7 +20,7 @@ export default function AffiliateDashboard() {
         { label: 'Taxa de Conversão', value: '...', icon: RocketIcon, color: 'text-amber-400', bg: 'bg-amber-400/10' },
     ]);
 
-    const [recentClicks, setRecentClicks] = useState<any[]>([]);
+    const [recentClicks, setRecentClicks] = useState<{ code: string; date: string; location: string }[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

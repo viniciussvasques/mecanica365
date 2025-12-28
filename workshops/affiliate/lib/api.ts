@@ -29,7 +29,7 @@ export const affiliateApi = {
     getLinks: () => fetchWithAuth('/affiliate-portal/links'),
     getProducts: () => fetchWithAuth('/affiliate-portal/products'),
     getProfile: () => fetchWithAuth('/affiliate-portal/profile'),
-    updateProfile: (data: any) => fetchWithAuth('/affiliate-portal/profile', {
+    updateProfile: (data: { name?: string; email?: string; pixKey?: string }) => fetchWithAuth('/affiliate-portal/profile', {
         method: 'PUT',
         body: JSON.stringify(data),
     }),

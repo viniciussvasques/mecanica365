@@ -9,15 +9,29 @@ import {
 } from '@radix-ui/react-icons';
 import { affiliateApi } from '@/lib/api';
 
+interface LinkData {
+    name: string;
+    code: string;
+    clicks: number;
+    sales: number;
+    url: string;
+}
+
+interface ApiLink {
+    product: { name: string; baseUrl: string };
+    code: string;
+    _count: { visits: number; commissions: number };
+}
+
 export default function AffiliateLinks() {
-    const [links, setLinks] = useState<any[]>([]);
+    const [links, setLinks] = useState<LinkData[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         async function loadLinks() {
             try {
                 const data = await affiliateApi.getLinks();
-                setLinks(data.map((l: any) => ({
+                setLinks(data.map((l: ApiLink) => ({
                     name: l.product.name,
                     code: l.code,
                     clicks: l._count.visits,
@@ -35,7 +49,6 @@ export default function AffiliateLinks() {
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        // Toast notification would go here
     };
 
     return (

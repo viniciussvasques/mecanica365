@@ -8,8 +8,15 @@ import {
 import { useEffect, useState } from 'react';
 import { affiliateApi } from '@/lib/api';
 
+interface Product {
+    id: string;
+    name: string;
+    description: string;
+    isActive: boolean;
+}
+
 export default function AffiliateProducts() {
-    const [products, setProducts] = useState<any[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

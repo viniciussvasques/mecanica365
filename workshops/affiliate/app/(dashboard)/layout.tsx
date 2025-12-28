@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
     DashboardIcon,
     Link2Icon,
@@ -13,14 +13,9 @@ import {
 
 export default function AffiliateDashboardLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const router = useRouter();
-    const [isLoading, setIsLoading] = useState(true);
+    const [mounted] = useState(true);
 
-    useEffect(() => {
-        setIsLoading(false);
-    }, []);
-
-    if (isLoading) return <div className="min-h-screen bg-[#0A0A0D] flex items-center justify-center text-white font-sans">Carregando Hub de Afiliados...</div>;
+    if (!mounted) return <div className="min-h-screen bg-[#0A0A0D] flex items-center justify-center text-white font-sans">Carregando Hub de Afiliados...</div>;
 
     const menuItems = [
         { label: 'Visão Geral', href: '/', icon: DashboardIcon },

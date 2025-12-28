@@ -9,8 +9,14 @@ import {
 import { useEffect, useState } from 'react';
 import { affiliateApi } from '@/lib/api';
 
+interface ProfileData {
+    name: string;
+    email: string;
+    pixKey: string;
+}
+
 export default function AffiliateProfile() {
-    const [profile, setProfile] = useState<any>({
+    const [profile, setProfile] = useState<ProfileData>({
         name: '',
         email: '',
         pixKey: '',
